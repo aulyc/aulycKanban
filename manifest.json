@@ -1,0 +1,10 @@
+{
+	"id": "xaulyc-kanban",
+	"name": "X-aulyc Kanban",
+	"version": "2.0.0",
+	"minAppVersion": "1.5.0",
+	"description": "Manage tasks with a five-quadrant kanban board based on the Eisenhower Matrix.",
+	"author": "nicholaxs",
+	"authorUrl": "https://github.com/nicholaxs",
+	"isDesktopOnly": false
+}

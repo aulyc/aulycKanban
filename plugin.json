@@ -1,0 +1,44 @@
+{
+    "name": "X-aulyc-Kban",
+    "author": "nicholaxs",
+    "url": "https://github.com/nicholaxs/X-aulyc-kanban",
+    "version": "1.0.89",
+    "minAppVersion": "3.3.6",
+    "backends": ["all"],
+    "frontends": ["all"],
+    "displayName": {
+        "default": "X-aulyc Kanban Board",
+        "zh_CN": "X-aulyc 任务看板"
+    },
+    "description": {
+        "default": "A kanban board plugin for task management with five quadrant classification and note synchronization",
+        "zh_CN": "思源笔记 X-aulyc 任务看板插件，支持五元组分类和笔记同步"
+    },
+    "readme": {
+        "default": "README.md",
+        "zh_CN": "README.md"
+    },
+    "i18n": {
+        "zh_CN": {
+            "name": "X-aulyc 看板",
+            "description": "任务管理看板，支持五元组分类和笔记同步"
+        },
+        "en_US": {
+            "name": "X-aulyc Kanban",
+            "description": "A kanban board plugin for task management with four quadrant classification"
+        }
+    },
+    "funding": {
+        "custom": []
+    },
+    "disabledInPublish": false,
+    "keywords": [
+        "看板",
+        "kanban",
+        "任务管理",
+        "task management",
+        "四象限",
+        "思源笔记"
+    ],
+    "icon": "icon.png"
+}
