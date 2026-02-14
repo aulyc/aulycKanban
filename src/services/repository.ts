@@ -1,5 +1,6 @@
 import type { BoardData, PluginSettings, PluginData } from '../types';
 import { DEFAULT_SETTINGS, getDefaultBoardData, CURRENT_SCHEMA_VERSION } from '../constants';
+import { migrateBoardData } from './boardMigration';
 
 /**
  * 数据仓储层
@@ -16,8 +17,8 @@ export interface IBoardRepository {
  * 基于 Obsidian Plugin.loadData/saveData 的仓储实现
  */
 export class PluginDataRepository implements IBoardRepository {
-	private loadDataFn: () => Promise<unknown>;
-	private saveDataFn: (data: PluginData) => Promise<void>;
+	private readonly loadDataFn: () => Promise<unknown>;
+	private readonly saveDataFn: (data: PluginData) => Promise<void>;
 
 	constructor(
 		loadDataFn: () => Promise<unknown>,
@@ -45,7 +46,7 @@ export class PluginDataRepository implements IBoardRepository {
 			: { ...DEFAULT_SETTINGS };
 
 		// 解析看板数据（含旧格式迁移）
-		const board = this.migrateBoardData(data['board']);
+		const board = migrateBoardData(data['board']);
 
 		// 更新 schema 版本
 		settings.schemaVersion = CURRENT_SCHEMA_VERSION;
@@ -55,36 +56,5 @@ export class PluginDataRepository implements IBoardRepository {
 
 	async save(settings: PluginSettings, board: BoardData): Promise<void> {
 		await this.saveDataFn({ settings, board });
-	}
-
-	/**
-	 * 迁移旧版看板数据格式
-	 *
-	 * 支持的格式：
-	 * 1. 新格式 { work: ViewData, personal: ViewData }
-	 * 2. 旧格式 { columns: Column[] }（思源插件单视图，迁移到 work）
-	 * 3. 空/无效 -> 返回默认
-	 */
-	private migrateBoardData(raw: unknown): BoardData {
-		if (!raw || typeof raw !== 'object') {
-			return getDefaultBoardData();
-		}
-
-		const obj = raw as Record<string, unknown>;
-
-		// 新格式：双视图
-		if (obj['work'] && obj['personal']) {
-			return raw as BoardData;
-		}
-
-		// 旧格式：单视图 columns 数组（迁移到 work）
-		if (Array.isArray(obj['columns'])) {
-			return {
-				work: { columns: obj['columns'] as BoardData['work']['columns'] },
-				personal: getDefaultBoardData().personal,
-			};
-		}
-
-		return getDefaultBoardData();
 	}
 }

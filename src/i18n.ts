@@ -40,6 +40,14 @@ const zh: I18nStrings = {
 	'task.submit': '确定',
 	'task.cancel': '取消',
 
+	// 分类管理
+	'column.rename': '重命名',
+	'column.delete': '删除分类',
+	'column.addPrompt': '输入新分类名称',
+	'column.renamePrompt': '输入新名称',
+	'column.deleteConfirm': '确定要删除这个分类吗？',
+	'column.deleteMoveTasks': '分类下的任务将移到第一个分类中。',
+
 	// 列快捷键命令
 	'command.focusPeriodic': '聚焦到：🔄 周期任务',
 	'command.focusUrgentImportant': '聚焦到：🔥 重要且紧急',
@@ -55,9 +63,11 @@ const zh: I18nStrings = {
 	'archive.empty': '暂无归档任务',
 	'archive.archivedAt': '归档于',
 	'archive.tooltip': '查看已归档任务',
+	'archive.other': '📁 其他',
 
 	// 设置页
 	'settings.heading': '看板设置',
+	'settings.open': '打开设置',
 	'settings.appearance': 'Appearance',
 	'settings.appearance.desc': '外观设置',
 	'settings.icon.name': '自定义图标',
@@ -78,7 +88,7 @@ const zh: I18nStrings = {
 	'settings.backup.name': '备份数据',
 	'settings.backup.desc': '将看板数据以 JSON 文件保存到本地',
 	'settings.backup.button': '备份',
-	'settings.backup.success': '请选择 JSON 文件要备份到的文件夹',
+	'settings.backup.success': '备份文件已下载',
 	'settings.backup.fail': '备份失败',
 	'settings.import.name': '导入数据',
 	'settings.import.desc': '从已备份的 JSON 文件恢复至看板中',
@@ -158,6 +168,13 @@ const en: I18nStrings = {
 	'task.submit': 'Submit',
 	'task.cancel': 'Cancel',
 
+	'column.rename': 'Rename',
+	'column.delete': 'Delete category',
+	'column.addPrompt': 'Enter new category name',
+	'column.renamePrompt': 'Enter new name',
+	'column.deleteConfirm': 'Are you sure you want to delete this category?',
+	'column.deleteMoveTasks': 'Tasks will be moved to the first category.',
+
 	'command.focusPeriodic': 'Focus: 🔄 Periodic',
 	'command.focusUrgentImportant': 'Focus: 🔥 Urgent & Important',
 	'command.focusImportantNotUrgent': 'Focus: ⭐ Important',
@@ -171,8 +188,10 @@ const en: I18nStrings = {
 	'archive.empty': 'No archived tasks',
 	'archive.archivedAt': 'Archived at',
 	'archive.tooltip': 'View archived tasks',
+	'archive.other': '📁 Other',
 
 	'settings.heading': 'Kanban settings',
+	'settings.open': 'Open settings',
 	'settings.appearance': 'Appearance',
 	'settings.appearance.desc': 'Appearance settings',
 	'settings.icon.name': 'Custom icon',
@@ -193,7 +212,7 @@ const en: I18nStrings = {
 	'settings.backup.name': 'Backup data',
 	'settings.backup.desc': 'Save kanban data as a JSON file',
 	'settings.backup.button': 'Backup',
-	'settings.backup.success': 'Choose a folder to save the backup JSON file',
+	'settings.backup.success': 'Backup file downloaded',
 	'settings.backup.fail': 'Backup failed',
 	'settings.import.name': 'Import data',
 	'settings.import.desc': 'Restore kanban data from a backup JSON file',
@@ -244,6 +263,7 @@ const en: I18nStrings = {
 
 /** 当前语言字典 */
 let currentLang: I18nStrings = zh;
+let currentLocale = 'zh-CN';
 
 /**
  * 根据 Obsidian 语言环境初始化国际化
@@ -252,9 +272,15 @@ let currentLang: I18nStrings = zh;
 export function initI18n(locale: string): void {
 	if (locale.startsWith('zh')) {
 		currentLang = zh;
+		currentLocale = 'zh-CN';
 	} else {
 		currentLang = en;
+		currentLocale = 'en';
 	}
+}
+
+export function getCurrentLocale(): string {
+	return currentLocale;
 }
 
 /**

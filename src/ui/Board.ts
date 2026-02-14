@@ -1,22 +1,20 @@
 import { App } from 'obsidian';
 import type { KanbanStore } from '../store';
-import { ColumnComponent } from './Column';
+import { TaskList } from './TaskList';
+import { CategoryNav } from './CategoryNav';
 import { Toolbar } from './Toolbar';
 import { ArchiveView } from './ArchiveView';
-import { DragDropManager } from '../features/dnd';
 
 /**
  * 看板面板组件
- * 根据 store 状态切换看板视图 / 归档视图
+ * 布局：Toolbar + (左侧 TaskList + 右侧 CategoryNav)
+ * 归档模式：Toolbar + ArchiveView
  */
 export class Board {
 	private containerEl: HTMLElement;
 	private store: KanbanStore;
 	private app: App;
 	private pluginId: string;
-	private toolbar: Toolbar | null = null;
-	private columnComponents: ColumnComponent[] = [];
-	private dndManager: DragDropManager | null = null;
 
 	constructor(containerEl: HTMLElement, store: KanbanStore, app: App, pluginId: string) {
 		this.containerEl = containerEl;
@@ -26,50 +24,28 @@ export class Board {
 	}
 
 	render(): void {
-		if (this.dndManager) {
-			this.dndManager.cleanup();
-			this.dndManager = null;
-		}
-
 		this.containerEl.empty();
-		this.columnComponents = [];
 
-		// 工具栏（传入 app 和 pluginId 供设置按钮使用）
-		this.toolbar = new Toolbar(this.containerEl, this.store, this.app, this.pluginId);
+		// 工具栏（始终显示）
+		new Toolbar(this.containerEl, this.store, this.app, this.pluginId);
 
 		if (this.store.isShowingArchive()) {
+			// 归档视图
 			const archiveContainer = this.containerEl.createDiv({ cls: 'xaulyc-archive-container' });
 			const archiveView = new ArchiveView(archiveContainer, this.store);
 			archiveView.render();
 		} else {
-			this.renderBoard();
+			// 看板视图：左侧任务列表 + 右侧分类导航
+			const contentArea = this.containerEl.createDiv({ cls: 'xaulyc-content-area' });
+
+			const taskList = new TaskList(contentArea, this.store);
+			taskList.render();
+
+			new CategoryNav(contentArea, this.store);
 		}
-	}
-
-	private renderBoard(): void {
-		const columnsEl = this.containerEl.createDiv({ cls: 'xaulyc-columns' });
-		const columns = this.store.getCurrentColumns();
-
-		for (const columnData of columns) {
-			const col = new ColumnComponent(columnsEl, this.store, columnData);
-			col.renderTasks();
-			this.columnComponents.push(col);
-		}
-
-		requestAnimationFrame(() => {
-			this.dndManager = new DragDropManager(this.store, columnsEl);
-			this.dndManager.setup();
-		});
-	}
-
-	getTaskContainers(): HTMLElement[] {
-		return this.columnComponents.map((col) => col.getTasksEl());
 	}
 
 	destroy(): void {
-		if (this.dndManager) {
-			this.dndManager.cleanup();
-			this.dndManager = null;
-		}
+		// 无需特殊清理（不再有 dndManager）
 	}
 }

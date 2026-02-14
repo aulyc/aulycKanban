@@ -1,20 +1,13 @@
 import type { Column } from '../types';
 import { t } from '../i18n';
+import { formatDateTime } from './datetime';
 
 /**
  * 生成看板 Markdown 内容
  * 已完成任务已归档到单独文件，这里只展示未完成任务
  */
 export function generateMarkdown(columns: Column[]): string {
-	const now = new Date().toLocaleString('zh-CN', {
-		year: 'numeric',
-		month: '2-digit',
-		day: '2-digit',
-		hour: '2-digit',
-		minute: '2-digit',
-		second: '2-digit',
-		hour12: false,
-	});
+	const now = formatDateTime(new Date());
 
 	let md = `> ${t('md.syncTime')}：${now}\n\n`;
 

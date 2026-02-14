@@ -1,8 +1,8 @@
 import { Notice } from 'obsidian';
 import type { BoardData } from '../types';
 import type { KanbanStore } from '../store';
-import { getDefaultBoardData } from '../constants';
 import { t } from '../i18n';
+import { isMigratableBoardData, migrateBoardData } from './boardMigration';
 
 /**
  * 备份导出/导入服务
@@ -23,6 +23,8 @@ export class BackupService {
 			const dataToBackup = {
 				work: boardData.work,
 				personal: boardData.personal,
+				workArchive: boardData.workArchive ?? { tasks: [] },
+				personalArchive: boardData.personalArchive ?? { tasks: [] },
 				backupTime: new Date().toISOString(),
 				version: '2.0',
 			};
@@ -99,22 +101,7 @@ export class BackupService {
 	 * 支持新格式（双视图）和旧格式（单 columns 数组）
 	 */
 	private validateAndMigrate(data: Record<string, unknown>): BoardData | null {
-		// 新格式：有 work 和 personal
-		if (data['work'] && data['personal']) {
-			return {
-				work: data['work'] as BoardData['work'],
-				personal: data['personal'] as BoardData['personal'],
-			};
-		}
-
-		// 旧格式：只有 columns 数组
-		if (Array.isArray(data['columns'])) {
-			return {
-				work: { columns: data['columns'] as BoardData['work']['columns'] },
-				personal: getDefaultBoardData().personal,
-			};
-		}
-
-		return null;
+		if (!isMigratableBoardData(data)) return null;
+		return migrateBoardData(data);
 	}
 }

@@ -5,13 +5,8 @@
 /** 视图类型：工作 / 个人 */
 export type ViewKind = 'work' | 'personal';
 
-/** 列 ID 枚举 */
-export type ColumnId =
-	| 'periodic'
-	| 'urgent-important'
-	| 'important-not-urgent'
-	| 'urgent-not-important'
-	| 'not-urgent-not-important';
+/** 列/分类 ID（自由字符串，支持用户自定义） */
+export type ColumnId = string;
 
 /** 单个任务 */
 export interface Task {
@@ -24,13 +19,14 @@ export interface Task {
 	/** 归档时间（有值表示已归档） */
 	archivedAt?: string;
 	/** 归档前所在列 ID（用于归档视图分类） */
-	sourceColumnId?: ColumnId;
+	sourceColumnId?: string;
 }
 
-/** 看板列 */
+/** 看板列/分类 */
 export interface Column {
 	id: ColumnId;
 	title: string;
+	order: number;
 	tasks: Task[];
 }
 
@@ -60,6 +56,8 @@ export interface SyncTarget {
 /** 插件设置 */
 export interface PluginSettings {
 	currentView: ViewKind;
+	/** 当前选中的分类 ID */
+	activeColumnId: string;
 	/** 是否正在查看归档 */
 	showArchive: boolean;
 	customIcon: string;
@@ -84,6 +82,11 @@ export type ActionType =
 	| 'TOGGLE_TASK'
 	| 'MOVE_TASK'
 	| 'SWITCH_VIEW'
+	| 'SELECT_COLUMN'
+	| 'ADD_COLUMN'
+	| 'RENAME_COLUMN'
+	| 'DELETE_COLUMN'
+	| 'REORDER_COLUMNS'
 	| 'TOGGLE_ARCHIVE_VIEW'
 	| 'RESTORE_TASK'
 	| 'SET_BOARD_DATA'

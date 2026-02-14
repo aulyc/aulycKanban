@@ -1,5 +1,6 @@
 import type { Task } from '../types';
 import type { KanbanStore } from '../store';
+import { formatDateTimeMinute } from '../utils/datetime';
 
 /**
  * 任务卡片组件
@@ -107,15 +108,16 @@ export class TaskCard {
 			textarea.style.height = textarea.scrollHeight + 'px';
 		});
 
-		// Cmd+Enter 保存
+		// Enter 保存，Shift+Enter 换行，Escape 取消
 		textarea.addEventListener('keydown', (e: KeyboardEvent) => {
-			if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+			if (e.key === 'Enter' && !e.shiftKey) {
 				e.preventDefault();
+				e.stopPropagation();
 				this.saveEdit(textarea.value.trim());
 			}
 			if (e.key === 'Escape') {
 				e.preventDefault();
-				this.saveEdit(currentText); // 取消 = 恢复原内容
+				this.saveEdit(currentText);
 			}
 		});
 
@@ -177,27 +179,10 @@ export class TaskCard {
 	}
 
 	/**
-	 * 格式化时间显示
+	 * 格式化时间显示（完整年月日+时间）
 	 */
 	private formatTime(isoStr: string): string {
-		try {
-			const date = new Date(isoStr);
-			const now = new Date();
-			const isToday =
-				date.getFullYear() === now.getFullYear() &&
-				date.getMonth() === now.getMonth() &&
-				date.getDate() === now.getDate();
-
-			if (isToday) {
-				return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
-			}
-
-			return date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })
-				+ ' '
-				+ date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
-		} catch {
-			return '';
-		}
+		return formatDateTimeMinute(isoStr);
 	}
 
 	private setTextWithLineBreaks(el: HTMLElement, text: string): void {

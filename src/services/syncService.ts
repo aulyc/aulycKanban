@@ -1,9 +1,10 @@
 import { normalizePath, Notice, TFile, Vault } from 'obsidian';
 import type { KanbanStore } from '../store';
-import type { Task, ColumnId } from '../types';
+import type { Task, Column } from '../types';
 import { t } from '../i18n';
 import { generateMarkdown } from '../utils/markdown';
-import { PERFORMANCE, COLUMN_DEFINITIONS } from '../constants';
+import { formatDateTime, formatDateTimeMinute } from '../utils/datetime';
+import { PERFORMANCE, ARCHIVE_UNCATEGORIZED_ID } from '../constants';
 
 /** 同步区块标记 */
 const SYNC_START = '<!-- XAULYC_KANBAN:START -->';
@@ -119,13 +120,10 @@ export class VaultSyncService {
 
 	/**
 	 * 生成归档 Markdown
-	 * 按五列分类，工作和个人分别展示，含归档时间
+	 * 按当前分类展示，工作和个人分别展示，含归档时间
 	 */
 	private generateArchiveMarkdown(workTasks: Task[], personalTasks: Task[]): string {
-		const now = new Date().toLocaleString('zh-CN', {
-			year: 'numeric', month: '2-digit', day: '2-digit',
-			hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
-		});
+		const now = formatDateTime(new Date());
 
 		let md = `> ${t('md.syncTime')}：${now}\n\n`;
 
@@ -135,47 +133,49 @@ export class VaultSyncService {
 		md += `- 工作任务：${workTasks.length}\n`;
 		md += `- 个人任务：${personalTasks.length}\n\n`;
 
-		// 工作归档
+		const boardData = this.store.getBoardData();
+
 		if (workTasks.length > 0) {
 			md += `## 💼 工作任务归档\n\n`;
-			md += this.renderArchiveByColumn(workTasks);
+			md += this.renderArchiveByColumn(workTasks, boardData.work.columns);
 		}
 
-		// 个人归档
 		if (personalTasks.length > 0) {
 			md += `## 👤 个人任务归档\n\n`;
-			md += this.renderArchiveByColumn(personalTasks);
+			md += this.renderArchiveByColumn(personalTasks, boardData.personal.columns);
 		}
 
 		return md;
 	}
 
 	/**
-	 * 按五列分类渲染归档任务
+	 * 按分类渲染归档任务
 	 */
-	private renderArchiveByColumn(tasks: Task[]): string {
+	private renderArchiveByColumn(tasks: Task[], columns: Column[]): string {
 		let md = '';
 
-		// 按列分组
-		const grouped = new Map<ColumnId, Task[]>();
-		for (const colDef of COLUMN_DEFINITIONS) {
-			grouped.set(colDef.id, []);
+		const grouped = new Map<string, Task[]>();
+		for (const col of columns) {
+			grouped.set(col.id, []);
 		}
+		grouped.set(ARCHIVE_UNCATEGORIZED_ID, []);
+
 		for (const task of tasks) {
-			const colId = task.sourceColumnId ?? 'periodic';
+			const colId = task.sourceColumnId ?? ARCHIVE_UNCATEGORIZED_ID;
 			const list = grouped.get(colId);
 			if (list) {
 				list.push(task);
+			} else {
+				grouped.get(ARCHIVE_UNCATEGORIZED_ID)?.push(task);
 			}
 		}
 
-		for (const colDef of COLUMN_DEFINITIONS) {
-			const colTasks = grouped.get(colDef.id) ?? [];
+		for (const col of columns) {
+			const colTasks = grouped.get(col.id) ?? [];
 			if (colTasks.length === 0) continue;
 
-			md += `### ${colDef.title}\n\n`;
+			md += `### ${col.title}\n\n`;
 
-			// 按归档时间倒序
 			const sorted = [...colTasks].sort((a, b) => {
 				const aTime = new Date(a.archivedAt ?? a.createdAt).getTime();
 				const bTime = new Date(b.archivedAt ?? b.createdAt).getTime();
@@ -189,17 +189,21 @@ export class VaultSyncService {
 			md += '\n';
 		}
 
+		const otherTasks = grouped.get(ARCHIVE_UNCATEGORIZED_ID) ?? [];
+		if (otherTasks.length > 0) {
+			md += `### ${t('archive.other')}\n\n`;
+			for (const task of otherTasks) {
+				const archiveTime = this.formatTime(task.archivedAt ?? task.completedAt ?? task.createdAt);
+				md += `- [x] ${task.content}  *(${t('archive.archivedAt')} ${archiveTime})*\n`;
+			}
+			md += '\n';
+		}
+
 		return md;
 	}
 
 	private formatTime(isoStr: string): string {
-		try {
-			const date = new Date(isoStr);
-			return date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })
-				+ ' ' + date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
-		} catch {
-			return '';
-		}
+		return formatDateTimeMinute(isoStr);
 	}
 
 	/**

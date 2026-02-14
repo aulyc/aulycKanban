@@ -63,7 +63,7 @@ export class Toolbar {
 			cls: 'xaulyc-settings-btn',
 		});
 		setIcon(settingsBtn, 'settings');
-		settingsBtn.setAttribute('aria-label', '设置');
+		settingsBtn.setAttribute('aria-label', t('settings.open'));
 		settingsBtn.addEventListener('click', (e: MouseEvent) => {
 			e.preventDefault();
 			e.stopPropagation();

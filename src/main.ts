@@ -1,28 +1,28 @@
-import { ItemView, Plugin, WorkspaceLeaf } from 'obsidian';
-import { VIEW_TYPE_KANBAN, DEFAULT_SETTINGS, getDefaultBoardData } from './constants';
+import { Plugin, WorkspaceLeaf } from 'obsidian';
+import { VIEW_TYPE_KANBAN } from './constants';
 import { initI18n, t } from './i18n';
-import type { PluginData, PluginSettings, BoardData } from './types';
 import { KanbanView } from './ui/KanbanView';
 import { KanbanSettingTab } from './ui/KanbanSettingTab';
 import { KanbanStore } from './store';
 import { VaultSyncService } from './services/syncService';
+import { PluginDataRepository } from './services/repository';
 
 export default class KanbanPlugin extends Plugin {
 	store: KanbanStore;
 	syncService: VaultSyncService;
+	private repository: PluginDataRepository;
+	private unsubscribeSync: (() => void) | null = null;
 
 	async onload(): Promise<void> {
 		// 初始化国际化
 		initI18n(this.getLocale());
 
-		// 加载持久化数据
-		const savedData = await this.loadData() as PluginData | null;
-		const settings: PluginSettings = savedData?.settings
-			? { ...DEFAULT_SETTINGS, ...savedData.settings }
-			: { ...DEFAULT_SETTINGS };
-		const board: BoardData = savedData?.board
-			? this.migrateBoardData(savedData.board as unknown as Record<string, unknown>)
-			: getDefaultBoardData();
+		// 初始化仓储并加载持久化数据
+		this.repository = new PluginDataRepository(
+			this.loadData.bind(this),
+			this.saveData.bind(this),
+		);
+		const { settings, board } = await this.repository.load();
 
 		// 初始化 Store
 		this.store = new KanbanStore(settings, board, this);
@@ -31,7 +31,7 @@ export default class KanbanPlugin extends Plugin {
 		this.syncService = new VaultSyncService(this.app.vault, this.store);
 
 		// 只在数据真正变更时才同步 md（切换视图等 UI 操作不触发）
-		this.store.subscribe(() => {
+		this.unsubscribeSync = this.store.subscribe(() => {
 			if (!this.store.lastActionMutatedData) return;
 
 			const syncSettings = this.store.getSettings();
@@ -48,7 +48,7 @@ export default class KanbanPlugin extends Plugin {
 		);
 
 		// 添加 Ribbon 图标（左侧栏）
-		this.addRibbonIcon('kanban', t('plugin.ribbonTip'), () => {
+		this.addRibbonIcon('list-todo', t('plugin.ribbonTip'), () => {
 			this.activateView();
 		});
 
@@ -84,6 +84,10 @@ export default class KanbanPlugin extends Plugin {
 	}
 
 	onunload(): void {
+		if (this.unsubscribeSync) {
+			this.unsubscribeSync();
+			this.unsubscribeSync = null;
+		}
 		// 先销毁 store（清除所有订阅者，防止视图关闭时触发回调连锁反应）
 		if (this.store) {
 			this.store.destroy();
@@ -98,8 +102,22 @@ export default class KanbanPlugin extends Plugin {
 	 * 获取当前 Obsidian 语言环境
 	 */
 	private getLocale(): string {
-		const locale = window.localStorage.getItem('language');
-		return locale ?? 'en';
+		const appWithConfig = this.app as unknown as {
+			vault?: { getConfig?: (key: string) => unknown };
+		};
+		const configLocale = appWithConfig.vault?.getConfig?.('language')
+			?? appWithConfig.vault?.getConfig?.('locale');
+		if (typeof configLocale === 'string' && configLocale) {
+			return configLocale;
+		}
+
+		const htmlLocale = globalThis.document?.documentElement?.lang;
+		if (htmlLocale) {
+			return htmlLocale;
+		}
+
+		const localStorageLocale = globalThis.localStorage.getItem('language');
+		return localStorageLocale ?? 'en';
 	}
 
 	/**
@@ -118,10 +136,8 @@ export default class KanbanPlugin extends Plugin {
 			} else {
 				// 尝试在右侧栏创建
 				leaf = workspace.getRightLeaf(false);
-				if (!leaf) {
-					// 备用：在新标签页创建
-					leaf = workspace.getLeaf('tab');
-				}
+				// 备用：在新标签页创建
+				leaf ??= workspace.getLeaf('tab');
 				if (leaf) {
 					await leaf.setViewState({
 						type: VIEW_TYPE_KANBAN,
@@ -142,28 +158,9 @@ export default class KanbanPlugin extends Plugin {
 	 * 持久化数据到磁盘
 	 */
 	async persistData(): Promise<void> {
-		const data: PluginData = {
-			settings: this.store.getSettings(),
-			board: this.store.getBoardData(),
-		};
-		await this.saveData(data);
-	}
-
-	/**
-	 * 迁移旧版看板数据格式
-	 */
-	private migrateBoardData(raw: Record<string, unknown>): BoardData {
-		if (raw['work'] && raw['personal']) {
-			return raw as unknown as BoardData;
-		}
-
-		if (Array.isArray(raw['columns'])) {
-			return {
-				work: { columns: raw['columns'] as BoardData['work']['columns'] },
-				personal: getDefaultBoardData().personal,
-			};
-		}
-
-		return getDefaultBoardData();
+		await this.repository.save(
+			this.store.getSettings(),
+			this.store.getBoardData(),
+		);
 	}
 }

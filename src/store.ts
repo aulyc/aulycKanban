@@ -1,4 +1,4 @@
-import type { Action, BoardData, PluginSettings, ViewKind, Task, Column, ColumnId, ArchiveData } from './types';
+import type { Action, BoardData, PluginSettings, ViewKind, Task, Column, ArchiveData } from './types';
 import { getDefaultBoardData, PERFORMANCE } from './constants';
 import type KanbanPlugin from './main';
 
@@ -14,6 +14,10 @@ const DATA_MUTATION_ACTIONS: ReadonlySet<string> = new Set([
 	'RESTORE_TASK',
 	'SET_BOARD_DATA',
 	'CLEAR_ALL_DATA',
+	'ADD_COLUMN',
+	'RENAME_COLUMN',
+	'DELETE_COLUMN',
+	'REORDER_COLUMNS',
 ]);
 
 /**
@@ -30,7 +34,7 @@ export class KanbanStore {
 
 	constructor(settings: PluginSettings, board: BoardData, plugin: KanbanPlugin) {
 		this.settings = { ...settings };
-		this.board = board;
+		this.board = this.ensureColumnOrder(board);
 		this.plugin = plugin;
 	}
 
@@ -52,10 +56,28 @@ export class KanbanStore {
 		return this.settings.showArchive;
 	}
 
-	/** 获取当前视图的列 */
+	/** 获取当前选中的分类 ID */
+	getActiveColumnId(): string {
+		const columns = this.getCurrentColumns();
+		const activeId = this.settings.activeColumnId;
+		// 如果 activeColumnId 无效，选第一个
+		if (columns.find((c) => c.id === activeId)) {
+			return activeId;
+		}
+		return columns[0]?.id ?? '';
+	}
+
+	/** 获取当前选中分类的数据 */
+	getActiveColumn(): Column | undefined {
+		const activeId = this.getActiveColumnId();
+		return this.getCurrentColumns().find((c) => c.id === activeId);
+	}
+
+	/** 获取当前视图的列（按 order 排序） */
 	getCurrentColumns(): Column[] {
 		const viewData = this.board[this.settings.currentView];
-		return viewData?.columns ?? [];
+		const columns = viewData?.columns ?? [];
+		return [...columns].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 	}
 
 	/** 获取当前视图的归档任务 */
@@ -68,6 +90,11 @@ export class KanbanStore {
 	findTask(columnId: string, taskId: string): Task | undefined {
 		const column = this.getCurrentColumns().find((c) => c.id === columnId);
 		return column?.tasks.find((t) => t.id === taskId);
+	}
+
+	/** 上一次 dispatch 是否修改了看板数据 */
+	get lastActionMutatedData(): boolean {
+		return this._lastActionMutatedData;
 	}
 
 	// ==================== 订阅 ====================
@@ -128,6 +155,34 @@ export class KanbanStore {
 			case 'SWITCH_VIEW':
 				this.settings.currentView = action.payload?.['view'] as ViewKind;
 				this.settings.showArchive = false;
+				// 切换视图后，如果 activeColumnId 无效则选第一个
+				this.ensureActiveColumn();
+				break;
+
+			case 'SELECT_COLUMN':
+				this.settings.activeColumnId = action.payload?.['columnId'] as string;
+				break;
+
+			case 'ADD_COLUMN':
+				this.addColumn(action.payload?.['title'] as string);
+				break;
+
+			case 'RENAME_COLUMN':
+				this.renameColumn(
+					action.payload?.['columnId'] as string,
+					action.payload?.['title'] as string,
+				);
+				break;
+
+			case 'DELETE_COLUMN':
+				this.deleteColumn(
+					action.payload?.['columnId'] as string,
+					(action.payload?.['moveTasks'] as boolean) ?? true,
+				);
+				break;
+
+			case 'REORDER_COLUMNS':
+				this.reorderColumns(action.payload?.['columnIds'] as string[]);
 				break;
 
 			case 'TOGGLE_ARCHIVE_VIEW':
@@ -139,15 +194,17 @@ export class KanbanStore {
 				break;
 
 			case 'SET_BOARD_DATA':
-				this.board = action.payload?.['board'] as BoardData;
+				this.board = this.ensureColumnOrder(action.payload?.['board'] as BoardData);
+				this.ensureActiveColumn();
 				break;
 
 			case 'CLEAR_ALL_DATA':
 				this.board = getDefaultBoardData();
+				this.ensureActiveColumn();
 				break;
 
 			case 'UPDATE_SETTINGS':
-				Object.assign(this.settings, action.payload);
+				this.updateSettings(action.payload);
 				break;
 		}
 
@@ -156,15 +213,10 @@ export class KanbanStore {
 		this.scheduleSave();
 	}
 
-	/** 上一次 dispatch 是否修改了看板数据（供外部判断是否需要同步 md） */
-	get lastActionMutatedData(): boolean {
-		return this._lastActionMutatedData;
-	}
-
 	// ==================== 任务操作 ====================
 
 	private addTask(columnId: string, content: string): void {
-		const column = this.getCurrentColumns().find((c) => c.id === columnId);
+		const column = this.getRawColumn(columnId);
 		if (!column) return;
 
 		const now = new Date().toISOString();
@@ -188,7 +240,7 @@ export class KanbanStore {
 	}
 
 	private deleteTask(columnId: string, taskId: string): void {
-		const column = this.getCurrentColumns().find((c) => c.id === columnId);
+		const column = this.getRawColumn(columnId);
 		if (!column) return;
 
 		const index = column.tasks.findIndex((t) => t.id === taskId);
@@ -198,7 +250,7 @@ export class KanbanStore {
 	}
 
 	private toggleTask(columnId: string, taskId: string): void {
-		const column = this.getCurrentColumns().find((c) => c.id === columnId);
+		const column = this.getRawColumn(columnId);
 		if (!column) return;
 
 		const task = column.tasks.find((t) => t.id === taskId);
@@ -207,19 +259,16 @@ export class KanbanStore {
 		task.completed = !task.completed;
 
 		if (task.completed) {
-			// 完成 -> 自动归档
 			const now = new Date().toISOString();
 			task.completedAt = now;
 			task.archivedAt = now;
-			task.sourceColumnId = columnId as ColumnId;
+			task.sourceColumnId = columnId;
 
-			// 从列中移除
 			const idx = column.tasks.indexOf(task);
 			if (idx > -1) {
 				column.tasks.splice(idx, 1);
 			}
 
-			// 添加到归档
 			this.getOrCreateArchive().tasks.unshift(task);
 		} else {
 			delete task.completedAt;
@@ -227,46 +276,50 @@ export class KanbanStore {
 		}
 	}
 
-	/** 从归档恢复任务到原列 */
 	private restoreTask(taskId: string): void {
-		const archive = this.getOrCreateArchive();
+		// 在工作和个人归档中都查找
+		let archive: ArchiveData | undefined;
+		let targetView: 'work' | 'personal' = this.settings.currentView;
+
+		const workArchive = this.board.workArchive;
+		const personalArchive = this.board.personalArchive;
+
+		if (workArchive?.tasks.some((t) => t.id === taskId)) {
+			archive = workArchive;
+			targetView = 'work';
+		} else if (personalArchive?.tasks.some((t) => t.id === taskId)) {
+			archive = personalArchive;
+			targetView = 'personal';
+		}
+
+		if (!archive) return;
+
 		const idx = archive.tasks.findIndex((t) => t.id === taskId);
 		if (idx === -1) return;
 
 		const task = archive.tasks[idx];
 		if (!task) return;
 
-		// 从归档移除
 		archive.tasks.splice(idx, 1);
 
-		// 恢复状态
 		task.completed = false;
 		delete task.completedAt;
 		delete task.archivedAt;
 
-		// 放回原列（如果原列存在）
 		const targetColumnId = task.sourceColumnId ?? 'periodic';
 		delete task.sourceColumnId;
 
-		const column = this.getCurrentColumns().find((c) => c.id === targetColumnId);
+		// 放回对应视图的列
+		const viewData = this.board[targetView];
+		const column = viewData?.columns.find((c) => c.id === targetColumnId);
 		if (column) {
 			column.tasks.unshift(task);
 		} else {
-			// 原列不存在，放到第一列
-			const firstCol = this.getCurrentColumns()[0];
+			const firstCol = viewData?.columns[0];
 			if (firstCol) {
 				firstCol.tasks.unshift(task);
 			}
 		}
-	}
-
-	/** 获取或创建当前视图的归档 */
-	private getOrCreateArchive(): ArchiveData {
-		const archiveKey = this.settings.currentView === 'work' ? 'workArchive' : 'personalArchive';
-		if (!this.board[archiveKey]) {
-			this.board[archiveKey] = { tasks: [] };
-		}
-		return this.board[archiveKey]!;
 	}
 
 	private moveTask(
@@ -275,8 +328,8 @@ export class KanbanStore {
 		toColumnId: string,
 		targetIndex: number,
 	): void {
-		const fromColumn = this.getCurrentColumns().find((c) => c.id === fromColumnId);
-		const toColumn = this.getCurrentColumns().find((c) => c.id === toColumnId);
+		const fromColumn = this.getRawColumn(fromColumnId);
+		const toColumn = this.getRawColumn(toColumnId);
 		if (!fromColumn || !toColumn) return;
 
 		const taskIndex = fromColumn.tasks.findIndex((t) => t.id === taskId);
@@ -295,6 +348,133 @@ export class KanbanStore {
 			}
 		} else {
 			toColumn.tasks.unshift(task);
+		}
+	}
+
+	// ==================== 分类操作 ====================
+
+	private addColumn(title: string): void {
+		const columns = this.getRawColumns();
+		const maxOrder = columns.reduce((max, c) => Math.max(max, c.order ?? 0), -1);
+
+		const newCol: Column = {
+			id: `col_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+			title,
+			order: maxOrder + 1,
+			tasks: [],
+		};
+
+		columns.push(newCol);
+		this.settings.activeColumnId = newCol.id;
+	}
+
+	private renameColumn(columnId: string, newTitle: string): void {
+		const column = this.getRawColumn(columnId);
+		if (column) {
+			column.title = newTitle;
+		}
+	}
+
+	private deleteColumn(columnId: string, moveTasks: boolean): void {
+		const columns = this.getRawColumns();
+		if (columns.length <= 1) return; // 至少保留一个
+
+		const idx = columns.findIndex((c) => c.id === columnId);
+		if (idx === -1) return;
+
+		const column = columns[idx];
+		if (!column) return;
+
+		if (moveTasks && column.tasks.length > 0) {
+			// 将任务移到第一个非当前的分类
+			const target = columns.find((c) => c.id !== columnId);
+			if (target) {
+				target.tasks.push(...column.tasks);
+			}
+		}
+
+		columns.splice(idx, 1);
+
+		// 如果删的是当前选中的，切换到第一个
+		if (this.settings.activeColumnId === columnId) {
+			this.settings.activeColumnId = columns[0]?.id ?? '';
+		}
+	}
+
+	private reorderColumns(columnIds: string[]): void {
+		const columns = this.getRawColumns();
+		for (let i = 0; i < columnIds.length; i++) {
+			const col = columns.find((c) => c.id === columnIds[i]);
+			if (col) {
+				col.order = i;
+			}
+		}
+	}
+
+	private ensureActiveColumn(): void {
+		const columns = this.getCurrentColumns();
+		if (!columns.find((c) => c.id === this.settings.activeColumnId)) {
+			this.settings.activeColumnId = columns[0]?.id ?? '';
+		}
+	}
+
+	// ==================== 内部辅助 ====================
+
+	/** 获取当前视图的原始列数组引用（不排序，用于修改） */
+	private getRawColumns(): Column[] {
+		const viewData = this.board[this.settings.currentView];
+		return viewData?.columns ?? [];
+	}
+
+	/** 获取原始列引用（用于修改） */
+	private getRawColumn(columnId: string): Column | undefined {
+		return this.getRawColumns().find((c) => c.id === columnId);
+	}
+
+	private getOrCreateArchive(): ArchiveData {
+		const archiveKey = this.settings.currentView === 'work' ? 'workArchive' : 'personalArchive';
+		if (!this.board[archiveKey]) {
+			this.board[archiveKey] = { tasks: [] };
+		}
+		return this.board[archiveKey]!;
+	}
+
+	/** 确保旧数据中的列有 order 字段 */
+	private ensureColumnOrder(board: BoardData): BoardData {
+		const ensureView = (columns: Column[]): void => {
+			for (let i = 0; i < columns.length; i++) {
+				const col = columns[i];
+				if (col && col.order === undefined) {
+					col.order = i;
+				}
+			}
+		};
+		if (board.work?.columns) ensureView(board.work.columns);
+		if (board.personal?.columns) ensureView(board.personal.columns);
+		if (!board.workArchive) board.workArchive = { tasks: [] };
+		if (!board.personalArchive) board.personalArchive = { tasks: [] };
+		return board;
+	}
+
+	private updateSettings(payload?: Record<string, unknown>): void {
+		if (!payload) return;
+
+		const partial = payload as Partial<PluginSettings>;
+
+		if (partial.currentView !== undefined) this.settings.currentView = partial.currentView;
+		if (partial.activeColumnId !== undefined) this.settings.activeColumnId = partial.activeColumnId;
+		if (partial.showArchive !== undefined) this.settings.showArchive = partial.showArchive;
+		if (partial.customIcon !== undefined) this.settings.customIcon = partial.customIcon;
+		if (partial.schemaVersion !== undefined) this.settings.schemaVersion = partial.schemaVersion;
+
+		if (partial.work) {
+			this.settings.work = { ...this.settings.work, ...partial.work };
+		}
+		if (partial.personal) {
+			this.settings.personal = { ...this.settings.personal, ...partial.personal };
+		}
+		if (partial.archive) {
+			this.settings.archive = { ...this.settings.archive, ...partial.archive };
 		}
 	}
 
@@ -318,17 +498,7 @@ export class KanbanStore {
 		}
 	}
 
-	/** 只取消定时器，不执行保存（用于 onunload） */
 	cancelPendingSave(): void {
-		if (this.saveTimeout) {
-			clearTimeout(this.saveTimeout);
-			this.saveTimeout = null;
-		}
-	}
-
-	/** 完全销毁：清除所有订阅者和定时器（用于插件卸载） */
-	destroy(): void {
-		this.listeners.clear();
 		if (this.saveTimeout) {
 			clearTimeout(this.saveTimeout);
 			this.saveTimeout = null;
@@ -341,5 +511,13 @@ export class KanbanStore {
 			this.saveTimeout = null;
 		}
 		await this.plugin.persistData();
+	}
+
+	destroy(): void {
+		this.listeners.clear();
+		if (this.saveTimeout) {
+			clearTimeout(this.saveTimeout);
+			this.saveTimeout = null;
+		}
 	}
 }

@@ -1,41 +1,35 @@
-import type { Column, ColumnId, PluginSettings, BoardData } from './types';
+import type { Column, PluginSettings, BoardData } from './types';
+import { t } from './i18n';
 
 /** 自定义视图类型标识 */
 export const VIEW_TYPE_KANBAN = 'xaulyc-kanban-view';
+/** 归档中“未分类”分组的内部 ID */
+export const ARCHIVE_UNCATEGORIZED_ID = '__uncategorized';
 
 /** 性能配置常量 */
 export const PERFORMANCE = {
-	/** 每列可见任务数（虚拟滚动窗口） */
-	VISIBLE_TASK_COUNT: 30,
-	/** 任务卡片高度（像素） */
-	TASK_HEIGHT: 70,
 	/** 保存防抖时间（毫秒） */
 	SAVE_DEBOUNCE: 500,
 	/** 同步防抖时间（毫秒） */
 	SYNC_DEBOUNCE: 2000,
-	/** 滚动防抖时间（毫秒） */
-	SCROLL_DEBOUNCE: 50,
-	/** 最大缓存条目数 */
-	MAX_CACHE_SIZE: 50,
-	/** 缓存清理后保留数 */
-	CACHE_TRIM_SIZE: 25,
 } as const;
 
-/** 列定义模板（用于生成默认数据） */
-export const COLUMN_DEFINITIONS: ReadonlyArray<{ id: ColumnId; title: string }> = [
-	{ id: 'periodic', title: '🔄 周期任务' },
-	{ id: 'urgent-important', title: '🔥 重要且紧急' },
-	{ id: 'important-not-urgent', title: '⭐ 重要不紧急' },
-	{ id: 'urgent-not-important', title: '⚡ 紧急不重要' },
-	{ id: 'not-urgent-not-important', title: '💤 不紧急不重要' },
+/** 默认列定义模板（带 order） */
+export const COLUMN_DEFINITIONS: ReadonlyArray<{ id: string; titleKey: string; order: number }> = [
+	{ id: 'periodic', titleKey: 'column.periodic', order: 0 },
+	{ id: 'urgent-important', titleKey: 'column.urgentImportant', order: 1 },
+	{ id: 'important-not-urgent', titleKey: 'column.importantNotUrgent', order: 2 },
+	{ id: 'urgent-not-important', titleKey: 'column.urgentNotImportant', order: 3 },
+	{ id: 'not-urgent-not-important', titleKey: 'column.notUrgentNotImportant', order: 4 },
 ];
 
 /** 当前数据 schema 版本 */
-export const CURRENT_SCHEMA_VERSION = 1;
+export const CURRENT_SCHEMA_VERSION = 2;
 
 /** 默认设置 */
 export const DEFAULT_SETTINGS: PluginSettings = {
 	currentView: 'work',
+	activeColumnId: 'periodic',
 	showArchive: false,
 	customIcon: '',
 	work: { filePath: '' },
@@ -49,7 +43,8 @@ export function getDefaultBoardData(): BoardData {
 	const createColumns = (): Column[] =>
 		COLUMN_DEFINITIONS.map((def) => ({
 			id: def.id,
-			title: def.title,
+			title: t(def.titleKey),
+			order: def.order,
 			tasks: [],
 		}));
 

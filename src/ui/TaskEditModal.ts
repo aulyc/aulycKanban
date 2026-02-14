@@ -7,10 +7,10 @@ import { t } from '../i18n';
  * 支持多行输入、Ctrl+Enter 提交
  */
 export class TaskEditModal extends Modal {
-	private title: string;
-	private placeholder: string;
-	private defaultValue: string;
-	private onSubmit: (result: string) => void;
+	private readonly title: string;
+	private readonly placeholder: string;
+	private readonly defaultValue: string;
+	private readonly onSubmit: (result: string) => void;
 	private textareaEl: HTMLTextAreaElement | null = null;
 
 	constructor(
