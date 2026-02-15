@@ -1,4 +1,3 @@
-import { App } from 'obsidian';
 import type { KanbanStore } from '../store';
 import { TaskList } from './TaskList';
 import { CategoryNav } from './CategoryNav';
@@ -11,23 +10,20 @@ import { ArchiveView } from './ArchiveView';
  * 归档模式：Toolbar + ArchiveView
  */
 export class Board {
-	private containerEl: HTMLElement;
-	private store: KanbanStore;
-	private app: App;
-	private pluginId: string;
+	private readonly containerEl: HTMLElement;
+	private readonly store: KanbanStore;
 
-	constructor(containerEl: HTMLElement, store: KanbanStore, app: App, pluginId: string) {
+	constructor(containerEl: HTMLElement, store: KanbanStore) {
 		this.containerEl = containerEl;
 		this.store = store;
-		this.app = app;
-		this.pluginId = pluginId;
 	}
 
 	render(): void {
 		this.containerEl.empty();
 
 		// 工具栏（始终显示）
-		new Toolbar(this.containerEl, this.store, this.app, this.pluginId);
+		const toolbar = new Toolbar(this.containerEl, this.store);
+		toolbar.getEl();
 
 		if (this.store.isShowingArchive()) {
 			// 归档视图
@@ -41,7 +37,8 @@ export class Board {
 			const taskList = new TaskList(contentArea, this.store);
 			taskList.render();
 
-			new CategoryNav(contentArea, this.store);
+			const categoryNav = new CategoryNav(contentArea, this.store);
+			categoryNav.getEl();
 		}
 	}
 

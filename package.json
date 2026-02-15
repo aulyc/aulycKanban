@@ -1,5 +1,5 @@
 {
-	"name": "xaulyc-kanban",
+	"name": "KBtask",
 	"version": "2.0.0",
 	"description": "Manage tasks with a five-quadrant kanban board based on the Eisenhower Matrix.",
 	"main": "main.js",
@@ -14,7 +14,7 @@
 		"task-management",
 		"eisenhower-matrix"
 	],
-	"author": "nicholaxs",
+	"author": "AULYC",
 	"license": "MIT",
 	"devDependencies": {
 		"@types/node": "^16.11.6",

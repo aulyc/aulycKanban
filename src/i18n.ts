@@ -9,7 +9,7 @@ interface I18nStrings {
 
 const zh: I18nStrings = {
 	// 插件级别
-	'plugin.name': 'X-aulyc 看板',
+	'plugin.name': 'KBtask',
 	'plugin.ribbonTip': '打开看板',
 
 	// 命令
@@ -18,7 +18,7 @@ const zh: I18nStrings = {
 	'command.focusPersonal': '聚焦：个人任务',
 
 	// 视图
-	'view.displayName': 'X-aulyc 看板',
+	'view.displayName': 'KBtask',
 	'view.work': '💼 工作任务',
 	'view.personal': '👤 个人任务',
 
@@ -30,15 +30,9 @@ const zh: I18nStrings = {
 	'column.notUrgentNotImportant': '💤 不紧急不重要',
 
 	// 任务操作
-	'task.add': '+ 添加任务',
-	'task.addTitle': '添加任务',
-	'task.addPlaceholder': '请输入任务内容（支持换行，Ctrl+Enter 提交）',
-	'task.editTitle': '编辑任务',
-	'task.editPlaceholder': '修改任务内容（支持换行，Ctrl+Enter 提交）',
-	'task.deleteConfirm': '确定要删除这个任务吗？',
 	'task.inputPlaceholder': '输入任务，Enter 添加',
-	'task.submit': '确定',
-	'task.cancel': '取消',
+	'task.confirm.archive': '确认归档该任务吗？',
+	'task.confirm.delete': '确认删除该任务吗？此操作不可恢复。',
 
 	// 分类管理
 	'column.rename': '重命名',
@@ -48,28 +42,42 @@ const zh: I18nStrings = {
 	'column.deleteConfirm': '确定要删除这个分类吗？',
 	'column.deleteMoveTasks': '分类下的任务将移到第一个分类中。',
 
-	// 列快捷键命令
-	'command.focusPeriodic': '聚焦到：🔄 周期任务',
-	'command.focusUrgentImportant': '聚焦到：🔥 重要且紧急',
-	'command.focusImportantNotUrgent': '聚焦到：⭐ 重要不紧急',
-	'command.focusUrgentNotImportant': '聚焦到：⚡ 紧急不重要',
-	'command.focusNotUrgentNotImportant': '聚焦到：💤 不紧急不重要',
-
 	// 归档
 	'archive.title': '📦 归档',
-	'archive.button': '归档',
+	'archive.button': '归档任务',
 	'archive.back': '← 返回看板',
 	'archive.restore': '恢复',
 	'archive.empty': '暂无归档任务',
 	'archive.archivedAt': '归档于',
 	'archive.tooltip': '查看已归档任务',
-	'archive.other': '📁 其他',
+	'archive.other': '其他',
+	'archive.noMatch': '未找到匹配的归档任务',
+	'archive.filter.view': '任务类型',
+	'archive.filter.category': '任务分类',
+	'archive.filter.allViews': '任务类型：全部',
+	'archive.filter.allCategories': '全部',
+	'archive.filter.uncategorized': '其他',
+	'archive.sort.label': '时间排序',
+	'archive.sort.newest': '倒序',
+	'archive.sort.oldest': '正序',
+	'archive.searchPlaceholder': '搜索归档任务内容...',
+	'archive.searchClear': '清除',
+	'archive.delete.mode': '删除任务',
+	'archive.delete.exitMode': '退出删除',
+	'archive.delete.single': '删除',
+	'archive.delete.selected': '删除选中',
+	'archive.delete.all': '全部删除',
+	'archive.delete.selectAll': '全选',
+	'archive.delete.unselectAll': '取消全选',
+	'archive.delete.selectTask': '选择任务',
+	'archive.confirm.restore': '确认恢复该归档任务吗？',
+	'archive.confirm.deleteSelected': '确认删除选中的归档任务吗？此操作不可恢复。',
+	'archive.confirm.deleteAll': '确认删除全部归档任务吗？此操作不可恢复。',
 
 	// 设置页
 	'settings.heading': '看板设置',
 	'settings.open': '打开设置',
 	'settings.appearance': 'Appearance',
-	'settings.appearance.desc': '外观设置',
 	'settings.icon.name': '自定义图标',
 	'settings.icon.desc': '上传自定义看板图标（PNG 格式，建议 128×128，不超过 500KB）',
 	'settings.icon.upload': '选择图标文件',
@@ -84,7 +92,6 @@ const zh: I18nStrings = {
 	'settings.icon.restored': '已恢复默认图标',
 
 	'settings.dataManagement': 'Data management',
-	'settings.dataManagement.desc': '数据管理',
 	'settings.backup.name': '备份数据',
 	'settings.backup.desc': '将看板数据以 JSON 文件保存到本地',
 	'settings.backup.button': '备份',
@@ -108,7 +115,6 @@ const zh: I18nStrings = {
 	'settings.clear.success': '所有任务数据已清除',
 
 	'settings.sync': 'Note synchronization',
-	'settings.sync.desc': '笔记同步',
 	'settings.sync.workPath.name': '工作任务同步文件',
 	'settings.sync.workPath.desc': '工作任务看板同步到的 Markdown 文件路径（例如：看板/工作任务.md）',
 	'settings.sync.personalPath.name': '个人任务同步文件',
@@ -117,7 +123,6 @@ const zh: I18nStrings = {
 	'settings.sync.archivePath.desc': '归档任务同步到的 Markdown 文件路径（例如：看板/归档任务.md）',
 	'settings.sync.hint': '看板变动会自动同步到对应笔记',
 	'settings.sync.duplicateError': '同步文件路径不能重复',
-	'settings.saved': '设置已保存',
 
 	// 同步
 	'sync.updated': '笔记已更新',
@@ -129,10 +134,6 @@ const zh: I18nStrings = {
 	'md.syncTime': '最新同步时间',
 	'md.stats': '📊 任务统计',
 	'md.totalTasks': '总任务数',
-	'md.completed': '已完成',
-	'md.completionRate': '完成率',
-	'md.inProgress': '进行中',
-	'md.completedSection': '已完成',
 	'md.noTasks': '暂无任务',
 
 	// 通用
@@ -141,14 +142,14 @@ const zh: I18nStrings = {
 };
 
 const en: I18nStrings = {
-	'plugin.name': 'X-aulyc Kanban',
+	'plugin.name': 'KBtask',
 	'plugin.ribbonTip': 'Open kanban board',
 
 	'command.openBoard': 'Open kanban board',
 	'command.focusWork': 'Focus: Work tasks',
 	'command.focusPersonal': 'Focus: Personal tasks',
 
-	'view.displayName': 'X-aulyc Kanban',
+	'view.displayName': 'KBtask',
 	'view.work': '💼 Work',
 	'view.personal': '👤 Personal',
 
@@ -158,15 +159,9 @@ const en: I18nStrings = {
 	'column.urgentNotImportant': '⚡ Urgent',
 	'column.notUrgentNotImportant': '💤 Neither',
 
-	'task.add': '+ Add task',
-	'task.addTitle': 'Add task',
-	'task.addPlaceholder': 'Enter task content (supports line breaks, Ctrl+Enter to submit)',
-	'task.editTitle': 'Edit task',
-	'task.editPlaceholder': 'Edit task content (supports line breaks, Ctrl+Enter to submit)',
-	'task.deleteConfirm': 'Are you sure you want to delete this task?',
 	'task.inputPlaceholder': 'Type task, Enter to add',
-	'task.submit': 'Submit',
-	'task.cancel': 'Cancel',
+	'task.confirm.archive': 'Archive this task?',
+	'task.confirm.delete': 'Delete this task? This cannot be undone.',
 
 	'column.rename': 'Rename',
 	'column.delete': 'Delete category',
@@ -175,25 +170,40 @@ const en: I18nStrings = {
 	'column.deleteConfirm': 'Are you sure you want to delete this category?',
 	'column.deleteMoveTasks': 'Tasks will be moved to the first category.',
 
-	'command.focusPeriodic': 'Focus: 🔄 Periodic',
-	'command.focusUrgentImportant': 'Focus: 🔥 Urgent & Important',
-	'command.focusImportantNotUrgent': 'Focus: ⭐ Important',
-	'command.focusUrgentNotImportant': 'Focus: ⚡ Urgent',
-	'command.focusNotUrgentNotImportant': 'Focus: 💤 Neither',
-
 	'archive.title': '📦 Archive',
-	'archive.button': 'Archive',
+	'archive.button': 'Archive Tasks',
 	'archive.back': '← Back to board',
 	'archive.restore': 'Restore',
 	'archive.empty': 'No archived tasks',
 	'archive.archivedAt': 'Archived at',
 	'archive.tooltip': 'View archived tasks',
-	'archive.other': '📁 Other',
+	'archive.other': 'Other',
+	'archive.noMatch': 'No archived tasks matched',
+	'archive.filter.view': 'Task type',
+	'archive.filter.category': 'Category',
+	'archive.filter.allViews': 'Type: All',
+	'archive.filter.allCategories': 'All',
+	'archive.filter.uncategorized': 'Other',
+	'archive.sort.label': 'Sort',
+	'archive.sort.newest': 'Newest',
+	'archive.sort.oldest': 'Oldest',
+	'archive.searchPlaceholder': 'Search archived tasks...',
+	'archive.searchClear': 'Clear',
+	'archive.delete.mode': 'Delete tasks',
+	'archive.delete.exitMode': 'Exit delete mode',
+	'archive.delete.single': 'Delete',
+	'archive.delete.selected': 'Delete selected',
+	'archive.delete.all': 'Delete all',
+	'archive.delete.selectAll': 'Select all',
+	'archive.delete.unselectAll': 'Unselect all',
+	'archive.delete.selectTask': 'Select task',
+	'archive.confirm.restore': 'Restore this archived task?',
+	'archive.confirm.deleteSelected': 'Delete selected archived tasks? This cannot be undone.',
+	'archive.confirm.deleteAll': 'Delete all archived tasks? This cannot be undone.',
 
 	'settings.heading': 'Kanban settings',
 	'settings.open': 'Open settings',
 	'settings.appearance': 'Appearance',
-	'settings.appearance.desc': 'Appearance settings',
 	'settings.icon.name': 'Custom icon',
 	'settings.icon.desc': 'Upload a custom kanban icon (PNG, recommended 128x128, max 500KB)',
 	'settings.icon.upload': 'Choose icon file',
@@ -208,7 +218,6 @@ const en: I18nStrings = {
 	'settings.icon.restored': 'Default icon restored',
 
 	'settings.dataManagement': 'Data management',
-	'settings.dataManagement.desc': 'Data management',
 	'settings.backup.name': 'Backup data',
 	'settings.backup.desc': 'Save kanban data as a JSON file',
 	'settings.backup.button': 'Backup',
@@ -232,7 +241,6 @@ const en: I18nStrings = {
 	'settings.clear.success': 'All task data has been cleared',
 
 	'settings.sync': 'Note synchronization',
-	'settings.sync.desc': 'Note synchronization',
 	'settings.sync.workPath.name': 'Work tasks sync file',
 	'settings.sync.workPath.desc': 'Markdown file path to sync work tasks (e.g. Kanban/Work Tasks.md)',
 	'settings.sync.personalPath.name': 'Personal tasks sync file',
@@ -241,7 +249,6 @@ const en: I18nStrings = {
 	'settings.sync.archivePath.desc': 'Markdown file path to sync archived tasks (e.g. Kanban/Archive.md)',
 	'settings.sync.hint': 'Board changes are automatically synced to the corresponding note',
 	'settings.sync.duplicateError': 'Sync file paths cannot be the same',
-	'settings.saved': 'Settings saved',
 
 	'sync.updated': 'Note updated',
 	'sync.exported': 'Exported to new note successfully',
@@ -251,10 +258,6 @@ const en: I18nStrings = {
 	'md.syncTime': 'Last synced',
 	'md.stats': '📊 Task Statistics',
 	'md.totalTasks': 'Total tasks',
-	'md.completed': 'Completed',
-	'md.completionRate': 'Completion rate',
-	'md.inProgress': 'In progress',
-	'md.completedSection': 'Completed',
 	'md.noTasks': 'No tasks',
 
 	'confirm': 'OK',

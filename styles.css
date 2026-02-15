@@ -1,10 +1,27 @@
 /* ================================================
-   X-aulyc Kanban - Obsidian 插件样式
+   KBtask - Obsidian 插件样式
    所有颜色使用 Obsidian CSS 变量，禁止硬编码
    ================================================ */
 
+/* 重置 Obsidian 默认间距，消除顶部多余空白 */
+.workspace-leaf-content[data-type="kbtask-view"] .view-header {
+	display: none;
+}
+
+.workspace-leaf-content[data-type="kbtask-view"] .view-content {
+	padding: 0 !important;
+}
+
 /* 容器 */
 .xaulyc-kanban-container {
+	--xaulyc-toolbar-padding-y: 8px;
+	--xaulyc-toolbar-padding-x: 12px;
+	--xaulyc-content-padding-y: 12px;
+	--xaulyc-content-padding-left: 12px;
+	--xaulyc-content-padding-right: 12px;
+	--xaulyc-content-gap: 6px;
+	--xaulyc-nav-width: 150px;
+	--xaulyc-nav-inner-padding-x: 6px;
 	display: flex;
 	flex-direction: column;
 	height: 100%;
@@ -17,7 +34,7 @@
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-	padding: 10px 12px;
+	padding: var(--xaulyc-toolbar-padding-y) var(--xaulyc-toolbar-padding-x);
 	border-bottom: 1px solid var(--background-modifier-border);
 	flex-shrink: 0;
 }
@@ -109,22 +126,21 @@
 
 /* ==================== 内容区（左右分栏） ==================== */
 .xaulyc-content-area {
-	display: flex;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) var(--xaulyc-nav-width);
+	column-gap: var(--xaulyc-content-gap);
 	flex: 1;
 	min-height: 0;
-	gap: 0;
-	padding: 12px 12px 12px 12px;
+	padding: var(--xaulyc-content-padding-y) var(--xaulyc-content-padding-right) var(--xaulyc-content-padding-y) var(--xaulyc-content-padding-left);
+	overflow: hidden;
 }
 
 /* ==================== 左侧任务列表 ==================== */
 .xaulyc-task-list {
-	flex: 1;
 	min-width: 0;
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
-	padding-right: 12px;
-	padding-left: 0;
 }
 
 .xaulyc-task-list-header {
@@ -157,12 +173,14 @@
 
 /* ==================== 右侧分类导航 ==================== */
 .xaulyc-category-nav {
-	width: 160px;
-	min-width: 160px;
+	width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
 	display: flex;
 	flex-direction: column;
 	border-left: 1px solid var(--background-modifier-border);
-	padding-left: 12px;
+	padding-left: var(--xaulyc-nav-inner-padding-x);
+	padding-right: var(--xaulyc-nav-inner-padding-x);
 	overflow-y: auto;
 }
 
@@ -312,40 +330,6 @@
 	opacity: 0.65;
 }
 
-/* ==================== Checkbox ==================== */
-.xaulyc-checkbox {
-	width: 16px;
-	height: 16px;
-	min-width: 16px;
-	min-height: 16px;
-	border: 1.5px solid var(--interactive-accent);
-	border-radius: 3px;
-	cursor: pointer;
-	transition: all 0.2s ease;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	flex-shrink: 0;
-	margin-top: 2px;
-}
-
-.xaulyc-checkbox:hover {
-	background: var(--background-modifier-hover);
-	transform: scale(1.1);
-}
-
-.xaulyc-checkbox-checked {
-	background: var(--interactive-accent);
-	border-color: var(--interactive-accent);
-}
-
-.xaulyc-checkbox-checked::after {
-	content: '✓';
-	color: var(--text-on-accent);
-	font-size: 11px;
-	font-weight: bold;
-}
-
 /* ==================== 任务中间区域 ==================== */
 .xaulyc-task-middle {
 	flex: 1;
@@ -353,6 +337,48 @@
 	display: flex;
 	flex-direction: column;
 	gap: 2px;
+}
+
+.xaulyc-task-actions {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	margin-left: auto;
+}
+
+.xaulyc-task-archive {
+	width: 18px;
+	height: 18px;
+	min-width: 18px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border: none;
+	border-radius: 4px;
+	background: none;
+	color: var(--text-muted);
+	cursor: pointer;
+	padding: 0;
+	margin-top: 3px;
+	visibility: hidden;
+	transition: all 0.2s ease;
+	flex-shrink: 0;
+	line-height: 1;
+}
+
+.xaulyc-task:hover .xaulyc-task-archive {
+	visibility: visible;
+}
+
+.xaulyc-task-archive:hover {
+	background: var(--background-modifier-error);
+	color: var(--text-on-accent);
+	transform: scale(1.15);
+}
+
+.xaulyc-task-archive svg {
+	width: 12px;
+	height: 12px;
 }
 
 /* ==================== 任务内容 ==================== */
@@ -393,7 +419,7 @@
 	border-radius: 4px;
 	flex-shrink: 0;
 	line-height: 1;
-	margin-top: 1px;
+	margin-top: 3px;
 }
 
 .xaulyc-task:hover .xaulyc-task-delete {
@@ -403,20 +429,6 @@
 .xaulyc-task-delete:hover {
 	background: var(--background-modifier-error);
 	transform: scale(1.15);
-}
-
-/* 删除按钮警告态 */
-.xaulyc-task-delete-armed {
-	visibility: visible !important;
-	background: var(--text-error);
-	color: var(--text-on-accent);
-	border-radius: 4px;
-	font-size: 14px;
-}
-
-.xaulyc-task-delete-armed:hover {
-	background: var(--text-error);
-	opacity: 0.85;
 }
 
 /* ==================== 内嵌输入框 ==================== */
@@ -518,11 +530,91 @@
 	font-size: 15px;
 }
 
-.xaulyc-archive-empty-col {
-	padding: 16px;
-	text-align: center;
+/* 归档列表容器 */
+.xaulyc-archive-list {
+	display: flex;
+	flex-direction: column;
+	padding: 0 12px;
+}
+
+.xaulyc-archive-controls {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: 6px;
+	flex-wrap: wrap;
+	margin-bottom: 10px;
+	padding: 0 12px;
+}
+
+.xaulyc-archive-controls-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.xaulyc-archive-filter-label {
+	font-size: 12px;
+	color: var(--text-muted);
+}
+
+.xaulyc-archive-filter-select,
+.xaulyc-archive-search {
+	height: 30px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	padding: 0 8px;
+	font-size: 12px;
+	box-sizing: border-box;
+}
+
+.xaulyc-archive-search {
+	flex: 1;
+	min-width: 180px;
+}
+
+.xaulyc-archive-sort-btn {
+	height: 30px;
+	padding: 0 10px;
+	font-size: 12px;
+}
+
+.xaulyc-archive-delete-mode-btn,
+.xaulyc-archive-batch-btn {
+	height: 30px;
+	padding: 0 10px;
+	font-size: 12px;
+}
+
+.xaulyc-archive-danger-btn {
+	border-color: var(--text-error) !important;
+	color: var(--text-error) !important;
+}
+
+.xaulyc-archive-clear-btn {
+	height: 30px;
+	padding: 0 10px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	background: var(--background-primary);
+	color: var(--text-muted);
+	font-size: 12px;
+	cursor: pointer;
+}
+
+.xaulyc-archive-clear-btn:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.xaulyc-archive-clear-btn:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+	background: var(--background-primary);
 	color: var(--text-faint);
-	font-size: 13px;
 }
 
 /* 归档大类区块（工作/个人） */
@@ -559,6 +651,75 @@
 .xaulyc-archive-task {
 	cursor: default;
 	opacity: 0.8;
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: 8px;
+}
+
+.xaulyc-archive-task-top {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.xaulyc-archive-task-main {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	flex: 1;
+	min-width: 0;
+	min-height: 28px;
+}
+
+.xaulyc-archive-task-bottom {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.xaulyc-archive-task-tags {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex-wrap: wrap;
+	min-width: 0;
+}
+
+.xaulyc-archive-task-time {
+	white-space: nowrap;
+}
+
+.xaulyc-archive-tag {
+	display: inline-flex;
+	align-items: center;
+	height: 22px;
+	padding: 0 8px;
+	border-radius: 999px;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+	color: var(--text-muted);
+	font-size: 12px;
+	line-height: 1;
+	white-space: nowrap;
+}
+
+.xaulyc-archive-select-checkbox {
+	width: 16px;
+	height: 16px;
+	margin: 0;
+}
+
+.xaulyc-archive-task-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-shrink: 0;
+	width: 56px;
+	justify-content: flex-end;
 }
 
 .xaulyc-archive-task:hover {
@@ -570,6 +731,41 @@
 	border: 1px solid var(--background-modifier-border);
 	color: var(--text-muted);
 	cursor: pointer;
+	width: 24px;
+	height: 24px;
+	padding: 0;
+	border-radius: 4px;
+	flex-shrink: 0;
+	transition: all 0.15s ease;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.xaulyc-archive-restore-btn svg {
+	width: 12px;
+	height: 12px;
+}
+
+.xaulyc-archive-restore-btn:hover {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border-color: var(--interactive-accent);
+}
+
+.xaulyc-archive-restore-btn:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+	background: transparent;
+	color: var(--text-faint);
+	border-color: var(--background-modifier-border);
+}
+
+.xaulyc-archive-delete-btn {
+	background: none;
+	border: 1px solid var(--background-modifier-border);
+	color: var(--text-error);
+	cursor: pointer;
 	padding: 3px 8px;
 	border-radius: 4px;
 	font-size: 12px;
@@ -578,8 +774,8 @@
 	align-self: center;
 }
 
-.xaulyc-archive-restore-btn:hover {
-	background: var(--interactive-accent);
-	color: var(--text-on-accent);
-	border-color: var(--interactive-accent);
+.xaulyc-archive-delete-btn:hover {
+	background: var(--text-error);
+	color: #fff;
+	border-color: var(--text-error);
 }

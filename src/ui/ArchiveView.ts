@@ -1,5 +1,6 @@
 import type { Task, Column } from '../types';
 import type { KanbanStore } from '../store';
+import { setIcon } from 'obsidian';
 import { t } from '../i18n';
 import { formatDateTimeMinute } from '../utils/datetime';
 import { ARCHIVE_UNCATEGORIZED_ID } from '../constants';
@@ -9,8 +10,14 @@ import { ARCHIVE_UNCATEGORIZED_ID } from '../constants';
  * 合并展示工作+个人归档，按大类分隔，各自按分类分组
  */
 export class ArchiveView {
-	private containerEl: HTMLElement;
-	private store: KanbanStore;
+	private readonly containerEl: HTMLElement;
+	private readonly store: KanbanStore;
+	private selectedCategory = 'all';
+	private sortOrder: 'desc' | 'asc' = 'desc';
+	private searchKeyword = '';
+	private searchInputValue = '';
+	private deleteMode = false;
+	private readonly selectedTaskIds = new Set<string>();
 
 	constructor(containerEl: HTMLElement, store: KanbanStore) {
 		this.containerEl = containerEl;
@@ -23,8 +30,14 @@ export class ArchiveView {
 		const boardData = this.store.getBoardData();
 		const workArchive = boardData.workArchive?.tasks ?? [];
 		const personalArchive = boardData.personalArchive?.tasks ?? [];
+		const allItems = this.buildArchiveItems(workArchive, personalArchive);
+		const filtered = this.applyFilters(allItems);
+		this.syncSelectionWithFiltered(filtered);
 
-		if (workArchive.length === 0 && personalArchive.length === 0) {
+		const controlsEl = this.containerEl.createDiv({ cls: 'xaulyc-archive-controls' });
+		this.renderFilters(controlsEl, boardData, allItems, filtered);
+
+		if (allItems.length === 0) {
 			const emptyEl = this.containerEl.createDiv({ cls: 'xaulyc-archive-empty' });
 			emptyEl.setText(t('archive.empty'));
 			return;
@@ -32,100 +45,273 @@ export class ArchiveView {
 
 		const listEl = this.containerEl.createDiv({ cls: 'xaulyc-archive-list' });
 
-		// 工作任务归档
-		if (workArchive.length > 0) {
-			this.renderViewSection(
-				listEl,
-				t('view.work'),
-				workArchive,
-				boardData.work.columns,
-				'work',
-			);
+		if (filtered.length === 0) {
+			const emptyEl = listEl.createDiv({ cls: 'xaulyc-archive-empty' });
+			emptyEl.setText(t('archive.noMatch'));
+			return;
 		}
 
-		// 个人任务归档
-		if (personalArchive.length > 0) {
-			this.renderViewSection(
-				listEl,
-				t('view.personal'),
-				personalArchive,
-				boardData.personal.columns,
-				'personal',
-			);
+		for (const item of filtered) {
+			this.renderArchiveCard(listEl, item.task, item.viewKind, boardData);
 		}
 	}
 
 	/**
-	 * 渲染一个视图（工作/个人）的归档区块
+	 * 渲染筛选控件
 	 */
-	private renderViewSection(
-		parentEl: HTMLElement,
-		viewTitle: string,
-		tasks: Task[],
-		columns: Column[],
-		viewKind: 'work' | 'personal',
+	private renderFilters(
+		controlsEl: HTMLElement,
+		boardData: Readonly<ReturnType<KanbanStore['getBoardData']>>,
+		allItems: Array<{ task: Task; viewKind: 'work' | 'personal' }>,
+		filteredItems: Array<{ task: Task; viewKind: 'work' | 'personal' }>,
 	): void {
-		// 大类标题
-		const viewSectionEl = parentEl.createDiv({ cls: 'xaulyc-archive-view-section' });
-		const viewHeaderEl = viewSectionEl.createDiv({ cls: 'xaulyc-archive-view-header' });
-		viewHeaderEl.createSpan({ text: viewTitle, cls: 'xaulyc-archive-view-title' });
-		viewHeaderEl.createSpan({ text: String(tasks.length), cls: 'xaulyc-archive-view-count' });
+		const filterRow = controlsEl.createDiv({ cls: 'xaulyc-archive-controls-row' });
+		const categorySelect = filterRow.createEl('select', { cls: 'xaulyc-archive-filter-select' });
+		categorySelect.setAttribute('aria-label', t('archive.filter.category'));
+		this.addOption(
+			categorySelect,
+			'all',
+			`${t('archive.filter.category')}：${t('archive.filter.allCategories')}`,
+		);
+		this.populateCategoryOptions(categorySelect, boardData);
+		categorySelect.value = this.selectedCategory;
+		categorySelect.addEventListener('change', () => {
+			this.selectedCategory = categorySelect.value;
+			this.render();
+		});
 
-		// 按分类分组
-		const grouped = this.groupByColumn(tasks, columns);
+		const sortSelect = filterRow.createEl('select', { cls: 'xaulyc-archive-filter-select' });
+		sortSelect.setAttribute('aria-label', t('archive.sort.label'));
+		this.addOption(sortSelect, 'desc', `${t('archive.sort.label')}：${t('archive.sort.newest')}`);
+		this.addOption(sortSelect, 'asc', `${t('archive.sort.label')}：${t('archive.sort.oldest')}`);
+		sortSelect.value = this.sortOrder;
+		sortSelect.addEventListener('change', () => {
+			this.sortOrder = sortSelect.value as 'desc' | 'asc';
+			this.render();
+		});
 
-		for (const column of columns) {
-			const colTasks = grouped.get(column.id) ?? [];
-			if (colTasks.length === 0) continue;
+		const searchRow = controlsEl.createDiv({ cls: 'xaulyc-archive-controls-row' });
+		const bottomRow = searchRow;
+		const deleteModeBtn = document.createElement('button');
+		deleteModeBtn.className = 'xaulyc-archive-delete-mode-btn xaulyc-tab';
+		deleteModeBtn.textContent = this.deleteMode ? t('archive.delete.exitMode') : t('archive.delete.mode');
+		deleteModeBtn.addEventListener('click', () => {
+			this.deleteMode = !this.deleteMode;
+			if (!this.deleteMode) {
+				this.selectedTaskIds.clear();
+			}
+			this.render();
+		});
 
-			const sectionEl = viewSectionEl.createDiv({ cls: 'xaulyc-archive-section' });
-			const headerEl = sectionEl.createDiv({ cls: 'xaulyc-task-list-header' });
-			headerEl.createSpan({ text: column.title, cls: 'xaulyc-task-list-title' });
-			headerEl.createSpan({ text: String(colTasks.length), cls: 'xaulyc-task-list-count' });
+		const actionRow = controlsEl.createDiv({ cls: 'xaulyc-archive-controls-row' });
+		actionRow.appendChild(deleteModeBtn);
 
-			const sorted = [...colTasks].sort((a, b) => {
-				const aTime = new Date(a.archivedAt ?? a.completedAt ?? a.createdAt).getTime();
-				const bTime = new Date(b.archivedAt ?? b.completedAt ?? b.createdAt).getTime();
-				return bTime - aTime;
+		if (this.deleteMode) {
+			const filteredIds = filteredItems.map((item) => item.task.id);
+			const allFilteredSelected =
+				filteredIds.length > 0 && filteredIds.every((id) => this.selectedTaskIds.has(id));
+
+			const selectAllBtn = actionRow.createEl('button', { cls: 'xaulyc-archive-batch-btn' });
+			selectAllBtn.setText(allFilteredSelected ? t('archive.delete.unselectAll') : t('archive.delete.selectAll'));
+			selectAllBtn.disabled = filteredIds.length === 0;
+			selectAllBtn.addEventListener('click', () => {
+				if (allFilteredSelected) {
+					for (const id of filteredIds) this.selectedTaskIds.delete(id);
+				} else {
+					for (const id of filteredIds) this.selectedTaskIds.add(id);
+				}
+				this.render();
 			});
 
-			for (const task of sorted) {
-				this.renderArchiveCard(sectionEl, task, viewKind);
-			}
+			const deleteSelectedBtn = actionRow.createEl('button', { cls: 'xaulyc-archive-batch-btn' });
+			deleteSelectedBtn.setText(t('archive.delete.selected'));
+			deleteSelectedBtn.disabled = this.selectedTaskIds.size === 0;
+			deleteSelectedBtn.addEventListener('click', () => {
+				const ids = Array.from(this.selectedTaskIds);
+				if (ids.length === 0) return;
+				if (!confirm(t('archive.confirm.deleteSelected'))) return;
+				this.selectedTaskIds.clear();
+				this.store.dispatch({ type: 'DELETE_ARCHIVE_TASKS', payload: { taskIds: ids } });
+			});
+
+			const deleteAllBtn = actionRow.createEl('button', { cls: 'xaulyc-archive-batch-btn xaulyc-archive-danger-btn' });
+			deleteAllBtn.setText(t('archive.delete.all'));
+			deleteAllBtn.disabled = allItems.length === 0;
+			deleteAllBtn.addEventListener('click', () => {
+				const allIds = allItems.map((item) => item.task.id);
+				if (allIds.length === 0) return;
+				if (!confirm(t('archive.confirm.deleteAll'))) return;
+				this.selectedTaskIds.clear();
+				this.store.dispatch({ type: 'DELETE_ARCHIVE_TASKS', payload: { taskIds: allIds } });
+			});
 		}
+		const searchInput = bottomRow.createEl('input', {
+			cls: 'xaulyc-archive-search',
+			attr: { type: 'text', placeholder: t('archive.searchPlaceholder') },
+		});
+		searchInput.value = this.searchInputValue;
 
-		// 未分类
-		const uncategorized = grouped.get(ARCHIVE_UNCATEGORIZED_ID) ?? [];
-		if (uncategorized.length > 0) {
-			const sectionEl = viewSectionEl.createDiv({ cls: 'xaulyc-archive-section' });
-			const headerEl = sectionEl.createDiv({ cls: 'xaulyc-task-list-header' });
-			headerEl.createSpan({ text: t('archive.other'), cls: 'xaulyc-task-list-title' });
-			headerEl.createSpan({ text: String(uncategorized.length), cls: 'xaulyc-task-list-count' });
+		let composing = false;
+		searchInput.addEventListener('compositionstart', () => {
+			composing = true;
+		});
+		searchInput.addEventListener('compositionend', () => {
+			composing = false;
+		});
+		searchInput.addEventListener('keydown', (e: KeyboardEvent) => {
+			if (e.key !== 'Enter') return;
+			if (composing || e.isComposing) return;
+			e.preventDefault();
+			this.searchKeyword = this.searchInputValue.trim();
+			this.render();
+		});
 
-			for (const task of uncategorized) {
-				this.renderArchiveCard(sectionEl, task, viewKind);
+		const clearBtn = bottomRow.createEl('button', { cls: 'xaulyc-archive-clear-btn' });
+		clearBtn.setText(t('archive.searchClear'));
+		const updateClearButtonState = () => {
+			clearBtn.disabled = !this.searchKeyword && !this.searchInputValue;
+		};
+		updateClearButtonState();
+		clearBtn.addEventListener('click', () => {
+			this.searchInputValue = '';
+			this.searchKeyword = '';
+			this.render();
+		});
+		searchInput.addEventListener('input', () => {
+			this.searchInputValue = searchInput.value;
+			updateClearButtonState();
+		});
+
+	}
+
+	private addOption(selectEl: HTMLSelectElement, value: string, label: string): void {
+		const option = document.createElement('option');
+		option.value = value;
+		option.text = label;
+		selectEl.add(option);
+	}
+
+	private populateCategoryOptions(
+		selectEl: HTMLSelectElement,
+		boardData: Readonly<ReturnType<KanbanStore['getBoardData']>>,
+	): void {
+		const appendViewCols = (viewKind: 'work' | 'personal', columns: Column[]): void => {
+			const viewTitle = viewKind === 'work' ? t('view.work') : t('view.personal');
+			for (const col of columns) {
+				this.addOption(
+					selectEl,
+					`${viewKind}:${col.id}`,
+					`${viewTitle} / ${col.title}`,
+				);
 			}
+			this.addOption(
+				selectEl,
+				`${viewKind}:${ARCHIVE_UNCATEGORIZED_ID}`,
+				`${viewTitle} / ${t('archive.other')}`,
+			);
+		};
+		appendViewCols('work', boardData.work.columns);
+		appendViewCols('personal', boardData.personal.columns);
+	}
+
+	private buildArchiveItems(workTasks: Task[], personalTasks: Task[]): Array<{
+		task: Task;
+		viewKind: 'work' | 'personal';
+	}> {
+		return [
+			...workTasks.map((task) => ({ task, viewKind: 'work' as const })),
+			...personalTasks.map((task) => ({ task, viewKind: 'personal' as const })),
+		];
+	}
+
+	private applyFilters(
+		items: Array<{ task: Task; viewKind: 'work' | 'personal' }>,
+	): Array<{ task: Task; viewKind: 'work' | 'personal' }> {
+		const keyword = this.searchKeyword.trim().toLowerCase();
+		const filtered = items.filter(({ task, viewKind }) => {
+			if (this.selectedCategory !== 'all') {
+				const [filterView, filterCol] = this.selectedCategory.split(':');
+				if (filterView !== viewKind) return false;
+				const sourceCol = task.sourceColumnId ?? ARCHIVE_UNCATEGORIZED_ID;
+				if (filterCol !== sourceCol) return false;
+			}
+			if (keyword && !task.content.toLowerCase().includes(keyword)) return false;
+			return true;
+		});
+
+		filtered.sort((a, b) => {
+			const aTime = this.getTaskTime(a.task);
+			const bTime = this.getTaskTime(b.task);
+			return this.sortOrder === 'desc' ? bTime - aTime : aTime - bTime;
+		});
+
+		return filtered;
+	}
+
+	private getTaskTime(task: Task): number {
+		return new Date(task.archivedAt ?? task.completedAt ?? task.createdAt).getTime();
+	}
+
+	private syncSelectionWithFiltered(filteredItems: Array<{ task: Task; viewKind: 'work' | 'personal' }>): void {
+		if (!this.deleteMode) return;
+		const validIds = new Set(filteredItems.map((item) => item.task.id));
+		for (const id of Array.from(this.selectedTaskIds)) {
+			if (!validIds.has(id)) this.selectedTaskIds.delete(id);
 		}
 	}
 
-	private renderArchiveCard(parentEl: HTMLElement, task: Task, viewKind: 'work' | 'personal'): void {
+	private resolveTaskCategory(
+		task: Task,
+		viewKind: 'work' | 'personal',
+		boardData: Readonly<ReturnType<KanbanStore['getBoardData']>>,
+	): string {
+		const sourceColId = task.sourceColumnId ?? ARCHIVE_UNCATEGORIZED_ID;
+		if (sourceColId === ARCHIVE_UNCATEGORIZED_ID) {
+			return t('archive.other');
+		}
+		const columns = viewKind === 'work' ? boardData.work.columns : boardData.personal.columns;
+		const matched = columns.find((col) => col.id === sourceColId);
+		return matched?.title ?? t('archive.other');
+	}
+
+	private renderArchiveCard(
+		parentEl: HTMLElement,
+		task: Task,
+		viewKind: 'work' | 'personal',
+		boardData: Readonly<ReturnType<KanbanStore['getBoardData']>>,
+	): void {
 		const cardEl = parentEl.createDiv({ cls: 'xaulyc-task xaulyc-archive-task' });
 
-		const middleEl = cardEl.createDiv({ cls: 'xaulyc-task-middle' });
+		const topEl = cardEl.createDiv({ cls: 'xaulyc-archive-task-top' });
+		const mainEl = topEl.createDiv({ cls: 'xaulyc-archive-task-main' });
 
-		const contentEl = middleEl.createDiv({ cls: 'xaulyc-task-content xaulyc-task-content-completed' });
+		const contentEl = mainEl.createDiv({ cls: 'xaulyc-task-content xaulyc-task-content-completed' });
 		this.setTextWithLineBreaks(contentEl, task.content);
 
-		const timeEl = middleEl.createDiv({ cls: 'xaulyc-task-time' });
-		const archiveTime = task.archivedAt ?? task.completedAt ?? task.createdAt;
-		timeEl.setText(`${t('archive.archivedAt')} ${this.formatTime(archiveTime)}`);
+		const actionsEl = topEl.createDiv({ cls: 'xaulyc-archive-task-actions' });
+		if (this.deleteMode) {
+			const checkbox = actionsEl.createEl('input', {
+				attr: { type: 'checkbox', 'aria-label': t('archive.delete.selectTask') },
+				cls: 'xaulyc-archive-select-checkbox',
+			});
+			checkbox.checked = this.selectedTaskIds.has(task.id);
+			checkbox.addEventListener('change', () => {
+				if (checkbox.checked) this.selectedTaskIds.add(task.id);
+				else this.selectedTaskIds.delete(task.id);
+				this.render();
+			});
+		}
 
-		const restoreBtn = cardEl.createEl('button', {
-			text: t('archive.restore'),
+		const restoreBtn = actionsEl.createEl('button', {
 			cls: 'xaulyc-archive-restore-btn',
 		});
+		restoreBtn.setAttribute('aria-label', t('archive.restore'));
+		setIcon(restoreBtn, 'rotate-ccw');
+		restoreBtn.disabled = this.deleteMode;
 		restoreBtn.addEventListener('click', (e: MouseEvent) => {
+			if (this.deleteMode) return;
 			e.stopPropagation();
+			if (!confirm(t('archive.confirm.restore'))) return;
 			// 恢复时需要先切换到对应视图
 			const currentView = this.store.getCurrentView();
 			if (currentView !== viewKind) {
@@ -138,25 +324,20 @@ export class ArchiveView {
 				payload: { taskId: task.id },
 			});
 		});
-	}
 
-	private groupByColumn(tasks: Task[], columns: Column[]): Map<string, Task[]> {
-		const map = new Map<string, Task[]>();
-		for (const col of columns) {
-			map.set(col.id, []);
-		}
-		map.set(ARCHIVE_UNCATEGORIZED_ID, []);
-
-		for (const task of tasks) {
-			const colId = task.sourceColumnId ?? ARCHIVE_UNCATEGORIZED_ID;
-			const list = map.get(colId);
-			if (list) {
-				list.push(task);
-			} else {
-				map.get(ARCHIVE_UNCATEGORIZED_ID)?.push(task);
-			}
-		}
-		return map;
+		const bottomEl = cardEl.createDiv({ cls: 'xaulyc-archive-task-bottom' });
+		const tagsEl = bottomEl.createDiv({ cls: 'xaulyc-archive-task-tags' });
+		tagsEl.createSpan({
+			cls: 'xaulyc-archive-tag',
+			text: viewKind === 'work' ? t('view.work') : t('view.personal'),
+		});
+		tagsEl.createSpan({
+			cls: 'xaulyc-archive-tag',
+			text: this.resolveTaskCategory(task, viewKind, boardData),
+		});
+		const archiveTime = task.archivedAt ?? task.completedAt ?? task.createdAt;
+		const timeEl = bottomEl.createDiv({ cls: 'xaulyc-task-time xaulyc-archive-task-time' });
+		timeEl.setText(`${t('archive.archivedAt')} ${this.formatTime(archiveTime)}`);
 	}
 
 	private formatTime(isoStr: string): string {

@@ -9,7 +9,7 @@ import { Board } from './Board';
  * 作为 Obsidian 标签页 / 侧栏面板展示
  */
 export class KanbanView extends ItemView {
-	private plugin: KanbanPlugin;
+	private readonly plugin: KanbanPlugin;
 	private board: Board | null = null;
 	private unsubscribe: (() => void) | null = null;
 	private isClosing = false;
@@ -41,7 +41,7 @@ export class KanbanView extends ItemView {
 		// 让容器可聚焦，接收键盘事件
 		container.setAttribute('tabindex', '0');
 
-		this.board = new Board(container, this.plugin.store, this.app, this.plugin.manifest.id);
+		this.board = new Board(container, this.plugin.store);
 		this.board.render();
 
 		// 订阅 store 变化，自动重渲染
@@ -60,6 +60,7 @@ export class KanbanView extends ItemView {
 				e.preventDefault();
 				e.stopPropagation();
 				this.switchToNextCategory();
+				this.refocusContainer();
 			}
 		};
 		container.addEventListener('keydown', this.tabHandler, true);
@@ -107,5 +108,11 @@ export class KanbanView extends ItemView {
 				payload: { columnId: targetCol.id },
 			});
 		}
+	}
+
+	private refocusContainer(): void {
+		requestAnimationFrame(() => {
+			this.contentEl.focus({ preventScroll: true });
+		});
 	}
 }

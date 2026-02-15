@@ -1,5 +1,7 @@
 import type { Task } from '../types';
 import type { KanbanStore } from '../store';
+import { setIcon } from 'obsidian';
+import { t } from '../i18n';
 import { formatDateTimeMinute } from '../utils/datetime';
 
 /**
@@ -9,12 +11,10 @@ import { formatDateTimeMinute } from '../utils/datetime';
  * - 显示创建/修改时间
  */
 export class TaskCard {
-	private el: HTMLElement;
-	private store: KanbanStore;
-	private columnId: string;
-	private task: Task;
-	private deleteArmed = false;
-	private deleteTimer: ReturnType<typeof setTimeout> | null = null;
+	private readonly el: HTMLElement;
+	private readonly store: KanbanStore;
+	private readonly columnId: string;
+	private readonly task: Task;
 
 	constructor(
 		parentEl: HTMLElement,
@@ -37,19 +37,7 @@ export class TaskCard {
 	}
 
 	private buildContent(): void {
-		const { task, columnId } = this;
-
-		// Checkbox
-		const checkbox = this.el.createDiv({
-			cls: `xaulyc-checkbox ${task.completed ? 'xaulyc-checkbox-checked' : ''}`,
-		});
-		checkbox.addEventListener('click', (e: MouseEvent) => {
-			e.stopPropagation();
-			this.store.dispatch({
-				type: 'TOGGLE_TASK',
-				payload: { columnId, taskId: task.id },
-			});
-		});
+		const { task } = this;
 
 		// 中间区域：内容 + 时间
 		const middleEl = this.el.createDiv({ cls: 'xaulyc-task-middle' });
@@ -70,14 +58,33 @@ export class TaskCard {
 		const timeStr = this.formatTime(task.updatedAt ?? task.createdAt);
 		timeEl.setText(timeStr);
 
+		// 右侧操作：归档图标 + 删除
+		const actionsEl = this.el.createDiv({ cls: 'xaulyc-task-actions' });
+
+		const archiveBtn = actionsEl.createEl('button', { cls: 'xaulyc-task-archive' });
+		archiveBtn.setAttribute('aria-label', t('archive.button'));
+		setIcon(archiveBtn, 'archive');
+		archiveBtn.addEventListener('click', (e: MouseEvent) => {
+			e.stopPropagation();
+			if (!confirm(t('task.confirm.archive'))) return;
+			this.store.dispatch({
+				type: 'TOGGLE_TASK',
+				payload: { columnId: this.columnId, taskId: this.task.id },
+			});
+		});
+
 		// 删除按钮（两次点击确认）
-		const deleteBtn = this.el.createSpan({
+		const deleteBtn = actionsEl.createSpan({
 			text: '✖',
 			cls: 'xaulyc-task-delete',
 		});
 		deleteBtn.addEventListener('click', (e: MouseEvent) => {
 			e.stopPropagation();
-			this.handleDelete(deleteBtn);
+			if (!confirm(t('task.confirm.delete'))) return;
+			this.store.dispatch({
+				type: 'DELETE_TASK',
+				payload: { columnId: this.columnId, taskId: this.task.id },
+			});
 		});
 	}
 
@@ -132,50 +139,19 @@ export class TaskCard {
 	}
 
 	private saveEdit(content: string): void {
-		if (content !== this.task.content) {
-			this.store.dispatch({
-				type: 'EDIT_TASK',
-				payload: { columnId: this.columnId, taskId: this.task.id, content },
-			});
-		} else {
+		if (content === this.task.content) {
 			// 内容未变也需要刷新 UI（退出编辑模式）
 			this.store.dispatch({
 				type: 'EDIT_TASK',
 				payload: { columnId: this.columnId, taskId: this.task.id, content: this.task.content },
 			});
+			return;
 		}
-	}
 
-	/**
-	 * 两次点击删除
-	 * 第一次：变红警告（3 秒后恢复）
-	 * 第二次：执行删除
-	 */
-	private handleDelete(btn: HTMLElement): void {
-		if (this.deleteArmed) {
-			// 第二次点击 -> 真正删除
-			if (this.deleteTimer) {
-				clearTimeout(this.deleteTimer);
-				this.deleteTimer = null;
-			}
-			this.store.dispatch({
-				type: 'DELETE_TASK',
-				payload: { columnId: this.columnId, taskId: this.task.id },
-			});
-		} else {
-			// 第一次点击 -> 变色警告
-			this.deleteArmed = true;
-			btn.classList.add('xaulyc-task-delete-armed');
-			btn.setText('✓');
-
-			// 3 秒后恢复
-			this.deleteTimer = setTimeout(() => {
-				this.deleteArmed = false;
-				btn.classList.remove('xaulyc-task-delete-armed');
-				btn.setText('✖');
-				this.deleteTimer = null;
-			}, 3000);
-		}
+		this.store.dispatch({
+			type: 'EDIT_TASK',
+			payload: { columnId: this.columnId, taskId: this.task.id, content },
+		});
 	}
 
 	/**

@@ -12,6 +12,7 @@ const DATA_MUTATION_ACTIONS: ReadonlySet<string> = new Set([
 	'TOGGLE_TASK',
 	'MOVE_TASK',
 	'RESTORE_TASK',
+	'DELETE_ARCHIVE_TASKS',
 	'SET_BOARD_DATA',
 	'CLEAR_ALL_DATA',
 	'ADD_COLUMN',
@@ -25,10 +26,10 @@ const DATA_MUTATION_ACTIONS: ReadonlySet<string> = new Set([
  * 单一数据源，所有 UI 通过 subscribe 监听变化
  */
 export class KanbanStore {
-	private settings: PluginSettings;
+	private readonly settings: PluginSettings;
 	private board: BoardData;
-	private plugin: KanbanPlugin;
-	private listeners: Set<Listener> = new Set();
+	private readonly plugin: KanbanPlugin;
+	private readonly listeners: Set<Listener> = new Set();
 	private saveTimeout: ReturnType<typeof setTimeout> | null = null;
 	private _lastActionMutatedData = false;
 
@@ -61,7 +62,7 @@ export class KanbanStore {
 		const columns = this.getCurrentColumns();
 		const activeId = this.settings.activeColumnId;
 		// 如果 activeColumnId 无效，选第一个
-		if (columns.find((c) => c.id === activeId)) {
+		if (columns.some((c) => c.id === activeId)) {
 			return activeId;
 		}
 		return columns[0]?.id ?? '';
@@ -193,6 +194,10 @@ export class KanbanStore {
 				this.restoreTask(action.payload?.['taskId'] as string);
 				break;
 
+			case 'DELETE_ARCHIVE_TASKS':
+				this.deleteArchiveTasks((action.payload?.['taskIds'] as string[]) ?? []);
+				break;
+
 			case 'SET_BOARD_DATA':
 				this.board = this.ensureColumnOrder(action.payload?.['board'] as BoardData);
 				this.ensureActiveColumn();
@@ -322,6 +327,20 @@ export class KanbanStore {
 		}
 	}
 
+	private deleteArchiveTasks(taskIds: string[]): void {
+		if (taskIds.length === 0) return;
+		const idSet = new Set(taskIds);
+
+		if (this.board.workArchive?.tasks) {
+			this.board.workArchive.tasks = this.board.workArchive.tasks.filter((task) => !idSet.has(task.id));
+		}
+		if (this.board.personalArchive?.tasks) {
+			this.board.personalArchive.tasks = this.board.personalArchive.tasks.filter(
+				(task) => !idSet.has(task.id),
+			);
+		}
+	}
+
 	private moveTask(
 		taskId: string,
 		fromColumnId: string,
@@ -413,7 +432,7 @@ export class KanbanStore {
 
 	private ensureActiveColumn(): void {
 		const columns = this.getCurrentColumns();
-		if (!columns.find((c) => c.id === this.settings.activeColumnId)) {
+		if (!columns.some((c) => c.id === this.settings.activeColumnId)) {
 			this.settings.activeColumnId = columns[0]?.id ?? '';
 		}
 	}
@@ -433,10 +452,8 @@ export class KanbanStore {
 
 	private getOrCreateArchive(): ArchiveData {
 		const archiveKey = this.settings.currentView === 'work' ? 'workArchive' : 'personalArchive';
-		if (!this.board[archiveKey]) {
-			this.board[archiveKey] = { tasks: [] };
-		}
-		return this.board[archiveKey]!;
+		const archive = (this.board[archiveKey] ??= { tasks: [] });
+		return archive;
 	}
 
 	/** 确保旧数据中的列有 order 字段 */
@@ -451,8 +468,8 @@ export class KanbanStore {
 		};
 		if (board.work?.columns) ensureView(board.work.columns);
 		if (board.personal?.columns) ensureView(board.personal.columns);
-		if (!board.workArchive) board.workArchive = { tasks: [] };
-		if (!board.personalArchive) board.personalArchive = { tasks: [] };
+		board.workArchive ??= { tasks: [] };
+		board.personalArchive ??= { tasks: [] };
 		return board;
 	}
 

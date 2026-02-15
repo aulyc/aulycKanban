@@ -7,16 +7,10 @@ import { migrateBoardData } from './boardMigration';
  * 负责数据读取、写入、格式迁移
  */
 
-/** 数据仓储接口 */
-export interface IBoardRepository {
-	load(): Promise<{ settings: PluginSettings; board: BoardData }>;
-	save(settings: PluginSettings, board: BoardData): Promise<void>;
-}
-
 /**
  * 基于 Obsidian Plugin.loadData/saveData 的仓储实现
  */
-export class PluginDataRepository implements IBoardRepository {
+export class PluginDataRepository {
 	private readonly loadDataFn: () => Promise<unknown>;
 	private readonly saveDataFn: (data: PluginData) => Promise<void>;
 

@@ -95,30 +95,6 @@ export class VaultSyncService {
 	}
 
 	/**
-	 * 同步指定视图到笔记
-	 */
-	async syncView(viewKind: 'work' | 'personal', silent = false): Promise<void> {
-		const settings = this.store.getSettings();
-		const syncTarget = settings[viewKind];
-
-		if (!syncTarget.filePath) return;
-
-		const boardData = this.store.getBoardData();
-		const viewData = boardData[viewKind];
-		const markdown = generateMarkdown(viewData.columns);
-		const filePath = normalizePath(syncTarget.filePath);
-
-		try {
-			await this.writeToFile(filePath, markdown, silent);
-		} catch (error) {
-			const msg = error instanceof Error ? error.message : String(error);
-			if (!silent) {
-				new Notice(`${t('sync.fail')}：${msg}`);
-			}
-		}
-	}
-
-	/**
 	 * 生成归档 Markdown
 	 * 按当前分类展示，工作和个人分别展示，含归档时间
 	 */

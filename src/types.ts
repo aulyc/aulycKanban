@@ -5,9 +5,6 @@
 /** 视图类型：工作 / 个人 */
 export type ViewKind = 'work' | 'personal';
 
-/** 列/分类 ID（自由字符串，支持用户自定义） */
-export type ColumnId = string;
-
 /** 单个任务 */
 export interface Task {
 	id: string;
@@ -24,7 +21,7 @@ export interface Task {
 
 /** 看板列/分类 */
 export interface Column {
-	id: ColumnId;
+	id: string;
 	title: string;
 	order: number;
 	tasks: Task[];
@@ -89,6 +86,7 @@ export type ActionType =
 	| 'REORDER_COLUMNS'
 	| 'TOGGLE_ARCHIVE_VIEW'
 	| 'RESTORE_TASK'
+	| 'DELETE_ARCHIVE_TASKS'
 	| 'SET_BOARD_DATA'
 	| 'CLEAR_ALL_DATA'
 	| 'UPDATE_SETTINGS';
