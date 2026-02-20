@@ -1,11 +1,11 @@
-import type { Action, BoardData, PluginSettings, ViewKind, Task, Column, ArchiveData } from './types';
-import { getDefaultBoardData, PERFORMANCE } from './constants';
+import type { Action, ActionType, BoardData, PluginSettings, ViewKind, Task, Column, ArchiveData } from './types';
+import { getDefaultBoardData, PERFORMANCE, ID_PREFIX, ARCHIVE_KEY } from './constants';
 import type KanbanPlugin from './main';
 
 type Listener = () => void;
 
 /** 会修改看板数据的 Action 类型（需要触发 md 同步） */
-const DATA_MUTATION_ACTIONS: ReadonlySet<string> = new Set([
+const DATA_MUTATION_ACTIONS: ReadonlySet<ActionType> = new Set<ActionType>([
 	'ADD_TASK',
 	'EDIT_TASK',
 	'DELETE_TASK',
@@ -19,6 +19,12 @@ const DATA_MUTATION_ACTIONS: ReadonlySet<string> = new Set([
 	'RENAME_COLUMN',
 	'DELETE_COLUMN',
 	'REORDER_COLUMNS',
+]);
+
+/** 需要持久化到 data.json 的 Action（包含数据变更和设置变更） */
+const PERSIST_ACTIONS: ReadonlySet<ActionType> = new Set<ActionType>([
+	...DATA_MUTATION_ACTIONS,
+	'UPDATE_SETTINGS',
 ]);
 
 /**
@@ -83,8 +89,7 @@ export class KanbanStore {
 
 	/** 获取当前视图的归档任务 */
 	getCurrentArchive(): Task[] {
-		const archiveKey = this.settings.currentView === 'work' ? 'workArchive' : 'personalArchive';
-		return this.board[archiveKey]?.tasks ?? [];
+		return this.board[ARCHIVE_KEY[this.settings.currentView]]?.tasks ?? [];
 	}
 
 	/** 在指定列中查找任务 */
@@ -116,98 +121,62 @@ export class KanbanStore {
 	dispatch(action: Action): void {
 		switch (action.type) {
 			case 'ADD_TASK':
-				this.addTask(
-					action.payload?.['columnId'] as string,
-					action.payload?.['content'] as string,
-				);
+				this.addTask(action.payload.columnId, action.payload.content);
 				break;
-
 			case 'EDIT_TASK':
-				this.editTask(
-					action.payload?.['columnId'] as string,
-					action.payload?.['taskId'] as string,
-					action.payload?.['content'] as string,
-				);
+				this.editTask(action.payload.columnId, action.payload.taskId, action.payload.content);
 				break;
-
 			case 'DELETE_TASK':
-				this.deleteTask(
-					action.payload?.['columnId'] as string,
-					action.payload?.['taskId'] as string,
-				);
+				this.deleteTask(action.payload.columnId, action.payload.taskId);
 				break;
-
 			case 'TOGGLE_TASK':
-				this.toggleTask(
-					action.payload?.['columnId'] as string,
-					action.payload?.['taskId'] as string,
-				);
+				this.toggleTask(action.payload.columnId, action.payload.taskId);
 				break;
-
 			case 'MOVE_TASK':
 				this.moveTask(
-					action.payload?.['taskId'] as string,
-					action.payload?.['fromColumnId'] as string,
-					action.payload?.['toColumnId'] as string,
-					(action.payload?.['targetIndex'] as number) ?? 0,
+					action.payload.taskId,
+					action.payload.fromColumnId,
+					action.payload.toColumnId,
+					action.payload.targetIndex,
 				);
 				break;
-
 			case 'SWITCH_VIEW':
-				this.settings.currentView = action.payload?.['view'] as ViewKind;
+				this.settings.currentView = action.payload.view;
 				this.settings.showArchive = false;
-				// 切换视图后，如果 activeColumnId 无效则选第一个
 				this.ensureActiveColumn();
 				break;
-
 			case 'SELECT_COLUMN':
-				this.settings.activeColumnId = action.payload?.['columnId'] as string;
+				this.settings.activeColumnId = action.payload.columnId;
 				break;
-
 			case 'ADD_COLUMN':
-				this.addColumn(action.payload?.['title'] as string);
+				this.addColumn(action.payload.title);
 				break;
-
 			case 'RENAME_COLUMN':
-				this.renameColumn(
-					action.payload?.['columnId'] as string,
-					action.payload?.['title'] as string,
-				);
+				this.renameColumn(action.payload.columnId, action.payload.title);
 				break;
-
 			case 'DELETE_COLUMN':
-				this.deleteColumn(
-					action.payload?.['columnId'] as string,
-					(action.payload?.['moveTasks'] as boolean) ?? true,
-				);
+				this.deleteColumn(action.payload.columnId, action.payload.moveTasks ?? true);
 				break;
-
 			case 'REORDER_COLUMNS':
-				this.reorderColumns(action.payload?.['columnIds'] as string[]);
+				this.reorderColumns(action.payload.columnIds);
 				break;
-
 			case 'TOGGLE_ARCHIVE_VIEW':
 				this.settings.showArchive = !this.settings.showArchive;
 				break;
-
 			case 'RESTORE_TASK':
-				this.restoreTask(action.payload?.['taskId'] as string);
+				this.restoreTask(action.payload.taskId);
 				break;
-
 			case 'DELETE_ARCHIVE_TASKS':
-				this.deleteArchiveTasks((action.payload?.['taskIds'] as string[]) ?? []);
+				this.deleteArchiveTasks(action.payload.taskIds);
 				break;
-
 			case 'SET_BOARD_DATA':
-				this.board = this.ensureColumnOrder(action.payload?.['board'] as BoardData);
+				this.board = this.ensureColumnOrder(action.payload.board);
 				this.ensureActiveColumn();
 				break;
-
 			case 'CLEAR_ALL_DATA':
 				this.board = getDefaultBoardData();
 				this.ensureActiveColumn();
 				break;
-
 			case 'UPDATE_SETTINGS':
 				this.updateSettings(action.payload);
 				break;
@@ -215,7 +184,9 @@ export class KanbanStore {
 
 		this._lastActionMutatedData = DATA_MUTATION_ACTIONS.has(action.type);
 		this.notify();
-		this.scheduleSave();
+		if (PERSIST_ACTIONS.has(action.type)) {
+			this.scheduleSave();
+		}
 	}
 
 	// ==================== 任务操作 ====================
@@ -226,7 +197,7 @@ export class KanbanStore {
 
 		const now = new Date().toISOString();
 		const task: Task = {
-			id: `task_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+			id: `${ID_PREFIX.TASK}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
 			content,
 			completed: false,
 			createdAt: now,
@@ -275,9 +246,6 @@ export class KanbanStore {
 			}
 
 			this.getOrCreateArchive().tasks.unshift(task);
-		} else {
-			delete task.completedAt;
-			delete task.archivedAt;
 		}
 	}
 
@@ -311,11 +279,9 @@ export class KanbanStore {
 		delete task.completedAt;
 		delete task.archivedAt;
 
-		const targetColumnId = task.sourceColumnId ?? 'periodic';
-		delete task.sourceColumnId;
-
-		// 放回对应视图的列
 		const viewData = this.board[targetView];
+		const targetColumnId = task.sourceColumnId ?? viewData?.columns[0]?.id ?? '';
+		delete task.sourceColumnId;
 		const column = viewData?.columns.find((c) => c.id === targetColumnId);
 		if (column) {
 			column.tasks.unshift(task);
@@ -377,7 +343,7 @@ export class KanbanStore {
 		const maxOrder = columns.reduce((max, c) => Math.max(max, c.order ?? 0), -1);
 
 		const newCol: Column = {
-			id: `col_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+			id: `${ID_PREFIX.COLUMN}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
 			title,
 			order: maxOrder + 1,
 			tasks: [],
@@ -451,7 +417,7 @@ export class KanbanStore {
 	}
 
 	private getOrCreateArchive(): ArchiveData {
-		const archiveKey = this.settings.currentView === 'work' ? 'workArchive' : 'personalArchive';
+		const archiveKey = ARCHIVE_KEY[this.settings.currentView];
 		const archive = (this.board[archiveKey] ??= { tasks: [] });
 		return archive;
 	}
@@ -473,16 +439,14 @@ export class KanbanStore {
 		return board;
 	}
 
-	private updateSettings(payload?: Record<string, unknown>): void {
-		if (!payload) return;
-
-		const partial = payload as Partial<PluginSettings>;
-
+	private updateSettings(partial: Partial<PluginSettings>): void {
 		if (partial.currentView !== undefined) this.settings.currentView = partial.currentView;
 		if (partial.activeColumnId !== undefined) this.settings.activeColumnId = partial.activeColumnId;
 		if (partial.showArchive !== undefined) this.settings.showArchive = partial.showArchive;
-		if (partial.customIcon !== undefined) this.settings.customIcon = partial.customIcon;
+
 		if (partial.schemaVersion !== undefined) this.settings.schemaVersion = partial.schemaVersion;
+		if (partial.saveDebounce !== undefined) this.settings.saveDebounce = partial.saveDebounce;
+		if (partial.syncDebounce !== undefined) this.settings.syncDebounce = partial.syncDebounce;
 
 		if (partial.work) {
 			this.settings.work = { ...this.settings.work, ...partial.work };
@@ -501,25 +465,11 @@ export class KanbanStore {
 		if (this.saveTimeout) {
 			clearTimeout(this.saveTimeout);
 		}
+		const debounce = this.settings.saveDebounce ?? PERFORMANCE.SAVE_DEBOUNCE;
 		this.saveTimeout = setTimeout(() => {
 			void this.plugin.persistData();
 			this.saveTimeout = null;
-		}, PERFORMANCE.SAVE_DEBOUNCE);
-	}
-
-	flushPendingSave(): void {
-		if (this.saveTimeout) {
-			clearTimeout(this.saveTimeout);
-			this.saveTimeout = null;
-			void this.plugin.persistData();
-		}
-	}
-
-	cancelPendingSave(): void {
-		if (this.saveTimeout) {
-			clearTimeout(this.saveTimeout);
-			this.saveTimeout = null;
-		}
+		}, debounce);
 	}
 
 	async saveNow(): Promise<void> {
@@ -527,7 +477,12 @@ export class KanbanStore {
 			clearTimeout(this.saveTimeout);
 			this.saveTimeout = null;
 		}
-		await this.plugin.persistData();
+		try {
+			await this.plugin.persistData();
+		} catch (error) {
+			this.scheduleSave();
+			throw error;
+		}
 	}
 
 	destroy(): void {

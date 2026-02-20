@@ -14,6 +14,7 @@ export class KanbanView extends ItemView {
 	private unsubscribe: (() => void) | null = null;
 	private isClosing = false;
 	private tabHandler: ((e: KeyboardEvent) => void) | null = null;
+	private renderQueued = false;
 
 	constructor(leaf: WorkspaceLeaf, plugin: KanbanPlugin) {
 		super(leaf);
@@ -47,7 +48,7 @@ export class KanbanView extends ItemView {
 		// 订阅 store 变化，自动重渲染
 		this.unsubscribe = this.plugin.store.subscribe(() => {
 			if (this.isClosing || !this.board) return;
-			this.board.render();
+			this.requestRender();
 		});
 
 		// 视图级别监听 Tab 切换分类
@@ -113,6 +114,16 @@ export class KanbanView extends ItemView {
 	private refocusContainer(): void {
 		requestAnimationFrame(() => {
 			this.contentEl.focus({ preventScroll: true });
+		});
+	}
+
+	private requestRender(): void {
+		if (this.renderQueued) return;
+		this.renderQueued = true;
+		requestAnimationFrame(() => {
+			this.renderQueued = false;
+			if (this.isClosing || !this.board) return;
+			this.board.render();
 		});
 	}
 }

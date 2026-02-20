@@ -23,7 +23,7 @@ export interface Task {
 export interface Column {
 	id: string;
 	title: string;
-	order: number;
+	order?: number;
 	tasks: Task[];
 }
 
@@ -57,12 +57,16 @@ export interface PluginSettings {
 	activeColumnId: string;
 	/** 是否正在查看归档 */
 	showArchive: boolean;
-	customIcon: string;
+
 	work: SyncTarget;
 	personal: SyncTarget;
 	/** 归档同步文件路径 */
 	archive: SyncTarget;
 	schemaVersion: number;
+	/** 保存防抖时间（毫秒） */
+	saveDebounce: number;
+	/** 同步防抖时间（毫秒） */
+	syncDebounce: number;
 }
 
 /** 持久化数据（settings + board 合并存储） */
@@ -71,28 +75,25 @@ export interface PluginData {
 	board: BoardData;
 }
 
-/** Store 操作类型 */
-export type ActionType =
-	| 'ADD_TASK'
-	| 'EDIT_TASK'
-	| 'DELETE_TASK'
-	| 'TOGGLE_TASK'
-	| 'MOVE_TASK'
-	| 'SWITCH_VIEW'
-	| 'SELECT_COLUMN'
-	| 'ADD_COLUMN'
-	| 'RENAME_COLUMN'
-	| 'DELETE_COLUMN'
-	| 'REORDER_COLUMNS'
-	| 'TOGGLE_ARCHIVE_VIEW'
-	| 'RESTORE_TASK'
-	| 'DELETE_ARCHIVE_TASKS'
-	| 'SET_BOARD_DATA'
-	| 'CLEAR_ALL_DATA'
-	| 'UPDATE_SETTINGS';
+/** Store Action（可辨识联合类型，每种操作有独立的 payload 类型） */
+export type Action =
+	| { type: 'ADD_TASK'; payload: { columnId: string; content: string } }
+	| { type: 'EDIT_TASK'; payload: { columnId: string; taskId: string; content: string } }
+	| { type: 'DELETE_TASK'; payload: { columnId: string; taskId: string } }
+	| { type: 'TOGGLE_TASK'; payload: { columnId: string; taskId: string } }
+	| { type: 'MOVE_TASK'; payload: { taskId: string; fromColumnId: string; toColumnId: string; targetIndex: number } }
+	| { type: 'SWITCH_VIEW'; payload: { view: ViewKind } }
+	| { type: 'SELECT_COLUMN'; payload: { columnId: string } }
+	| { type: 'ADD_COLUMN'; payload: { title: string } }
+	| { type: 'RENAME_COLUMN'; payload: { columnId: string; title: string } }
+	| { type: 'DELETE_COLUMN'; payload: { columnId: string; moveTasks?: boolean } }
+	| { type: 'REORDER_COLUMNS'; payload: { columnIds: string[] } }
+	| { type: 'TOGGLE_ARCHIVE_VIEW' }
+	| { type: 'RESTORE_TASK'; payload: { taskId: string } }
+	| { type: 'DELETE_ARCHIVE_TASKS'; payload: { taskIds: string[] } }
+	| { type: 'SET_BOARD_DATA'; payload: { board: BoardData } }
+	| { type: 'CLEAR_ALL_DATA' }
+	| { type: 'UPDATE_SETTINGS'; payload: Partial<PluginSettings> };
 
-/** Store Action 定义 */
-export interface Action {
-	type: ActionType;
-	payload?: Record<string, unknown>;
-}
+/** 从 Action 联合类型中提取所有 type 字面量 */
+export type ActionType = Action['type'];

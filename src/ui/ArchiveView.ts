@@ -3,6 +3,7 @@ import type { KanbanStore } from '../store';
 import { setIcon } from 'obsidian';
 import { t } from '../i18n';
 import { formatDateTimeMinute } from '../utils/datetime';
+import { setTextWithLineBreaks } from '../utils/dom';
 import { ARCHIVE_UNCATEGORIZED_ID } from '../constants';
 
 /**
@@ -17,7 +18,9 @@ export class ArchiveView {
 	private searchKeyword = '';
 	private searchInputValue = '';
 	private deleteMode = false;
+	private searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 	private readonly selectedTaskIds = new Set<string>();
+	private listScrollTop = 0;
 
 	constructor(containerEl: HTMLElement, store: KanbanStore) {
 		this.containerEl = containerEl;
@@ -25,6 +28,15 @@ export class ArchiveView {
 	}
 
 	render(): void {
+		const prevListEl = this.containerEl.querySelector<HTMLElement>('.xaulyc-archive-list');
+		const prevSearchInput = this.containerEl.querySelector<HTMLInputElement>('.xaulyc-archive-search');
+		const restoreSearchFocus = document.activeElement === prevSearchInput;
+		const searchSelectionStart = prevSearchInput?.selectionStart ?? null;
+		const searchSelectionEnd = prevSearchInput?.selectionEnd ?? null;
+		if (prevListEl) {
+			this.listScrollTop = prevListEl.scrollTop;
+		}
+
 		this.containerEl.empty();
 
 		const boardData = this.store.getBoardData();
@@ -35,7 +47,15 @@ export class ArchiveView {
 		this.syncSelectionWithFiltered(filtered);
 
 		const controlsEl = this.containerEl.createDiv({ cls: 'xaulyc-archive-controls' });
-		this.renderFilters(controlsEl, boardData, allItems, filtered);
+		this.renderFilters(
+			controlsEl,
+			boardData,
+			allItems,
+			filtered,
+			restoreSearchFocus,
+			searchSelectionStart,
+			searchSelectionEnd,
+		);
 
 		if (allItems.length === 0) {
 			const emptyEl = this.containerEl.createDiv({ cls: 'xaulyc-archive-empty' });
@@ -54,6 +74,7 @@ export class ArchiveView {
 		for (const item of filtered) {
 			this.renderArchiveCard(listEl, item.task, item.viewKind, boardData);
 		}
+		listEl.scrollTop = this.listScrollTop;
 	}
 
 	/**
@@ -64,6 +85,9 @@ export class ArchiveView {
 		boardData: Readonly<ReturnType<KanbanStore['getBoardData']>>,
 		allItems: Array<{ task: Task; viewKind: 'work' | 'personal' }>,
 		filteredItems: Array<{ task: Task; viewKind: 'work' | 'personal' }>,
+		restoreSearchFocus: boolean,
+		searchSelectionStart: number | null,
+		searchSelectionEnd: number | null,
 	): void {
 		const filterRow = controlsEl.createDiv({ cls: 'xaulyc-archive-controls-row' });
 		const categorySelect = filterRow.createEl('select', { cls: 'xaulyc-archive-filter-select' });
@@ -155,24 +179,23 @@ export class ArchiveView {
 		searchInput.addEventListener('compositionstart', () => {
 			composing = true;
 		});
-		searchInput.addEventListener('compositionend', () => {
-			composing = false;
-		});
 		searchInput.addEventListener('keydown', (e: KeyboardEvent) => {
 			if (e.key !== 'Enter') return;
 			if (composing || e.isComposing) return;
 			e.preventDefault();
+			if (this.searchDebounceTimer) clearTimeout(this.searchDebounceTimer);
 			this.searchKeyword = this.searchInputValue.trim();
 			this.render();
 		});
 
 		const clearBtn = bottomRow.createEl('button', { cls: 'xaulyc-archive-clear-btn' });
 		clearBtn.setText(t('archive.searchClear'));
-		const updateClearButtonState = () => {
+		const updateClearButtonState = (): void => {
 			clearBtn.disabled = !this.searchKeyword && !this.searchInputValue;
 		};
 		updateClearButtonState();
 		clearBtn.addEventListener('click', () => {
+			if (this.searchDebounceTimer) clearTimeout(this.searchDebounceTimer);
 			this.searchInputValue = '';
 			this.searchKeyword = '';
 			this.render();
@@ -180,7 +203,32 @@ export class ArchiveView {
 		searchInput.addEventListener('input', () => {
 			this.searchInputValue = searchInput.value;
 			updateClearButtonState();
+			if (composing) return;
+			if (this.searchDebounceTimer) clearTimeout(this.searchDebounceTimer);
+			this.searchDebounceTimer = setTimeout(() => {
+				this.searchDebounceTimer = null;
+				this.searchKeyword = this.searchInputValue.trim();
+				this.render();
+			}, 300);
 		});
+		searchInput.addEventListener('compositionend', () => {
+			composing = false;
+			if (this.searchDebounceTimer) clearTimeout(this.searchDebounceTimer);
+			this.searchDebounceTimer = setTimeout(() => {
+				this.searchDebounceTimer = null;
+				this.searchKeyword = this.searchInputValue.trim();
+				this.render();
+			}, 300);
+		});
+
+		if (restoreSearchFocus) {
+			requestAnimationFrame(() => {
+				searchInput.focus({ preventScroll: true });
+				if (searchSelectionStart !== null && searchSelectionEnd !== null) {
+					searchInput.setSelectionRange(searchSelectionStart, searchSelectionEnd);
+				}
+			});
+		}
 
 	}
 
@@ -286,7 +334,7 @@ export class ArchiveView {
 		const mainEl = topEl.createDiv({ cls: 'xaulyc-archive-task-main' });
 
 		const contentEl = mainEl.createDiv({ cls: 'xaulyc-task-content xaulyc-task-content-completed' });
-		this.setTextWithLineBreaks(contentEl, task.content);
+		setTextWithLineBreaks(contentEl, task.content);
 
 		const actionsEl = topEl.createDiv({ cls: 'xaulyc-archive-task-actions' });
 		if (this.deleteMode) {
@@ -344,16 +392,4 @@ export class ArchiveView {
 		return formatDateTimeMinute(isoStr);
 	}
 
-	private setTextWithLineBreaks(el: HTMLElement, text: string): void {
-		const lines = text.split('\n');
-		for (let i = 0; i < lines.length; i++) {
-			const line = lines[i];
-			if (line !== undefined) {
-				el.appendText(line);
-			}
-			if (i < lines.length - 1) {
-				el.createEl('br');
-			}
-		}
-	}
 }

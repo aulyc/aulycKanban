@@ -7,8 +7,12 @@ import { t } from '../i18n';
  * 垂直排列分类按钮，底部有添加按钮
  */
 export class CategoryNav {
-	private el: HTMLElement;
-	private store: KanbanStore;
+	private readonly el: HTMLElement;
+	private readonly store: KanbanStore;
+	private editingColumnId: string | null = null;
+	private isAdding = false;
+	private draftTitle = '';
+	private shouldFocusInput = false;
 
 	constructor(parentEl: HTMLElement, store: KanbanStore) {
 		this.store = store;
@@ -33,6 +37,11 @@ export class CategoryNav {
 				cls: `xaulyc-nav-item ${isActive ? 'xaulyc-nav-item-active' : ''}`,
 			});
 			itemEl.dataset['columnId'] = column.id;
+
+			if (this.editingColumnId === column.id) {
+				this.renderInlineEditor(itemEl, column.id, column.title);
+				continue;
+			}
 
 			// 标题
 			const titleEl = itemEl.createSpan({ cls: 'xaulyc-nav-item-title' });
@@ -64,12 +73,39 @@ export class CategoryNav {
 
 		// 添加分类按钮（紧跟在分类列表下方）
 		const addBtn = listEl.createDiv({ cls: 'xaulyc-nav-add-btn' });
-		addBtn.createSpan({ text: '+', cls: 'xaulyc-nav-add-icon' });
-		addBtn.addEventListener('click', (e: MouseEvent) => {
-			e.preventDefault();
-			e.stopPropagation();
-			this.startInlineAddInPlace(addBtn);
-		});
+		if (this.isAdding) {
+			addBtn.addClass('xaulyc-nav-item-editing');
+			const input = addBtn.createEl('input', {
+				cls: 'xaulyc-nav-inline-input',
+				attr: { type: 'text', placeholder: t('column.addPrompt') },
+			});
+			input.value = this.draftTitle;
+			input.addEventListener('input', () => {
+				this.draftTitle = input.value;
+			});
+			input.addEventListener('keydown', (e: KeyboardEvent) => {
+				if (e.key === 'Enter') {
+					e.preventDefault();
+					e.stopPropagation();
+					this.commitAdd();
+				}
+				if (e.key === 'Escape') {
+					e.preventDefault();
+					this.cancelEditing();
+				}
+			});
+			input.addEventListener('blur', () => {
+				this.commitAdd();
+			});
+			this.focusInput(input);
+		} else {
+			addBtn.createSpan({ text: '+', cls: 'xaulyc-nav-add-icon' });
+			addBtn.addEventListener('click', (e: MouseEvent) => {
+				e.preventDefault();
+				e.stopPropagation();
+				this.startInlineAdd();
+			});
+		}
 	}
 
 	/**
@@ -103,118 +139,95 @@ export class CategoryNav {
 	 * 内联重命名：整个 nav-item 变为输入框
 	 */
 	private startInlineRename(columnId: string, itemEl: HTMLElement): void {
-		const titleEl = itemEl.querySelector('.xaulyc-nav-item-title') as HTMLElement | null;
-		if (!titleEl) return;
-
-		const currentTitle = titleEl.getText();
-
-		// 给 item 加编辑态 class，去掉多余样式
-		itemEl.addClass('xaulyc-nav-item-editing');
-		itemEl.empty();
-
-		const input = itemEl.createEl('input', {
-			cls: 'xaulyc-nav-inline-input',
-			attr: { type: 'text' },
-		});
-		input.value = currentTitle;
-
-		const save = (): void => {
-			const newTitle = input.value.trim();
-			if (newTitle && newTitle !== currentTitle) {
-				this.store.dispatch({
-					type: 'RENAME_COLUMN',
-					payload: { columnId, title: newTitle },
-				});
-			} else {
-				// 恢复（触发重渲染）
-				this.store.dispatch({ type: 'SELECT_COLUMN', payload: { columnId: this.store.getActiveColumnId() } });
-			}
-		};
-
-		input.addEventListener('keydown', (e: KeyboardEvent) => {
-			if (e.key === 'Enter') {
-				e.preventDefault();
-				e.stopPropagation();
-				save();
-			}
-			if (e.key === 'Escape') {
-				e.preventDefault();
-				this.store.dispatch({ type: 'SELECT_COLUMN', payload: { columnId: this.store.getActiveColumnId() } });
-			}
-		});
-
-		input.addEventListener('blur', () => {
-			save();
-		});
-
-		// 阻止输入框内的点击冒泡（防止触发 itemEl 的 click）
-		input.addEventListener('click', (e: MouseEvent) => {
-			e.stopPropagation();
-		});
-
-		input.focus();
-		// 光标放到文字末尾（不全选）
-		const len = input.value.length;
-		input.setSelectionRange(len, len);
+		const titleEl = itemEl.querySelector('.xaulyc-nav-item-title');
+		const currentTitle = titleEl?.textContent ?? '';
+		this.editingColumnId = columnId;
+		this.isAdding = false;
+		this.draftTitle = currentTitle;
+		this.shouldFocusInput = true;
+		this.render();
 	}
 
 	/**
 	 * 内联添加分类：按钮本身变为输入框
 	 */
-	private startInlineAddInPlace(addBtn: HTMLElement): void {
-		// 如果已经是输入状态则跳过
-		if (addBtn.querySelector('.xaulyc-nav-inline-input')) return;
+	private startInlineAdd(): void {
+		this.isAdding = true;
+		this.editingColumnId = null;
+		this.draftTitle = '';
+		this.shouldFocusInput = true;
+		this.render();
+	}
 
-		// 清空按钮内容，替换为输入框
-		addBtn.empty();
-		addBtn.classList.add('xaulyc-nav-item-editing');
-
-		const input = addBtn.createEl('input', {
+	private renderInlineEditor(itemEl: HTMLElement, columnId: string, currentTitle: string): void {
+		itemEl.addClass('xaulyc-nav-item-editing');
+		itemEl.empty();
+		const input = itemEl.createEl('input', {
 			cls: 'xaulyc-nav-inline-input',
-			attr: { type: 'text', placeholder: t('column.addPrompt') },
+			attr: { type: 'text' },
 		});
-
-		let saved = false;
-		const save = (): void => {
-			if (saved) return;
-			saved = true;
-			const title = input.value.trim();
-			if (title) {
-				this.store.dispatch({
-					type: 'ADD_COLUMN',
-					payload: { title },
-				});
-			} else {
-				// 没输入内容，恢复按钮（触发重渲染）
-				this.store.dispatch({
-					type: 'SELECT_COLUMN',
-					payload: { columnId: this.store.getActiveColumnId() },
-				});
-			}
-		};
-
+		input.value = this.draftTitle || currentTitle;
+		input.addEventListener('input', () => {
+			this.draftTitle = input.value;
+		});
 		input.addEventListener('keydown', (e: KeyboardEvent) => {
 			if (e.key === 'Enter') {
 				e.preventDefault();
 				e.stopPropagation();
-				save();
+				this.commitRename(columnId, currentTitle);
 			}
 			if (e.key === 'Escape') {
 				e.preventDefault();
-				saved = true;
-				// 恢复按钮
-				this.store.dispatch({
-					type: 'SELECT_COLUMN',
-					payload: { columnId: this.store.getActiveColumnId() },
-				});
+				this.cancelEditing();
 			}
 		});
-
 		input.addEventListener('blur', () => {
-			save();
+			this.commitRename(columnId, currentTitle);
 		});
+		input.addEventListener('click', (e: MouseEvent) => {
+			e.stopPropagation();
+		});
+		this.focusInput(input);
+	}
 
-		input.focus();
+	private commitRename(columnId: string, currentTitle: string): void {
+		const newTitle = this.draftTitle.trim();
+		this.cancelEditing();
+		if (newTitle && newTitle !== currentTitle) {
+			this.store.dispatch({
+				type: 'RENAME_COLUMN',
+				payload: { columnId, title: newTitle },
+			});
+		}
+	}
+
+	private commitAdd(): void {
+		const title = this.draftTitle.trim();
+		this.cancelEditing();
+		if (title) {
+			this.store.dispatch({
+				type: 'ADD_COLUMN',
+				payload: { title },
+			});
+		}
+	}
+
+	private cancelEditing(): void {
+		this.editingColumnId = null;
+		this.isAdding = false;
+		this.draftTitle = '';
+		this.shouldFocusInput = false;
+		this.render();
+	}
+
+	private focusInput(input: HTMLInputElement): void {
+		if (!this.shouldFocusInput) return;
+		this.shouldFocusInput = false;
+		requestAnimationFrame(() => {
+			input.focus();
+			const len = input.value.length;
+			input.setSelectionRange(len, len);
+		});
 	}
 
 	/**

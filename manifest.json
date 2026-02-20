@@ -1,9 +1,9 @@
 {
 	"id": "KBtask",
 	"name": "KBtask",
-	"version": "2.0.0",
+	"version": "2.0.1",
 	"minAppVersion": "1.5.0",
-	"description": "Manage tasks with a five-quadrant kanban board based on the Eisenhower Matrix.",
+	"description": "Manage tasks with kanban board based on the Eisenhower Matrix.",
 	"author": "AULYC",
 	"authorUrl": "https://github.com/AULYC",
 	"isDesktopOnly": false

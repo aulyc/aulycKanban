@@ -6,6 +6,21 @@ export const VIEW_TYPE_KANBAN = 'kbtask-view';
 /** 归档中“未分类”分组的内部 ID */
 export const ARCHIVE_UNCATEGORIZED_ID = '__uncategorized';
 
+/** ID 生成前缀 */
+export const ID_PREFIX = {
+	TASK: 'task',
+	COLUMN: 'col',
+} as const;
+
+/** 备份文件格式版本 */
+export const BACKUP_VERSION = '2.0';
+
+/** 归档数据键名映射 */
+export const ARCHIVE_KEY: Record<'work' | 'personal', 'workArchive' | 'personalArchive'> = {
+	work: 'workArchive',
+	personal: 'personalArchive',
+};
+
 /** 性能配置常量 */
 export const PERFORMANCE = {
 	/** 保存防抖时间（毫秒） */
@@ -31,11 +46,13 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 	currentView: 'work',
 	activeColumnId: 'periodic',
 	showArchive: false,
-	customIcon: '',
+
 	work: { filePath: '' },
 	personal: { filePath: '' },
 	archive: { filePath: '' },
 	schemaVersion: CURRENT_SCHEMA_VERSION,
+	saveDebounce: PERFORMANCE.SAVE_DEBOUNCE,
+	syncDebounce: PERFORMANCE.SYNC_DEBOUNCE,
 };
 
 /** 生成默认看板数据 */

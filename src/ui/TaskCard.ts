@@ -1,8 +1,8 @@
 import type { Task } from '../types';
 import type { KanbanStore } from '../store';
-import { setIcon } from 'obsidian';
 import { t } from '../i18n';
 import { formatDateTimeMinute } from '../utils/datetime';
+import { setTextWithLineBreaks, autoResizeTextarea } from '../utils/dom';
 
 /**
  * 任务卡片组件
@@ -17,7 +17,6 @@ export class TaskCard {
 	private readonly task: Task;
 
 	constructor(
-		parentEl: HTMLElement,
 		store: KanbanStore,
 		columnId: string,
 		task: Task,
@@ -26,9 +25,8 @@ export class TaskCard {
 		this.columnId = columnId;
 		this.task = task;
 
-		this.el = parentEl.createDiv({
-			cls: `xaulyc-task ${task.completed ? 'xaulyc-task-completed' : ''}`,
-		});
+		this.el = document.createElement('div');
+		this.el.className = `xaulyc-task${task.completed ? ' xaulyc-task-completed' : ''}`;
 		this.el.draggable = true;
 		this.el.dataset['taskId'] = task.id;
 		this.el.dataset['columnId'] = columnId;
@@ -46,24 +44,25 @@ export class TaskCard {
 		const contentEl = middleEl.createDiv({
 			cls: `xaulyc-task-content ${task.completed ? 'xaulyc-task-content-completed' : ''}`,
 		});
-		this.setTextWithLineBreaks(contentEl, task.content);
+		setTextWithLineBreaks(contentEl, task.content);
 
 		contentEl.addEventListener('click', (e: MouseEvent) => {
 			e.stopPropagation();
 			this.enterEditMode(contentEl);
 		});
 
-		// 时间显示
-		const timeEl = middleEl.createDiv({ cls: 'xaulyc-task-time' });
+		// 底部信息行：时间（左） + 操作图标（右）
+		const metaRowEl = middleEl.createDiv({ cls: 'xaulyc-task-meta-row' });
+		const timeEl = metaRowEl.createDiv({ cls: 'xaulyc-task-time' });
 		const timeStr = this.formatTime(task.updatedAt ?? task.createdAt);
 		timeEl.setText(timeStr);
 
-		// 右侧操作：归档图标 + 删除
-		const actionsEl = this.el.createDiv({ cls: 'xaulyc-task-actions' });
+		const actionsEl = metaRowEl.createDiv({ cls: 'xaulyc-task-actions' });
 
-		const archiveBtn = actionsEl.createEl('button', { cls: 'xaulyc-task-archive' });
-		archiveBtn.setAttribute('aria-label', t('archive.button'));
-		setIcon(archiveBtn, 'archive');
+		const archiveBtn = actionsEl.createSpan({
+			text: '⤓',
+			cls: 'xaulyc-task-archive',
+		});
 		archiveBtn.addEventListener('click', (e: MouseEvent) => {
 			e.stopPropagation();
 			if (!confirm(t('task.confirm.archive'))) return;
@@ -75,7 +74,7 @@ export class TaskCard {
 
 		// 删除按钮（两次点击确认）
 		const deleteBtn = actionsEl.createSpan({
-			text: '✖',
+			text: '✕',
 			cls: 'xaulyc-task-delete',
 		});
 		deleteBtn.addEventListener('click', (e: MouseEvent) => {
@@ -106,14 +105,7 @@ export class TaskCard {
 		});
 		textarea.value = currentText;
 
-		// 自动调整高度
-		textarea.style.height = 'auto';
-		textarea.style.height = textarea.scrollHeight + 'px';
-
-		textarea.addEventListener('input', () => {
-			textarea.style.height = 'auto';
-			textarea.style.height = textarea.scrollHeight + 'px';
-		});
+		autoResizeTextarea(textarea);
 
 		// Enter 保存，Shift+Enter 换行，Escape 取消
 		textarea.addEventListener('keydown', (e: KeyboardEvent) => {
@@ -159,19 +151,6 @@ export class TaskCard {
 	 */
 	private formatTime(isoStr: string): string {
 		return formatDateTimeMinute(isoStr);
-	}
-
-	private setTextWithLineBreaks(el: HTMLElement, text: string): void {
-		const lines = text.split('\n');
-		for (let i = 0; i < lines.length; i++) {
-			const line = lines[i];
-			if (line !== undefined) {
-				el.appendText(line);
-			}
-			if (i < lines.length - 1) {
-				el.createEl('br');
-			}
-		}
 	}
 
 	getEl(): HTMLElement {

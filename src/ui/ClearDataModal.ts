@@ -1,14 +1,14 @@
-import { App, Modal, Setting } from 'obsidian';
+import { App, Modal } from 'obsidian';
 import { t } from '../i18n';
 
 /**
  * 清除数据专用弹窗
- * 替代原思源版的 clearAllData 弹窗
- * 包含：警告文字 + "先备份数据"按钮 + "确认清除"按钮
+ * 无分隔线、无关闭按钮
+ * 按钮行：备份数据 | 取消 | 确认清除
  */
 export class ClearDataModal extends Modal {
-	private onBackup: () => void;
-	private onConfirmClear: () => void;
+	private readonly onBackup: () => void;
+	private readonly onConfirmClear: () => void;
 
 	constructor(
 		app: App,
@@ -23,56 +23,44 @@ export class ClearDataModal extends Modal {
 	}
 
 	onOpen(): void {
-		const { contentEl } = this;
+		const { contentEl, modalEl } = this;
 		contentEl.empty();
-		contentEl.addClass('xaulyc-clear-modal');
+		modalEl.addClass('xaulyc-modal-clean');
 
-		this.setTitle(t('settings.clear.title'));
-
-		// 警告文字
 		contentEl.createDiv({
 			text: t('settings.clear.warning'),
-			cls: 'xaulyc-clear-warning',
+			cls: 'xaulyc-modal-message',
 		});
 
-		// 建议区块
 		const suggestionEl = contentEl.createDiv({ cls: 'xaulyc-clear-suggestion' });
 		suggestionEl.createEl('strong', { text: '💡 ' });
 		suggestionEl.appendText(t('settings.clear.suggestion'));
 
-		// 备份按钮
-		new Setting(contentEl)
-			.addButton((btn) =>
-				btn
-					.setButtonText(t('settings.clear.backupFirst'))
-					.setCta()
-					.onClick(() => {
-						this.onBackup();
-					}),
-			);
+		const btnRow = contentEl.createDiv({ cls: 'xaulyc-modal-buttons' });
 
-		// 底部操作区：取消 + 确认清除
-		new Setting(contentEl)
-			.addButton((btn) =>
-				btn
-					.setButtonText(t('cancel'))
-					.onClick(() => {
-						this.close();
-					}),
-			)
-			.addButton((btn) =>
-				btn
-					.setButtonText(t('settings.clear.confirm'))
-					.setWarning()
-					.onClick(() => {
-						this.onConfirmClear();
-						this.close();
-					}),
-			);
+		const backupBtn = btnRow.createEl('button', {
+			text: t('settings.clear.backupFirst'),
+			cls: 'xaulyc-modal-btn mod-cta',
+		});
+		backupBtn.addEventListener('click', () => this.onBackup());
+
+		const cancelBtn = btnRow.createEl('button', {
+			text: t('cancel'),
+			cls: 'xaulyc-modal-btn',
+		});
+		cancelBtn.addEventListener('click', () => this.close());
+
+		const confirmBtn = btnRow.createEl('button', {
+			text: t('settings.clear.confirm'),
+			cls: 'xaulyc-modal-btn mod-warning',
+		});
+		confirmBtn.addEventListener('click', () => {
+			this.onConfirmClear();
+			this.close();
+		});
 	}
 
 	onClose(): void {
-		const { contentEl } = this;
-		contentEl.empty();
+		this.contentEl.empty();
 	}
 }

@@ -12,37 +12,48 @@ import { ArchiveView } from './ArchiveView';
 export class Board {
 	private readonly containerEl: HTMLElement;
 	private readonly store: KanbanStore;
+	private readonly toolbar: Toolbar;
+	private readonly contentAreaEl: HTMLElement;
+	private readonly archiveContainerEl: HTMLElement;
+	private readonly taskList: TaskList;
+	private readonly categoryNav: CategoryNav;
+	private readonly archiveView: ArchiveView;
 
 	constructor(containerEl: HTMLElement, store: KanbanStore) {
 		this.containerEl = containerEl;
 		this.store = store;
+
+		// 工具栏（始终显示）
+		this.toolbar = new Toolbar(this.containerEl, this.store);
+		this.toolbar.getEl();
+
+		// 看板视图容器（左侧任务列表 + 右侧分类导航）
+		this.contentAreaEl = this.containerEl.createDiv({ cls: 'xaulyc-content-area' });
+		this.taskList = new TaskList(this.contentAreaEl, this.store);
+		this.categoryNav = new CategoryNav(this.contentAreaEl, this.store);
+
+		// 归档视图容器
+		this.archiveContainerEl = this.containerEl.createDiv({ cls: 'xaulyc-archive-container' });
+		this.archiveView = new ArchiveView(this.archiveContainerEl, this.store);
 	}
 
 	render(): void {
-		this.containerEl.empty();
-
-		// 工具栏（始终显示）
-		const toolbar = new Toolbar(this.containerEl, this.store);
-		toolbar.getEl();
+		this.toolbar.render();
 
 		if (this.store.isShowingArchive()) {
-			// 归档视图
-			const archiveContainer = this.containerEl.createDiv({ cls: 'xaulyc-archive-container' });
-			const archiveView = new ArchiveView(archiveContainer, this.store);
-			archiveView.render();
-		} else {
-			// 看板视图：左侧任务列表 + 右侧分类导航
-			const contentArea = this.containerEl.createDiv({ cls: 'xaulyc-content-area' });
-
-			const taskList = new TaskList(contentArea, this.store);
-			taskList.render();
-
-			const categoryNav = new CategoryNav(contentArea, this.store);
-			categoryNav.getEl();
+			this.contentAreaEl.style.display = 'none';
+			this.archiveContainerEl.style.display = '';
+			this.archiveView.render();
+			return;
 		}
+
+		this.archiveContainerEl.style.display = 'none';
+		this.contentAreaEl.style.display = '';
+		this.taskList.render();
+		this.categoryNav.render();
 	}
 
 	destroy(): void {
-		// 无需特殊清理（不再有 dndManager）
+		this.containerEl.empty();
 	}
 }

@@ -1,16 +1,16 @@
-import { App, Modal, Setting } from 'obsidian';
+import { App, Modal } from 'obsidian';
 import { t } from '../i18n';
 
 /**
  * 通用确认弹窗
- * 替代原思源版的 showConfirmDialog
+ * 无分隔线、无关闭按钮，内容和按钮水平居中
  */
 export class ConfirmModal extends Modal {
-	private message: string;
-	private onConfirm: () => void;
-	private confirmText: string;
-	private cancelText: string;
-	private isDestructive: boolean;
+	private readonly message: string;
+	private readonly onConfirm: () => void;
+	private readonly confirmText: string;
+	private readonly cancelText: string;
+	private readonly isDestructive: boolean;
 
 	constructor(
 		app: App,
@@ -31,44 +31,34 @@ export class ConfirmModal extends Modal {
 	}
 
 	onOpen(): void {
-		const { contentEl } = this;
+		const { contentEl, modalEl } = this;
 		contentEl.empty();
+		modalEl.addClass('xaulyc-modal-clean');
 
-		// 消息文本
 		contentEl.createDiv({
 			text: this.message,
-			cls: 'xaulyc-confirm-message',
+			cls: 'xaulyc-modal-message',
 		});
 
-		// 按钮区
-		const btnSetting = new Setting(contentEl);
+		const btnRow = contentEl.createDiv({ cls: 'xaulyc-modal-buttons' });
 
-		btnSetting.addButton((btn) =>
-			btn
-				.setButtonText(this.cancelText)
-				.onClick(() => {
-					this.close();
-				}),
-		);
+		const cancelBtn = btnRow.createEl('button', {
+			text: this.cancelText,
+			cls: 'xaulyc-modal-btn',
+		});
+		cancelBtn.addEventListener('click', () => this.close());
 
-		btnSetting.addButton((btn) => {
-			btn.setButtonText(this.confirmText)
-				.setCta()
-				.onClick(() => {
-					this.onConfirm();
-					this.close();
-				});
-
-			if (this.isDestructive) {
-				btn.setWarning();
-			}
-
-			return btn;
+		const confirmBtn = btnRow.createEl('button', {
+			text: this.confirmText,
+			cls: `xaulyc-modal-btn mod-cta${this.isDestructive ? ' mod-warning' : ''}`,
+		});
+		confirmBtn.addEventListener('click', () => {
+			this.onConfirm();
+			this.close();
 		});
 	}
 
 	onClose(): void {
-		const { contentEl } = this;
-		contentEl.empty();
+		this.contentEl.empty();
 	}
 }

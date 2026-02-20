@@ -25,16 +25,6 @@ export class Toolbar {
 		// 左侧：自定义图标 + 视图切换标签
 		const leftEl = this.el.createDiv({ cls: 'xaulyc-toolbar-left' });
 
-		// 自定义图标（设置中上传的）
-		const customIcon = this.store.getSettings().customIcon;
-		if (customIcon) {
-			const iconEl = leftEl.createEl('img', {
-				cls: 'xaulyc-toolbar-icon',
-				attr: { src: customIcon },
-			});
-			iconEl.alt = 'Kanban';
-		}
-
 		this.createTab(leftEl, 'work', t('view.work'), currentView === 'work' && !isArchive);
 		this.createTab(leftEl, 'personal', t('view.personal'), currentView === 'personal' && !isArchive);
 

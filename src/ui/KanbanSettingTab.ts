@@ -8,11 +8,12 @@ import { FileSuggest } from './FileSuggest';
 
 /**
  * 看板设置页（PluginSettingTab）
- * 包含三个区块：外观设置 / 数据管理 / 笔记同步
+ * 包含两个区块：数据管理 / 笔记同步
  */
 export class KanbanSettingTab extends PluginSettingTab {
-	plugin: KanbanPlugin;
-	private backupService: BackupService;
+	private readonly plugin: KanbanPlugin;
+	private readonly backupService: BackupService;
+	private readonly fileSuggests: FileSuggest[] = [];
 
 	constructor(app: App, plugin: KanbanPlugin) {
 		super(app, plugin);
@@ -23,16 +24,14 @@ export class KanbanSettingTab extends PluginSettingTab {
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
-
-		// ==================== 外观设置 ====================
-		new Setting(containerEl).setHeading().setName(t('settings.appearance'));
-
-		this.buildIconSetting(containerEl);
+		for (const suggest of this.fileSuggests) {
+			suggest.close();
+		}
+		this.fileSuggests.length = 0;
 
 		// ==================== 数据管理 ====================
 		new Setting(containerEl).setHeading().setName(t('settings.dataManagement'));
 
-		// 备份数据
 		new Setting(containerEl)
 			.setName(t('settings.backup.name'))
 			.setDesc(t('settings.backup.desc'))
@@ -42,7 +41,6 @@ export class KanbanSettingTab extends PluginSettingTab {
 				}),
 			);
 
-		// 导入数据
 		new Setting(containerEl)
 			.setName(t('settings.import.name'))
 			.setDesc(t('settings.import.desc'))
@@ -50,14 +48,13 @@ export class KanbanSettingTab extends PluginSettingTab {
 				btn.setButtonText(t('settings.import.button')).onClick(() => {
 					new ConfirmModal(this.app, {
 						message: t('settings.import.confirm'),
-						onConfirm: async () => {
-							await this.backupService.importBackup();
+						onConfirm: () => {
+							void this.backupService.importBackup();
 						},
 					}).open();
 				}),
 			);
 
-		// 清除所有数据
 		new Setting(containerEl)
 			.setName(t('settings.clear.name'))
 			.setDesc(t('settings.clear.desc'))
@@ -67,13 +64,11 @@ export class KanbanSettingTab extends PluginSettingTab {
 					.setWarning()
 					.onClick(() => {
 						new ClearDataModal(this.app, {
-							onBackup: async () => {
-								await this.backupService.exportBackup();
+							onBackup: () => {
+								void this.backupService.exportBackup();
 							},
-							onConfirmClear: async () => {
-								this.plugin.store.dispatch({ type: 'CLEAR_ALL_DATA' });
-								await this.plugin.store.saveNow();
-								new Notice(t('settings.clear.success'));
+							onConfirmClear: () => {
+								void this.clearAllDataAndSave();
 							},
 						}).open();
 					}),
@@ -84,157 +79,84 @@ export class KanbanSettingTab extends PluginSettingTab {
 
 		const settings = this.plugin.store.getSettings();
 
-		// 工作任务同步文件路径
-		new Setting(containerEl)
-			.setName(t('settings.sync.workPath.name'))
-			.setDesc(t('settings.sync.workPath.desc'))
-			.addText((text) => {
-				text
-					.setPlaceholder('看板/工作任务.md')
-					.setValue(settings.work.filePath)
-					.onChange(async (value) => {
-						const normalized = value.trim() ? normalizePath(value.trim()) : '';
-						if (normalized && normalized === normalizePath(settings.personal.filePath || '')) {
-							new Notice(t('settings.sync.duplicateError'));
-							return;
-						}
-						this.plugin.store.dispatch({
-							type: 'UPDATE_SETTINGS',
-							payload: { work: { filePath: normalized } },
-						});
-						await this.plugin.store.saveNow();
-					});
-				new FileSuggest(this.app, text.inputEl);
-			});
+		this.buildSyncPathSetting(containerEl, {
+			nameKey: 'settings.sync.workPath.name',
+			descKey: 'settings.sync.workPath.desc',
+			placeholderKey: 'settings.sync.workPath.placeholder',
+			currentPath: settings.work.filePath,
+			otherPaths: [settings.personal.filePath, settings.archive?.filePath ?? ''],
+			payload: (filePath) => ({ work: { filePath } }),
+		});
 
-		// 个人任务同步文件路径
-		new Setting(containerEl)
-			.setName(t('settings.sync.personalPath.name'))
-			.setDesc(t('settings.sync.personalPath.desc'))
-			.addText((text) => {
-				text
-					.setPlaceholder('看板/个人任务.md')
-					.setValue(settings.personal.filePath)
-					.onChange(async (value) => {
-						const normalized = value.trim() ? normalizePath(value.trim()) : '';
-						if (normalized && normalized === normalizePath(settings.work.filePath || '')) {
-							new Notice(t('settings.sync.duplicateError'));
-							return;
-						}
-						this.plugin.store.dispatch({
-							type: 'UPDATE_SETTINGS',
-							payload: { personal: { filePath: normalized } },
-						});
-						await this.plugin.store.saveNow();
-					});
-				new FileSuggest(this.app, text.inputEl);
-			});
+		this.buildSyncPathSetting(containerEl, {
+			nameKey: 'settings.sync.personalPath.name',
+			descKey: 'settings.sync.personalPath.desc',
+			placeholderKey: 'settings.sync.personalPath.placeholder',
+			currentPath: settings.personal.filePath,
+			otherPaths: [settings.work.filePath, settings.archive?.filePath ?? ''],
+			payload: (filePath) => ({ personal: { filePath } }),
+		});
 
-		// 归档同步文件路径
-		new Setting(containerEl)
-			.setName(t('settings.sync.archivePath.name'))
-			.setDesc(t('settings.sync.archivePath.desc'))
-			.addText((text) => {
-				text
-					.setPlaceholder('看板/归档任务.md')
-					.setValue(settings.archive?.filePath ?? '')
-					.onChange(async (value) => {
-						const normalized = value.trim() ? normalizePath(value.trim()) : '';
-						const workPath = normalizePath(settings.work.filePath || '');
-						const personalPath = normalizePath(settings.personal.filePath || '');
-						if (normalized && (normalized === workPath || normalized === personalPath)) {
-							new Notice(t('settings.sync.duplicateError'));
-							return;
-						}
-						this.plugin.store.dispatch({
-							type: 'UPDATE_SETTINGS',
-							payload: { archive: { filePath: normalized } },
-						});
-						await this.plugin.store.saveNow();
-					});
-				new FileSuggest(this.app, text.inputEl);
-			});
+		this.buildSyncPathSetting(containerEl, {
+			nameKey: 'settings.sync.archivePath.name',
+			descKey: 'settings.sync.archivePath.desc',
+			placeholderKey: 'settings.sync.archivePath.placeholder',
+			currentPath: settings.archive?.filePath ?? '',
+			otherPaths: [settings.work.filePath, settings.personal.filePath],
+			payload: (filePath) => ({ archive: { filePath } }),
+		});
 
-		// 同步提示
 		const hintEl = containerEl.createDiv({ cls: 'setting-item-description' });
 		hintEl.style.marginTop = '8px';
 		hintEl.style.paddingLeft = '16px';
 		hintEl.setText(`💡 ${t('settings.sync.hint')}`);
 	}
 
-	/**
-	 * 构建图标设置区
-	 */
-	private buildIconSetting(containerEl: HTMLElement): void {
-		const settings = this.plugin.store.getSettings();
-
-		// 图标预览
-		const previewSetting = new Setting(containerEl)
-			.setName(t('settings.icon.name'))
-			.setDesc(t('settings.icon.desc'));
-
-		// 上传按钮
-		previewSetting.addButton((btn) =>
-			btn.setButtonText(t('settings.icon.upload')).onClick(() => {
-				const input = document.createElement('input');
-				input.type = 'file';
-				input.accept = 'image/png';
-
-				input.onchange = async (e: Event): Promise<void> => {
-					const target = e.target as HTMLInputElement;
-					const file = target.files?.[0];
-					if (!file) return;
-
-					// PNG 格式校验
-					if (file.type !== 'image/png') {
-						new Notice(t('settings.icon.formatError'));
-						return;
-					}
-
-					// 大小校验
-					if (file.size > 500 * 1024) {
-						new Notice(t('settings.icon.sizeError'));
-						return;
-					}
-
-					const reader = new FileReader();
-					reader.onload = async (event): Promise<void> => {
-						const result = event.target?.result as string;
-						if (result) {
-							this.plugin.store.dispatch({
-								type: 'UPDATE_SETTINGS',
-								payload: { customIcon: result },
-							});
-							await this.plugin.store.saveNow();
-							new Notice(t('settings.icon.selected'));
-							this.display(); // 刷新设置页
+	private buildSyncPathSetting(
+		containerEl: HTMLElement,
+		opts: {
+			nameKey: string;
+			descKey: string;
+			placeholderKey: string;
+			currentPath: string;
+			otherPaths: string[];
+			payload: (filePath: string) => Partial<import('../types').PluginSettings>;
+		},
+	): void {
+		new Setting(containerEl)
+			.setName(t(opts.nameKey))
+			.setDesc(t(opts.descKey))
+			.addText((text) => {
+				text
+					.setPlaceholder(t(opts.placeholderKey))
+					.setValue(opts.currentPath)
+					.onChange(async (value) => {
+						const normalized = value.trim() ? normalizePath(value.trim()) : '';
+						const isDuplicate = normalized && opts.otherPaths.some(
+							(p) => p && normalized === normalizePath(p),
+						);
+						if (isDuplicate) {
+							new Notice(t('settings.sync.duplicateError'));
+							return;
 						}
-					};
-					reader.readAsDataURL(file);
-				};
+						this.plugin.store.dispatch({
+							type: 'UPDATE_SETTINGS',
+							payload: opts.payload(normalized),
+						});
+						await this.plugin.store.saveNow();
+					});
+				this.attachFileSuggest(text.inputEl);
+			});
+	}
 
-				input.click();
-			}),
-		);
+	private attachFileSuggest(inputEl: HTMLInputElement): void {
+		const suggest = new FileSuggest(this.app, inputEl);
+		this.fileSuggests.push(suggest);
+	}
 
-		// 恢复默认按钮（仅当有自定义图标时显示）
-		if (settings.customIcon) {
-			previewSetting.addButton((btn) =>
-				btn.setButtonText(t('settings.icon.reset')).onClick(() => {
-					new ConfirmModal(this.app, {
-						message: t('settings.icon.resetConfirm'),
-						onConfirm: async () => {
-							this.plugin.store.dispatch({
-								type: 'UPDATE_SETTINGS',
-								payload: { customIcon: '' },
-							});
-							await this.plugin.store.saveNow();
-							new Notice(t('settings.icon.restored'));
-							this.display(); // 刷新设置页
-						},
-					}).open();
-				}),
-			);
-		}
+	private async clearAllDataAndSave(): Promise<void> {
+		this.plugin.store.dispatch({ type: 'CLEAR_ALL_DATA' });
+		await this.plugin.store.saveNow();
+		new Notice(t('settings.clear.success'));
 	}
 }

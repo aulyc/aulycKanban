@@ -15,8 +15,8 @@ const SYNC_END = '<!-- XAULYC_KANBAN:END -->';
  * 将看板数据和归档数据同步到 Obsidian 笔记文件
  */
 export class VaultSyncService {
-	private vault: Vault;
-	private store: KanbanStore;
+	private readonly vault: Vault;
+	private readonly store: KanbanStore;
 	private syncTimeout: ReturnType<typeof setTimeout> | null = null;
 
 	constructor(vault: Vault, store: KanbanStore) {
@@ -31,11 +31,12 @@ export class VaultSyncService {
 		if (this.syncTimeout) {
 			clearTimeout(this.syncTimeout);
 		}
+		const debounce = this.store.getSettings().syncDebounce ?? PERFORMANCE.SYNC_DEBOUNCE;
 		this.syncTimeout = setTimeout(() => {
 			void this.syncCurrentView(true);
 			void this.syncArchive(true);
 			this.syncTimeout = null;
-		}, PERFORMANCE.SYNC_DEBOUNCE);
+		}, debounce);
 	}
 
 	/**
@@ -104,20 +105,20 @@ export class VaultSyncService {
 		let md = `> ${t('md.syncTime')}：${now}\n\n`;
 
 		const totalCount = workTasks.length + personalTasks.length;
-		md += `## 📦 归档统计\n\n`;
-		md += `- 总归档数：${totalCount}\n`;
-		md += `- 工作任务：${workTasks.length}\n`;
-		md += `- 个人任务：${personalTasks.length}\n\n`;
+		md += `## ${t('md.archiveStats')}\n\n`;
+		md += `- ${t('md.archiveTotal')}：${totalCount}\n`;
+		md += `- ${t('md.archiveWork')}：${workTasks.length}\n`;
+		md += `- ${t('md.archivePersonal')}：${personalTasks.length}\n\n`;
 
 		const boardData = this.store.getBoardData();
 
 		if (workTasks.length > 0) {
-			md += `## 💼 工作任务归档\n\n`;
+			md += `## ${t('md.archiveWorkHeading')}\n\n`;
 			md += this.renderArchiveByColumn(workTasks, boardData.work.columns);
 		}
 
 		if (personalTasks.length > 0) {
-			md += `## 👤 个人任务归档\n\n`;
+			md += `## ${t('md.archivePersonalHeading')}\n\n`;
 			md += this.renderArchiveByColumn(personalTasks, boardData.personal.columns);
 		}
 
@@ -159,7 +160,7 @@ export class VaultSyncService {
 			});
 
 			for (const task of sorted) {
-				const archiveTime = this.formatTime(task.archivedAt ?? task.completedAt ?? task.createdAt);
+				const archiveTime = formatDateTimeMinute(task.archivedAt ?? task.completedAt ?? task.createdAt);
 				md += `- [x] ${task.content}  *(${t('archive.archivedAt')} ${archiveTime})*\n`;
 			}
 			md += '\n';
@@ -169,7 +170,7 @@ export class VaultSyncService {
 		if (otherTasks.length > 0) {
 			md += `### ${t('archive.other')}\n\n`;
 			for (const task of otherTasks) {
-				const archiveTime = this.formatTime(task.archivedAt ?? task.completedAt ?? task.createdAt);
+				const archiveTime = formatDateTimeMinute(task.archivedAt ?? task.completedAt ?? task.createdAt);
 				md += `- [x] ${task.content}  *(${t('archive.archivedAt')} ${archiveTime})*\n`;
 			}
 			md += '\n';
@@ -178,9 +179,7 @@ export class VaultSyncService {
 		return md;
 	}
 
-	private formatTime(isoStr: string): string {
-		return formatDateTimeMinute(isoStr);
-	}
+
 
 	/**
 	 * 写入文件
@@ -223,9 +222,14 @@ export class VaultSyncService {
 	}
 
 	flush(): void {
+		const hadPending = this.syncTimeout !== null;
 		if (this.syncTimeout) {
 			clearTimeout(this.syncTimeout);
 			this.syncTimeout = null;
+		}
+		if (hadPending) {
+			void this.syncCurrentView(true);
+			void this.syncArchive(true);
 		}
 	}
 }

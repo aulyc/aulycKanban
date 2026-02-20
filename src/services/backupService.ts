@@ -3,12 +3,13 @@ import type { BoardData } from '../types';
 import type { KanbanStore } from '../store';
 import { t } from '../i18n';
 import { isMigratableBoardData, migrateBoardData } from './boardMigration';
+import { BACKUP_VERSION } from '../constants';
 
 /**
  * 备份导出/导入服务
  */
 export class BackupService {
-	private store: KanbanStore;
+	private readonly store: KanbanStore;
 
 	constructor(store: KanbanStore) {
 		this.store = store;
@@ -26,7 +27,7 @@ export class BackupService {
 				workArchive: boardData.workArchive ?? { tasks: [] },
 				personalArchive: boardData.personalArchive ?? { tasks: [] },
 				backupTime: new Date().toISOString(),
-				version: '2.0',
+				version: BACKUP_VERSION,
 			};
 
 			const jsonStr = JSON.stringify(dataToBackup, null, 2);
@@ -45,8 +46,6 @@ export class BackupService {
 			a.click();
 
 			URL.revokeObjectURL(url);
-
-			new Notice(t('settings.backup.success'));
 		} catch (error) {
 			const msg = error instanceof Error ? error.message : String(error);
 			new Notice(`${t('settings.backup.fail')}：${msg}`);
@@ -61,7 +60,7 @@ export class BackupService {
 		input.type = 'file';
 		input.accept = '.json';
 
-		input.onchange = async (e: Event): Promise<void> => {
+		input.addEventListener('change', async (e: Event) => {
 			const target = e.target as HTMLInputElement;
 			const file = target.files?.[0];
 			if (!file) return;
@@ -91,7 +90,7 @@ export class BackupService {
 				const msg = error instanceof Error ? error.message : String(error);
 				new Notice(`${t('settings.import.fail')}：${msg}`);
 			}
-		};
+		});
 
 		input.click();
 	}

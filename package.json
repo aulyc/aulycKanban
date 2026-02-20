@@ -1,7 +1,7 @@
 {
 	"name": "KBtask",
-	"version": "2.0.0",
-	"description": "Manage tasks with a five-quadrant kanban board based on the Eisenhower Matrix.",
+	"version": "2.0.1",
+	"description": "Manage tasks with kanban board based on the Eisenhower Matrix.",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
