@@ -118,14 +118,24 @@ export class TaskList {
 
 		inputEl.value = draft;
 		autoResizeTextarea(inputEl);
+		let composing = false;
 
 		inputEl.addEventListener('input', () => {
 			this.inputDraftByColumn.set(columnId, inputEl.value);
+		});
+		inputEl.addEventListener('compositionstart', () => {
+			composing = true;
+		});
+		inputEl.addEventListener('compositionend', () => {
+			composing = false;
 		});
 
 		// Enter 提交，Shift+Enter 换行，Tab/Shift+Tab 切换分类
 		inputEl.addEventListener('keydown', (e: KeyboardEvent) => {
 			if (e.key === 'Enter' && !e.shiftKey) {
+				if (composing || e.isComposing) {
+					return;
+				}
 				e.preventDefault();
 				e.stopPropagation();
 				const content = inputEl.value.trim();

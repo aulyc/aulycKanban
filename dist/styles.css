@@ -1,0 +1,769 @@
+/* ================================================
+   KBtask - Obsidian 插件样式
+   所有颜色使用 Obsidian CSS 变量，禁止硬编码
+   ================================================ */
+
+/* 重置 Obsidian 默认间距，消除顶部多余空白 */
+.workspace-leaf-content[data-type="kbtask-view"] .view-header {
+	display: none;
+}
+
+.workspace-leaf-content[data-type="kbtask-view"] .view-content {
+	padding: 0 !important;
+}
+
+/* 容器 */
+.xaulyc-kanban-container {
+	--xaulyc-toolbar-padding-y: 8px;
+	--xaulyc-toolbar-padding-x: 12px;
+	--xaulyc-content-padding-y: 12px;
+	--xaulyc-content-padding-left: 12px;
+	--xaulyc-content-padding-right: 12px;
+	--xaulyc-content-gap: 6px;
+	--xaulyc-nav-width: 150px;
+	--xaulyc-nav-inner-padding-x: 6px;
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	overflow: hidden;
+	padding: 0;
+}
+
+/* ==================== 工具栏 ==================== */
+.xaulyc-toolbar {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: var(--xaulyc-toolbar-padding-y) var(--xaulyc-toolbar-padding-x);
+	border-bottom: 1px solid var(--background-modifier-border);
+	flex-shrink: 0;
+}
+
+.xaulyc-toolbar-left {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+
+
+.xaulyc-tab {
+	padding: 6px 14px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	background: var(--background-secondary);
+	color: var(--text-normal);
+	cursor: pointer;
+	font-size: 13px;
+	font-weight: 500;
+	transition: all 0.2s ease;
+	white-space: nowrap;
+	box-sizing: border-box;
+	height: 30px;
+	display: flex;
+	align-items: center;
+}
+
+.xaulyc-tab:hover {
+	background: var(--background-modifier-hover);
+}
+
+.xaulyc-tab-active {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border-color: var(--interactive-accent);
+}
+
+.xaulyc-tab-active:hover {
+	background: var(--interactive-accent-hover);
+}
+
+/* ==================== 内容区（左右分栏） ==================== */
+.xaulyc-content-area {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) var(--xaulyc-nav-width);
+	column-gap: var(--xaulyc-content-gap);
+	flex: 1;
+	min-height: 0;
+	padding: var(--xaulyc-content-padding-y) var(--xaulyc-content-padding-right) var(--xaulyc-content-padding-y) var(--xaulyc-content-padding-left);
+	overflow: hidden;
+}
+
+/* ==================== 左侧任务列表 ==================== */
+.xaulyc-task-list {
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+.xaulyc-task-list-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 10px;
+}
+
+.xaulyc-task-list-title {
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--text-normal);
+}
+
+.xaulyc-task-list-count {
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--text-muted);
+}
+
+.xaulyc-task-list-empty {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 200px;
+	color: var(--text-faint);
+	font-size: 14px;
+}
+
+/* ==================== 右侧分类导航 ==================== */
+.xaulyc-category-nav {
+	width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	border-left: 1px solid var(--background-modifier-border);
+	padding-left: var(--xaulyc-nav-inner-padding-x);
+	padding-right: var(--xaulyc-nav-inner-padding-x);
+	overflow-y: auto;
+}
+
+.xaulyc-nav-list {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	flex: 1;
+}
+
+.xaulyc-nav-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 8px 10px;
+	border-radius: 6px;
+	cursor: pointer;
+	transition: all 0.15s ease;
+	user-select: none;
+}
+
+.xaulyc-nav-item:hover {
+	background: var(--background-modifier-hover);
+}
+
+.xaulyc-nav-item-active {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.xaulyc-nav-item-active:hover {
+	background: var(--interactive-accent-hover);
+}
+
+.xaulyc-nav-item-title {
+	font-size: 13px;
+	font-weight: 500;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	min-width: 0;
+	flex: 1;
+}
+
+.xaulyc-nav-item-count {
+	font-size: 12px;
+	color: var(--text-muted);
+	flex-shrink: 0;
+	margin-left: 6px;
+}
+
+.xaulyc-nav-item-active .xaulyc-nav-item-count {
+	color: var(--text-on-accent);
+	opacity: 0.8;
+}
+
+.xaulyc-nav-add-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 8px;
+	margin-top: 8px;
+	border: 1px dashed var(--background-modifier-border);
+	border-radius: 6px;
+	cursor: pointer;
+	color: var(--text-muted);
+	font-size: 18px;
+	transition: all 0.15s ease;
+	user-select: none;
+}
+
+.xaulyc-nav-add-btn:hover {
+	background: var(--background-modifier-hover);
+	color: var(--interactive-accent);
+	border-color: var(--text-muted);
+}
+
+.xaulyc-nav-add-icon {
+	font-weight: 300;
+	line-height: 1;
+}
+
+/* 导航项编辑态：去掉多余层级样式 */
+.xaulyc-nav-item.xaulyc-nav-item-editing {
+	padding: 0;
+	background: none;
+	border: none;
+}
+
+/* 导航区内联输入框（重命名/添加） */
+.xaulyc-nav-inline-input {
+	width: 100%;
+	padding: 8px 10px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	border: 1px solid var(--interactive-accent);
+	border-radius: 6px;
+	font-size: 13px;
+	font-family: inherit;
+	box-sizing: border-box;
+	outline: none;
+	-webkit-text-fill-color: var(--text-normal);
+	caret-color: var(--text-normal);
+	animation: xaulyc-blink 1s step-end infinite;
+}
+
+@keyframes xaulyc-blink {
+	50% { caret-color: transparent; }
+}
+
+.xaulyc-nav-add-input-wrapper {
+	padding: 0;
+	margin-top: 4px;
+}
+
+/* ==================== 任务列表滚动区 ==================== */
+.xaulyc-tasks {
+	flex: 1;
+	overflow-y: auto;
+	padding: 0;
+	margin: 0;
+	will-change: scroll-position;
+	-webkit-overflow-scrolling: touch;
+}
+
+/* ==================== 任务卡片 ==================== */
+.xaulyc-task {
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	padding: 10px 12px;
+	margin-bottom: 8px;
+	cursor: default;
+	transition: all 0.2s ease;
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	position: relative;
+	min-height: 36px;
+}
+
+.xaulyc-task:hover {
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.xaulyc-task-completed {
+	opacity: 0.65;
+}
+
+/* ==================== 任务中间区域 ==================== */
+.xaulyc-task-middle {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.xaulyc-task-meta-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	margin-top: 2px;
+}
+
+.xaulyc-task-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-shrink: 0;
+}
+
+.xaulyc-task-archive {
+	color: var(--text-muted);
+	cursor: pointer;
+	font-size: 14px;
+	width: 18px;
+	height: 18px;
+	min-width: 18px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	visibility: hidden;
+	transition: all 0.2s ease;
+	border-radius: 4px;
+	flex-shrink: 0;
+	line-height: 1;
+	margin-top: 0;
+}
+
+.xaulyc-task:hover .xaulyc-task-archive {
+	visibility: visible;
+}
+
+.xaulyc-task-archive:hover {
+	color: var(--text-error);
+	transform: scale(1.15);
+}
+
+
+/* ==================== 任务内容 ==================== */
+.xaulyc-task-content {
+	color: var(--text-normal);
+	font-size: 14px;
+	line-height: 1.5;
+	word-break: break-word;
+	cursor: text;
+	user-select: text;
+}
+
+.xaulyc-task-content-completed {
+	text-decoration: line-through;
+	color: var(--text-faint);
+}
+
+/* ==================== 任务时间 ==================== */
+.xaulyc-task-time {
+	font-size: 11px;
+	color: var(--text-faint);
+	line-height: 1.3;
+}
+
+/* ==================== 删除按钮 ==================== */
+.xaulyc-task-delete {
+	color: var(--text-muted);
+	cursor: pointer;
+	font-size: 14px;
+	width: 18px;
+	height: 18px;
+	min-width: 18px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	visibility: hidden;
+	transition: all 0.2s ease;
+	border-radius: 4px;
+	flex-shrink: 0;
+	line-height: 1;
+	margin-top: 0;
+}
+
+.xaulyc-task:hover .xaulyc-task-delete {
+	visibility: visible;
+}
+
+.xaulyc-task-delete:hover {
+	color: var(--text-error);
+	transform: scale(1.15);
+}
+
+/* ==================== 内嵌输入框 ==================== */
+.xaulyc-inline-input-wrapper {
+	margin: 0 0 10px 0;
+	padding: 0;
+}
+
+.xaulyc-inline-input {
+	width: 100%;
+	padding: 8px 10px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	font-size: 14px;
+	font-family: inherit;
+	line-height: 1.5;
+	resize: none;
+	overflow: hidden;
+	box-sizing: border-box;
+	transition: border-color 0.15s ease;
+	-webkit-text-fill-color: var(--text-normal);
+	caret-color: var(--text-normal);
+	opacity: 1;
+}
+
+.xaulyc-inline-input:focus {
+	border-color: var(--interactive-accent);
+	outline: none;
+}
+
+.xaulyc-inline-input::placeholder {
+	color: var(--text-muted);
+	-webkit-text-fill-color: var(--text-muted);
+}
+
+/* ==================== 内联编辑 textarea ==================== */
+.xaulyc-edit-textarea {
+	width: 100%;
+	padding: 4px 6px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	border: 1px solid var(--interactive-accent);
+	border-radius: 4px;
+	font-size: 14px;
+	font-family: inherit;
+	line-height: 1.5;
+	resize: none;
+	overflow: hidden;
+	box-sizing: border-box;
+	-webkit-text-fill-color: var(--text-normal);
+	caret-color: var(--text-normal);
+	opacity: 1;
+}
+
+.xaulyc-edit-textarea:focus {
+	outline: none;
+}
+
+/* ==================== 滚动条 ==================== */
+.xaulyc-tasks::-webkit-scrollbar,
+.xaulyc-category-nav::-webkit-scrollbar {
+	width: 6px;
+	height: 6px;
+}
+
+.xaulyc-tasks::-webkit-scrollbar-track,
+.xaulyc-category-nav::-webkit-scrollbar-track {
+	background: var(--background-secondary);
+	border-radius: 3px;
+}
+
+.xaulyc-tasks::-webkit-scrollbar-thumb,
+.xaulyc-category-nav::-webkit-scrollbar-thumb {
+	background: var(--background-modifier-border);
+	border-radius: 3px;
+}
+
+.xaulyc-tasks::-webkit-scrollbar-thumb:hover,
+.xaulyc-category-nav::-webkit-scrollbar-thumb:hover {
+	background: var(--text-faint);
+}
+
+/* ==================== 归档视图 ==================== */
+.xaulyc-archive-container {
+	flex: 1;
+	min-height: 0;
+	overflow: auto;
+	padding-top: 12px;
+}
+
+.xaulyc-archive-empty {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 200px;
+	color: var(--text-faint);
+	font-size: 15px;
+}
+
+/* 归档列表容器 */
+.xaulyc-archive-list {
+	display: flex;
+	flex-direction: column;
+	padding: 0 12px;
+}
+
+.xaulyc-archive-controls {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: 6px;
+	flex-wrap: wrap;
+	margin-bottom: 10px;
+	padding: 0 12px;
+}
+
+.xaulyc-archive-controls-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.xaulyc-archive-filter-label {
+	font-size: 12px;
+	color: var(--text-muted);
+}
+
+.xaulyc-archive-filter-select,
+.xaulyc-archive-search {
+	height: 30px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	padding: 0 8px;
+	font-size: 12px;
+	box-sizing: border-box;
+}
+
+.xaulyc-archive-search {
+	flex: 1;
+	min-width: 180px;
+}
+
+.xaulyc-archive-sort-btn {
+	height: 30px;
+	padding: 0 10px;
+	font-size: 12px;
+}
+
+.xaulyc-archive-delete-mode-btn,
+.xaulyc-archive-batch-btn {
+	height: 30px;
+	padding: 0 10px;
+	font-size: 12px;
+}
+
+.xaulyc-archive-danger-btn {
+	border-color: var(--text-error) !important;
+	color: var(--text-error) !important;
+}
+
+.xaulyc-archive-clear-btn {
+	height: 30px;
+	padding: 0 10px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	background: var(--background-primary);
+	color: var(--text-muted);
+	font-size: 12px;
+	cursor: pointer;
+}
+
+.xaulyc-archive-clear-btn:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.xaulyc-archive-clear-btn:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+	background: var(--background-primary);
+	color: var(--text-faint);
+}
+
+/* 归档大类区块（工作/个人） */
+.xaulyc-archive-view-section {
+	margin-bottom: 24px;
+}
+
+.xaulyc-archive-view-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding-bottom: 8px;
+	margin-bottom: 12px;
+	border-bottom: 2px solid var(--background-modifier-border);
+}
+
+.xaulyc-archive-view-title {
+	font-size: 17px;
+	font-weight: 700;
+	color: var(--text-normal);
+}
+
+.xaulyc-archive-view-count {
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--text-muted);
+}
+
+/* 归档分类区块 */
+.xaulyc-archive-section {
+	margin-bottom: 16px;
+}
+
+.xaulyc-archive-task {
+	cursor: default;
+	opacity: 0.8;
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: 8px;
+}
+
+.xaulyc-archive-task-top {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.xaulyc-archive-task-main {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	flex: 1;
+	min-width: 0;
+	min-height: 28px;
+}
+
+.xaulyc-archive-task-bottom {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.xaulyc-archive-task-tags {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex-wrap: wrap;
+	min-width: 0;
+}
+
+.xaulyc-archive-task-time {
+	white-space: nowrap;
+}
+
+.xaulyc-archive-tag {
+	display: inline-flex;
+	align-items: center;
+	height: 22px;
+	padding: 0 8px;
+	border-radius: 999px;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+	color: var(--text-muted);
+	font-size: 12px;
+	line-height: 1;
+	white-space: nowrap;
+}
+
+.xaulyc-archive-select-checkbox {
+	width: 16px;
+	height: 16px;
+	margin: 0;
+}
+
+.xaulyc-archive-task-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-shrink: 0;
+	width: 56px;
+	justify-content: flex-end;
+}
+
+.xaulyc-archive-task:hover {
+	box-shadow: none;
+}
+
+.xaulyc-archive-restore-btn {
+	background: none;
+	border: 1px solid var(--background-modifier-border);
+	color: var(--text-muted);
+	cursor: pointer;
+	width: 24px;
+	height: 24px;
+	padding: 0;
+	border-radius: 4px;
+	flex-shrink: 0;
+	transition: all 0.15s ease;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.xaulyc-archive-restore-btn svg {
+	width: 12px;
+	height: 12px;
+}
+
+.xaulyc-archive-restore-btn:hover {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border-color: var(--interactive-accent);
+}
+
+.xaulyc-archive-restore-btn:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+	background: transparent;
+	color: var(--text-faint);
+	border-color: var(--background-modifier-border);
+}
+
+.xaulyc-archive-delete-btn {
+	background: none;
+	border: 1px solid var(--background-modifier-border);
+	color: var(--text-error);
+	cursor: pointer;
+	padding: 3px 8px;
+	border-radius: 4px;
+	font-size: 12px;
+	flex-shrink: 0;
+	transition: all 0.15s ease;
+	align-self: center;
+}
+
+.xaulyc-archive-delete-btn:hover {
+	background: var(--text-error);
+	color: #fff;
+	border-color: var(--text-error);
+}
+
+/* ==================== 弹窗样式 ==================== */
+
+.xaulyc-modal-clean .modal-close-button {
+	display: none;
+}
+
+.xaulyc-modal-message {
+	text-align: center;
+	padding: 16px 20px;
+	line-height: 1.6;
+}
+
+.xaulyc-clear-suggestion {
+	text-align: center;
+	padding: 0 20px 16px;
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+}
+
+.xaulyc-modal-buttons {
+	display: flex;
+	justify-content: center;
+	gap: 10px;
+	padding: 12px 20px 16px;
+}
+
+.xaulyc-modal-btn {
+	padding: 6px 16px;
+	border-radius: var(--radius-s);
+	cursor: pointer;
+	font-size: var(--font-ui-small);
+}
