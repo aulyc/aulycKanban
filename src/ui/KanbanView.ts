@@ -38,7 +38,7 @@ export class KanbanView extends ItemView {
 
 		const container = this.contentEl;
 		container.empty();
-		container.addClass('xaulyc-kanban-container');
+		container.addClass('aulyckanban-kanban-container');
 		// 让容器可聚焦，接收键盘事件
 		container.setAttribute('tabindex', '0');
 
@@ -56,7 +56,7 @@ export class KanbanView extends ItemView {
 			if (e.key === 'Tab') {
 				// 如果正在重命名分类（nav-inline-input 聚焦），不拦截
 				const active = document.activeElement;
-				if (active?.classList.contains('xaulyc-nav-inline-input')) return;
+				if (active?.classList.contains('aulyckanban-nav-inline-input')) return;
 
 				e.preventDefault();
 				e.stopPropagation();

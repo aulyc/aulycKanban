@@ -18,13 +18,13 @@ export class TaskList {
 
 	constructor(parentEl: HTMLElement, store: KanbanStore) {
 		this.store = store;
-		this.el = parentEl.createDiv({ cls: 'xaulyc-task-list' });
+		this.el = parentEl.createDiv({ cls: 'aulyckanban-task-list' });
 	}
 
 	render(): void {
 		const prevColumnId = this.el.dataset['columnId'] ?? '';
-		const prevInputEl = this.el.querySelector<HTMLTextAreaElement>('.xaulyc-inline-input');
-		const prevTasksEl = this.el.querySelector<HTMLElement>('.xaulyc-tasks');
+		const prevInputEl = this.el.querySelector<HTMLTextAreaElement>('.aulyckanban-inline-input');
+		const prevTasksEl = this.el.querySelector<HTMLElement>('.aulyckanban-tasks');
 		const wasInputFocused = document.activeElement === prevInputEl;
 		const selectionStart = prevInputEl?.selectionStart ?? null;
 		const selectionEnd = prevInputEl?.selectionEnd ?? null;
@@ -41,14 +41,14 @@ export class TaskList {
 		const column = this.store.getActiveColumn();
 		if (!column) {
 			this.cardCache.clear();
-			this.el.createDiv({ text: t('md.noTasks'), cls: 'xaulyc-task-list-empty' });
+			this.el.createDiv({ text: t('md.noTasks'), cls: 'aulyckanban-task-list-empty' });
 			return;
 		}
 		this.el.dataset['columnId'] = column.id;
 
-		const headerEl = this.el.createDiv({ cls: 'xaulyc-task-list-header' });
-		headerEl.createSpan({ text: column.title, cls: 'xaulyc-task-list-title' });
-		headerEl.createSpan({ text: String(column.tasks.length), cls: 'xaulyc-task-list-count' });
+		const headerEl = this.el.createDiv({ cls: 'aulyckanban-task-list-header' });
+		headerEl.createSpan({ text: column.title, cls: 'aulyckanban-task-list-title' });
+		headerEl.createSpan({ text: String(column.tasks.length), cls: 'aulyckanban-task-list-count' });
 
 		this.buildInlineInput(
 			column.id,
@@ -58,7 +58,7 @@ export class TaskList {
 			selectionEnd,
 		);
 
-		const tasksEl = this.el.createDiv({ cls: 'xaulyc-tasks' });
+		const tasksEl = this.el.createDiv({ cls: 'aulyckanban-tasks' });
 
 		const sortedTasks = [...column.tasks].sort((a: Task, b: Task) => {
 			if (a.completed !== b.completed) return a.completed ? 1 : -1;
@@ -106,10 +106,10 @@ export class TaskList {
 		selectionStart: number | null,
 		selectionEnd: number | null,
 	): void {
-		const inputWrapper = this.el.createDiv({ cls: 'xaulyc-inline-input-wrapper' });
+		const inputWrapper = this.el.createDiv({ cls: 'aulyckanban-inline-input-wrapper' });
 
 		const inputEl = inputWrapper.createEl('textarea', {
-			cls: 'xaulyc-inline-input',
+			cls: 'aulyckanban-inline-input',
 			attr: {
 				placeholder: t('task.inputPlaceholder'),
 				rows: '1',

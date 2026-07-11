@@ -12,7 +12,7 @@ export class Toolbar {
 
 	constructor(parentEl: HTMLElement, store: KanbanStore) {
 		this.store = store;
-		this.el = parentEl.createDiv({ cls: 'xaulyc-toolbar' });
+		this.el = parentEl.createDiv({ cls: 'aulyckanban-toolbar' });
 		this.render();
 	}
 
@@ -23,7 +23,7 @@ export class Toolbar {
 		const isArchive = this.store.isShowingArchive();
 
 		// 左侧：自定义图标 + 视图切换标签
-		const leftEl = this.el.createDiv({ cls: 'xaulyc-toolbar-left' });
+		const leftEl = this.el.createDiv({ cls: 'aulyckanban-toolbar-left' });
 
 		this.createTab(leftEl, 'work', t('view.work'), currentView === 'work' && !isArchive);
 		this.createTab(leftEl, 'personal', t('view.personal'), currentView === 'personal' && !isArchive);
@@ -31,7 +31,7 @@ export class Toolbar {
 		// 归档按钮：放在个人任务右侧，样式与 tab 一致
 		const archiveBtn = leftEl.createEl('button', {
 			text: `📦 ${t('archive.button')}`,
-			cls: isArchive ? 'xaulyc-tab xaulyc-tab-active' : 'xaulyc-tab',
+			cls: isArchive ? 'aulyckanban-tab aulyckanban-tab-active' : 'aulyckanban-tab',
 		});
 		archiveBtn.setAttribute('aria-label', t('archive.tooltip'));
 		archiveBtn.addEventListener('click', (e: MouseEvent) => {
@@ -42,7 +42,7 @@ export class Toolbar {
 	}
 
 	private createTab(parentEl: HTMLElement, view: ViewKind, label: string, isActive: boolean): void {
-		const cls = isActive ? 'xaulyc-tab xaulyc-tab-active' : 'xaulyc-tab';
+		const cls = isActive ? 'aulyckanban-tab aulyckanban-tab-active' : 'aulyckanban-tab';
 		const btn = parentEl.createEl('button', { text: label, cls });
 
 		btn.addEventListener('click', (e: MouseEvent) => {

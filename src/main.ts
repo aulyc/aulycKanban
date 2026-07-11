@@ -150,7 +150,7 @@ export default class KanbanPlugin extends Plugin {
 				workspace.revealLeaf(leaf);
 			}
 		} catch (error) {
-			console.error('[KBtask] Failed to activate view:', error);
+			console.error('[aulyckanban] Failed to activate view:', error);
 		}
 	}
 

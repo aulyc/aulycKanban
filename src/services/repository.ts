@@ -45,7 +45,7 @@ export class PluginDataRepository {
 
 			return { settings, board };
 		} catch (error) {
-			console.error('[KBtask] Failed to load data, using defaults:', error);
+			console.error('[aulyckanban] Failed to load data, using defaults:', error);
 			return {
 				settings: { ...DEFAULT_SETTINGS },
 				board: getDefaultBoardData(),
@@ -57,7 +57,7 @@ export class PluginDataRepository {
 		try {
 			await this.saveDataFn({ settings, board });
 		} catch (error) {
-			console.error('[KBtask] Failed to save data:', error);
+			console.error('[aulyckanban] Failed to save data:', error);
 		}
 	}
 }

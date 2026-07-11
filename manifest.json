@@ -1,6 +1,6 @@
 {
-	"id": "KBtask",
-	"name": "KBtask",
+	"id": "aulyckanban",
+	"name": "aulyckanban",
 	"version": "2.0.1",
 	"minAppVersion": "1.5.0",
 	"description": "Manage tasks with kanban board based on the Eisenhower Matrix.",

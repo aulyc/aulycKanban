@@ -28,8 +28,8 @@ export class ArchiveView {
 	}
 
 	render(): void {
-		const prevListEl = this.containerEl.querySelector<HTMLElement>('.xaulyc-archive-list');
-		const prevSearchInput = this.containerEl.querySelector<HTMLInputElement>('.xaulyc-archive-search');
+		const prevListEl = this.containerEl.querySelector<HTMLElement>('.aulyckanban-archive-list');
+		const prevSearchInput = this.containerEl.querySelector<HTMLInputElement>('.aulyckanban-archive-search');
 		const restoreSearchFocus = document.activeElement === prevSearchInput;
 		const searchSelectionStart = prevSearchInput?.selectionStart ?? null;
 		const searchSelectionEnd = prevSearchInput?.selectionEnd ?? null;
@@ -46,7 +46,7 @@ export class ArchiveView {
 		const filtered = this.applyFilters(allItems);
 		this.syncSelectionWithFiltered(filtered);
 
-		const controlsEl = this.containerEl.createDiv({ cls: 'xaulyc-archive-controls' });
+		const controlsEl = this.containerEl.createDiv({ cls: 'aulyckanban-archive-controls' });
 		this.renderFilters(
 			controlsEl,
 			boardData,
@@ -58,15 +58,15 @@ export class ArchiveView {
 		);
 
 		if (allItems.length === 0) {
-			const emptyEl = this.containerEl.createDiv({ cls: 'xaulyc-archive-empty' });
+			const emptyEl = this.containerEl.createDiv({ cls: 'aulyckanban-archive-empty' });
 			emptyEl.setText(t('archive.empty'));
 			return;
 		}
 
-		const listEl = this.containerEl.createDiv({ cls: 'xaulyc-archive-list' });
+		const listEl = this.containerEl.createDiv({ cls: 'aulyckanban-archive-list' });
 
 		if (filtered.length === 0) {
-			const emptyEl = listEl.createDiv({ cls: 'xaulyc-archive-empty' });
+			const emptyEl = listEl.createDiv({ cls: 'aulyckanban-archive-empty' });
 			emptyEl.setText(t('archive.noMatch'));
 			return;
 		}
@@ -89,8 +89,8 @@ export class ArchiveView {
 		searchSelectionStart: number | null,
 		searchSelectionEnd: number | null,
 	): void {
-		const filterRow = controlsEl.createDiv({ cls: 'xaulyc-archive-controls-row' });
-		const categorySelect = filterRow.createEl('select', { cls: 'xaulyc-archive-filter-select' });
+		const filterRow = controlsEl.createDiv({ cls: 'aulyckanban-archive-controls-row' });
+		const categorySelect = filterRow.createEl('select', { cls: 'aulyckanban-archive-filter-select' });
 		categorySelect.setAttribute('aria-label', t('archive.filter.category'));
 		this.addOption(
 			categorySelect,
@@ -104,7 +104,7 @@ export class ArchiveView {
 			this.render();
 		});
 
-		const sortSelect = filterRow.createEl('select', { cls: 'xaulyc-archive-filter-select' });
+		const sortSelect = filterRow.createEl('select', { cls: 'aulyckanban-archive-filter-select' });
 		sortSelect.setAttribute('aria-label', t('archive.sort.label'));
 		this.addOption(sortSelect, 'desc', `${t('archive.sort.label')}：${t('archive.sort.newest')}`);
 		this.addOption(sortSelect, 'asc', `${t('archive.sort.label')}：${t('archive.sort.oldest')}`);
@@ -114,10 +114,10 @@ export class ArchiveView {
 			this.render();
 		});
 
-		const searchRow = controlsEl.createDiv({ cls: 'xaulyc-archive-controls-row' });
+		const searchRow = controlsEl.createDiv({ cls: 'aulyckanban-archive-controls-row' });
 		const bottomRow = searchRow;
 		const deleteModeBtn = document.createElement('button');
-		deleteModeBtn.className = 'xaulyc-archive-delete-mode-btn xaulyc-tab';
+		deleteModeBtn.className = 'aulyckanban-archive-delete-mode-btn aulyckanban-tab';
 		deleteModeBtn.textContent = this.deleteMode ? t('archive.delete.exitMode') : t('archive.delete.mode');
 		deleteModeBtn.addEventListener('click', () => {
 			this.deleteMode = !this.deleteMode;
@@ -127,7 +127,7 @@ export class ArchiveView {
 			this.render();
 		});
 
-		const actionRow = controlsEl.createDiv({ cls: 'xaulyc-archive-controls-row' });
+		const actionRow = controlsEl.createDiv({ cls: 'aulyckanban-archive-controls-row' });
 		actionRow.appendChild(deleteModeBtn);
 
 		if (this.deleteMode) {
@@ -135,7 +135,7 @@ export class ArchiveView {
 			const allFilteredSelected =
 				filteredIds.length > 0 && filteredIds.every((id) => this.selectedTaskIds.has(id));
 
-			const selectAllBtn = actionRow.createEl('button', { cls: 'xaulyc-archive-batch-btn' });
+			const selectAllBtn = actionRow.createEl('button', { cls: 'aulyckanban-archive-batch-btn' });
 			selectAllBtn.setText(allFilteredSelected ? t('archive.delete.unselectAll') : t('archive.delete.selectAll'));
 			selectAllBtn.disabled = filteredIds.length === 0;
 			selectAllBtn.addEventListener('click', () => {
@@ -147,7 +147,7 @@ export class ArchiveView {
 				this.render();
 			});
 
-			const deleteSelectedBtn = actionRow.createEl('button', { cls: 'xaulyc-archive-batch-btn' });
+			const deleteSelectedBtn = actionRow.createEl('button', { cls: 'aulyckanban-archive-batch-btn' });
 			deleteSelectedBtn.setText(t('archive.delete.selected'));
 			deleteSelectedBtn.disabled = this.selectedTaskIds.size === 0;
 			deleteSelectedBtn.addEventListener('click', () => {
@@ -158,7 +158,7 @@ export class ArchiveView {
 				this.store.dispatch({ type: 'DELETE_ARCHIVE_TASKS', payload: { taskIds: ids } });
 			});
 
-			const deleteAllBtn = actionRow.createEl('button', { cls: 'xaulyc-archive-batch-btn xaulyc-archive-danger-btn' });
+			const deleteAllBtn = actionRow.createEl('button', { cls: 'aulyckanban-archive-batch-btn aulyckanban-archive-danger-btn' });
 			deleteAllBtn.setText(t('archive.delete.all'));
 			deleteAllBtn.disabled = allItems.length === 0;
 			deleteAllBtn.addEventListener('click', () => {
@@ -170,7 +170,7 @@ export class ArchiveView {
 			});
 		}
 		const searchInput = bottomRow.createEl('input', {
-			cls: 'xaulyc-archive-search',
+			cls: 'aulyckanban-archive-search',
 			attr: { type: 'text', placeholder: t('archive.searchPlaceholder') },
 		});
 		searchInput.value = this.searchInputValue;
@@ -188,7 +188,7 @@ export class ArchiveView {
 			this.render();
 		});
 
-		const clearBtn = bottomRow.createEl('button', { cls: 'xaulyc-archive-clear-btn' });
+		const clearBtn = bottomRow.createEl('button', { cls: 'aulyckanban-archive-clear-btn' });
 		clearBtn.setText(t('archive.searchClear'));
 		const updateClearButtonState = (): void => {
 			clearBtn.disabled = !this.searchKeyword && !this.searchInputValue;
@@ -328,19 +328,19 @@ export class ArchiveView {
 		viewKind: 'work' | 'personal',
 		boardData: Readonly<ReturnType<KanbanStore['getBoardData']>>,
 	): void {
-		const cardEl = parentEl.createDiv({ cls: 'xaulyc-task xaulyc-archive-task' });
+		const cardEl = parentEl.createDiv({ cls: 'aulyckanban-task aulyckanban-archive-task' });
 
-		const topEl = cardEl.createDiv({ cls: 'xaulyc-archive-task-top' });
-		const mainEl = topEl.createDiv({ cls: 'xaulyc-archive-task-main' });
+		const topEl = cardEl.createDiv({ cls: 'aulyckanban-archive-task-top' });
+		const mainEl = topEl.createDiv({ cls: 'aulyckanban-archive-task-main' });
 
-		const contentEl = mainEl.createDiv({ cls: 'xaulyc-task-content xaulyc-task-content-completed' });
+		const contentEl = mainEl.createDiv({ cls: 'aulyckanban-task-content aulyckanban-task-content-completed' });
 		setTextWithLineBreaks(contentEl, task.content);
 
-		const actionsEl = topEl.createDiv({ cls: 'xaulyc-archive-task-actions' });
+		const actionsEl = topEl.createDiv({ cls: 'aulyckanban-archive-task-actions' });
 		if (this.deleteMode) {
 			const checkbox = actionsEl.createEl('input', {
 				attr: { type: 'checkbox', 'aria-label': t('archive.delete.selectTask') },
-				cls: 'xaulyc-archive-select-checkbox',
+				cls: 'aulyckanban-archive-select-checkbox',
 			});
 			checkbox.checked = this.selectedTaskIds.has(task.id);
 			checkbox.addEventListener('change', () => {
@@ -351,7 +351,7 @@ export class ArchiveView {
 		}
 
 		const restoreBtn = actionsEl.createEl('button', {
-			cls: 'xaulyc-archive-restore-btn',
+			cls: 'aulyckanban-archive-restore-btn',
 		});
 		restoreBtn.setAttribute('aria-label', t('archive.restore'));
 		setIcon(restoreBtn, 'rotate-ccw');
@@ -373,18 +373,18 @@ export class ArchiveView {
 			});
 		});
 
-		const bottomEl = cardEl.createDiv({ cls: 'xaulyc-archive-task-bottom' });
-		const tagsEl = bottomEl.createDiv({ cls: 'xaulyc-archive-task-tags' });
+		const bottomEl = cardEl.createDiv({ cls: 'aulyckanban-archive-task-bottom' });
+		const tagsEl = bottomEl.createDiv({ cls: 'aulyckanban-archive-task-tags' });
 		tagsEl.createSpan({
-			cls: 'xaulyc-archive-tag',
+			cls: 'aulyckanban-archive-tag',
 			text: viewKind === 'work' ? t('view.work') : t('view.personal'),
 		});
 		tagsEl.createSpan({
-			cls: 'xaulyc-archive-tag',
+			cls: 'aulyckanban-archive-tag',
 			text: this.resolveTaskCategory(task, viewKind, boardData),
 		});
 		const archiveTime = task.archivedAt ?? task.completedAt ?? task.createdAt;
-		const timeEl = bottomEl.createDiv({ cls: 'xaulyc-task-time xaulyc-archive-task-time' });
+		const timeEl = bottomEl.createDiv({ cls: 'aulyckanban-task-time aulyckanban-archive-task-time' });
 		timeEl.setText(`${t('archive.archivedAt')} ${this.formatTime(archiveTime)}`);
 	}
 

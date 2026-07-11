@@ -33,24 +33,24 @@ export class ConfirmModal extends Modal {
 	onOpen(): void {
 		const { contentEl, modalEl } = this;
 		contentEl.empty();
-		modalEl.addClass('xaulyc-modal-clean');
+		modalEl.addClass('aulyckanban-modal-clean');
 
 		contentEl.createDiv({
 			text: this.message,
-			cls: 'xaulyc-modal-message',
+			cls: 'aulyckanban-modal-message',
 		});
 
-		const btnRow = contentEl.createDiv({ cls: 'xaulyc-modal-buttons' });
+		const btnRow = contentEl.createDiv({ cls: 'aulyckanban-modal-buttons' });
 
 		const cancelBtn = btnRow.createEl('button', {
 			text: this.cancelText,
-			cls: 'xaulyc-modal-btn',
+			cls: 'aulyckanban-modal-btn',
 		});
 		cancelBtn.addEventListener('click', () => this.close());
 
 		const confirmBtn = btnRow.createEl('button', {
 			text: this.confirmText,
-			cls: `xaulyc-modal-btn mod-cta${this.isDestructive ? ' mod-warning' : ''}`,
+			cls: `aulyckanban-modal-btn mod-cta${this.isDestructive ? ' mod-warning' : ''}`,
 		});
 		confirmBtn.addEventListener('click', () => {
 			this.onConfirm();

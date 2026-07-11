@@ -2,7 +2,7 @@ import type { Column, PluginSettings, BoardData } from './types';
 import { t } from './i18n';
 
 /** 自定义视图类型标识 */
-export const VIEW_TYPE_KANBAN = 'kbtask-view';
+export const VIEW_TYPE_KANBAN = 'aulyckanban-view';
 /** 归档中“未分类”分组的内部 ID */
 export const ARCHIVE_UNCATEGORIZED_ID = '__uncategorized';
 

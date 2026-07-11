@@ -1,6 +1,8 @@
 import { Menu } from 'obsidian';
 import type { KanbanStore } from '../store';
 import { t } from '../i18n';
+import { shouldCommitInlineInput } from '../utils/keyboard';
+import { createInlineCommitController } from '../utils/inlineCommit';
 
 /**
  * 右侧分类导航组件
@@ -16,7 +18,7 @@ export class CategoryNav {
 
 	constructor(parentEl: HTMLElement, store: KanbanStore) {
 		this.store = store;
-		this.el = parentEl.createDiv({ cls: 'xaulyc-category-nav' });
+		this.el = parentEl.createDiv({ cls: 'aulyckanban-category-nav' });
 		this.render();
 	}
 
@@ -27,14 +29,14 @@ export class CategoryNav {
 		const activeId = this.store.getActiveColumnId();
 
 		// 分类列表
-		const listEl = this.el.createDiv({ cls: 'xaulyc-nav-list' });
+		const listEl = this.el.createDiv({ cls: 'aulyckanban-nav-list' });
 
 		for (const column of columns) {
 			const isActive = column.id === activeId;
 			const taskCount = column.tasks?.length ?? 0;
 
 			const itemEl = listEl.createDiv({
-				cls: `xaulyc-nav-item ${isActive ? 'xaulyc-nav-item-active' : ''}`,
+				cls: `aulyckanban-nav-item ${isActive ? 'aulyckanban-nav-item-active' : ''}`,
 			});
 			itemEl.dataset['columnId'] = column.id;
 
@@ -44,11 +46,11 @@ export class CategoryNav {
 			}
 
 			// 标题
-			const titleEl = itemEl.createSpan({ cls: 'xaulyc-nav-item-title' });
+			const titleEl = itemEl.createSpan({ cls: 'aulyckanban-nav-item-title' });
 			titleEl.setText(column.title);
 
 			// 任务数
-			const countEl = itemEl.createSpan({ cls: 'xaulyc-nav-item-count' });
+			const countEl = itemEl.createSpan({ cls: 'aulyckanban-nav-item-count' });
 			countEl.setText(String(taskCount));
 
 			// 点击选中（编辑态时不触发）
@@ -56,7 +58,7 @@ export class CategoryNav {
 				e.preventDefault();
 				e.stopPropagation();
 				// 如果正在编辑（有输入框），不切换分类
-				if (itemEl.classList.contains('xaulyc-nav-item-editing')) return;
+				if (itemEl.classList.contains('aulyckanban-nav-item-editing')) return;
 				this.store.dispatch({
 					type: 'SELECT_COLUMN',
 					payload: { columnId: column.id },
@@ -72,34 +74,65 @@ export class CategoryNav {
 		}
 
 		// 添加分类按钮（紧跟在分类列表下方）
-		const addBtn = listEl.createDiv({ cls: 'xaulyc-nav-add-btn' });
+		const addBtn = listEl.createDiv({ cls: 'aulyckanban-nav-add-btn' });
 		if (this.isAdding) {
-			addBtn.addClass('xaulyc-nav-item-editing');
+			addBtn.addClass('aulyckanban-nav-item-editing');
 			const input = addBtn.createEl('input', {
-				cls: 'xaulyc-nav-inline-input',
+				cls: 'aulyckanban-nav-inline-input',
 				attr: { type: 'text', placeholder: t('column.addPrompt') },
 			});
+			const confirmBtn = addBtn.createEl('button', {
+				cls: 'aulyckanban-nav-add-confirm',
+				attr: { type: 'button', 'aria-label': t('column.addConfirm') },
+			});
+			confirmBtn.setText('✓');
 			input.value = this.draftTitle;
+			confirmBtn.disabled = !input.value.trim();
+			let composing = false;
+			const finish = createInlineCommitController(
+				() => {
+					this.draftTitle = input.value;
+					this.commitAdd();
+				},
+				() => this.cancelEditing(),
+			);
 			input.addEventListener('input', () => {
+				this.draftTitle = input.value;
+				confirmBtn.disabled = !input.value.trim();
+			});
+			input.addEventListener('compositionstart', () => {
+				composing = true;
+			});
+			input.addEventListener('compositionend', () => {
+				composing = false;
 				this.draftTitle = input.value;
 			});
 			input.addEventListener('keydown', (e: KeyboardEvent) => {
-				if (e.key === 'Enter') {
+				if (shouldCommitInlineInput(e, composing)) {
 					e.preventDefault();
 					e.stopPropagation();
-					this.commitAdd();
+					finish.commit();
 				}
 				if (e.key === 'Escape') {
 					e.preventDefault();
-					this.cancelEditing();
+					finish.cancel();
 				}
 			});
 			input.addEventListener('blur', () => {
-				this.commitAdd();
+				finish.commit();
+			});
+			confirmBtn.addEventListener('mousedown', (e: MouseEvent) => {
+				// 保持输入框焦点，避免 blur 抢先移除确认按钮。
+				e.preventDefault();
+			});
+			confirmBtn.addEventListener('click', (e: MouseEvent) => {
+				e.preventDefault();
+				e.stopPropagation();
+				finish.commit();
 			});
 			this.focusInput(input);
 		} else {
-			addBtn.createSpan({ text: '+', cls: 'xaulyc-nav-add-icon' });
+			addBtn.createSpan({ text: '+', cls: 'aulyckanban-nav-add-icon' });
 			addBtn.addEventListener('click', (e: MouseEvent) => {
 				e.preventDefault();
 				e.stopPropagation();
@@ -139,7 +172,7 @@ export class CategoryNav {
 	 * 内联重命名：整个 nav-item 变为输入框
 	 */
 	private startInlineRename(columnId: string, itemEl: HTMLElement): void {
-		const titleEl = itemEl.querySelector('.xaulyc-nav-item-title');
+		const titleEl = itemEl.querySelector('.aulyckanban-nav-item-title');
 		const currentTitle = titleEl?.textContent ?? '';
 		this.editingColumnId = columnId;
 		this.isAdding = false;
@@ -160,18 +193,26 @@ export class CategoryNav {
 	}
 
 	private renderInlineEditor(itemEl: HTMLElement, columnId: string, currentTitle: string): void {
-		itemEl.addClass('xaulyc-nav-item-editing');
+		itemEl.addClass('aulyckanban-nav-item-editing');
 		itemEl.empty();
 		const input = itemEl.createEl('input', {
-			cls: 'xaulyc-nav-inline-input',
+			cls: 'aulyckanban-nav-inline-input',
 			attr: { type: 'text' },
 		});
 		input.value = this.draftTitle || currentTitle;
+		let composing = false;
 		input.addEventListener('input', () => {
 			this.draftTitle = input.value;
 		});
+		input.addEventListener('compositionstart', () => {
+			composing = true;
+		});
+		input.addEventListener('compositionend', () => {
+			composing = false;
+			this.draftTitle = input.value;
+		});
 		input.addEventListener('keydown', (e: KeyboardEvent) => {
-			if (e.key === 'Enter') {
+			if (shouldCommitInlineInput(e, composing)) {
 				e.preventDefault();
 				e.stopPropagation();
 				this.commitRename(columnId, currentTitle);

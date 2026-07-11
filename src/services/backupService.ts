@@ -38,7 +38,7 @@ export class BackupService {
 				.toISOString()
 				.replace(/[:.]/g, '-')
 				.slice(0, -5);
-			const filename = `kanban-backup-${timestamp}.json`;
+			const filename = `aulyckanban-backup-${timestamp}.json`;
 
 			const a = document.createElement('a');
 			a.href = url;

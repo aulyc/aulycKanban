@@ -26,7 +26,7 @@ export class TaskCard {
 		this.task = task;
 
 		this.el = document.createElement('div');
-		this.el.className = `xaulyc-task${task.completed ? ' xaulyc-task-completed' : ''}`;
+		this.el.className = `aulyckanban-task${task.completed ? ' aulyckanban-task-completed' : ''}`;
 		this.el.draggable = true;
 		this.el.dataset['taskId'] = task.id;
 		this.el.dataset['columnId'] = columnId;
@@ -38,11 +38,11 @@ export class TaskCard {
 		const { task } = this;
 
 		// 中间区域：内容 + 时间
-		const middleEl = this.el.createDiv({ cls: 'xaulyc-task-middle' });
+		const middleEl = this.el.createDiv({ cls: 'aulyckanban-task-middle' });
 
 		// 任务内容（单击进入编辑模式）
 		const contentEl = middleEl.createDiv({
-			cls: `xaulyc-task-content ${task.completed ? 'xaulyc-task-content-completed' : ''}`,
+			cls: `aulyckanban-task-content ${task.completed ? 'aulyckanban-task-content-completed' : ''}`,
 		});
 		setTextWithLineBreaks(contentEl, task.content);
 
@@ -52,16 +52,16 @@ export class TaskCard {
 		});
 
 		// 底部信息行：时间（左） + 操作图标（右）
-		const metaRowEl = middleEl.createDiv({ cls: 'xaulyc-task-meta-row' });
-		const timeEl = metaRowEl.createDiv({ cls: 'xaulyc-task-time' });
+		const metaRowEl = middleEl.createDiv({ cls: 'aulyckanban-task-meta-row' });
+		const timeEl = metaRowEl.createDiv({ cls: 'aulyckanban-task-time' });
 		const timeStr = this.formatTime(task.updatedAt ?? task.createdAt);
 		timeEl.setText(timeStr);
 
-		const actionsEl = metaRowEl.createDiv({ cls: 'xaulyc-task-actions' });
+		const actionsEl = metaRowEl.createDiv({ cls: 'aulyckanban-task-actions' });
 
 		const archiveBtn = actionsEl.createSpan({
 			text: '⤓',
-			cls: 'xaulyc-task-archive',
+			cls: 'aulyckanban-task-archive',
 		});
 		archiveBtn.addEventListener('click', (e: MouseEvent) => {
 			e.stopPropagation();
@@ -75,7 +75,7 @@ export class TaskCard {
 		// 删除按钮（两次点击确认）
 		const deleteBtn = actionsEl.createSpan({
 			text: '✕',
-			cls: 'xaulyc-task-delete',
+			cls: 'aulyckanban-task-delete',
 		});
 		deleteBtn.addEventListener('click', (e: MouseEvent) => {
 			e.stopPropagation();
@@ -92,7 +92,9 @@ export class TaskCard {
 	 */
 	private enterEditMode(contentEl: HTMLElement): void {
 		// 避免重复进入
-		if (contentEl.querySelector('.xaulyc-edit-textarea')) return;
+		if (contentEl.querySelector('.aulyckanban-edit-textarea')) return;
+
+		this.el.addClass('aulyckanban-task-editing');
 
 		const currentText = this.task.content;
 
@@ -100,8 +102,8 @@ export class TaskCard {
 		contentEl.empty();
 
 		const textarea = contentEl.createEl('textarea', {
-			cls: 'xaulyc-edit-textarea',
-			attr: { rows: '2' },
+			cls: 'aulyckanban-edit-textarea',
+			attr: { rows: '1' },
 		});
 		textarea.value = currentText;
 
@@ -131,6 +133,8 @@ export class TaskCard {
 	}
 
 	private saveEdit(content: string): void {
+		this.el.removeClass('aulyckanban-task-editing');
+
 		if (content === this.task.content) {
 			// 内容未变也需要刷新 UI（退出编辑模式）
 			this.store.dispatch({

@@ -28,12 +28,12 @@ export class Board {
 		this.toolbar.getEl();
 
 		// 看板视图容器（左侧任务列表 + 右侧分类导航）
-		this.contentAreaEl = this.containerEl.createDiv({ cls: 'xaulyc-content-area' });
+		this.contentAreaEl = this.containerEl.createDiv({ cls: 'aulyckanban-content-area' });
 		this.taskList = new TaskList(this.contentAreaEl, this.store);
 		this.categoryNav = new CategoryNav(this.contentAreaEl, this.store);
 
 		// 归档视图容器
-		this.archiveContainerEl = this.containerEl.createDiv({ cls: 'xaulyc-archive-container' });
+		this.archiveContainerEl = this.containerEl.createDiv({ cls: 'aulyckanban-archive-container' });
 		this.archiveView = new ArchiveView(this.archiveContainerEl, this.store);
 	}
 

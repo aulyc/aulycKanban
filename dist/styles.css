@@ -1,27 +1,27 @@
 /* ================================================
-   KBtask - Obsidian 插件样式
+   aulyckanban - Obsidian 插件样式
    所有颜色使用 Obsidian CSS 变量，禁止硬编码
    ================================================ */
 
 /* 重置 Obsidian 默认间距，消除顶部多余空白 */
-.workspace-leaf-content[data-type="kbtask-view"] .view-header {
+.workspace-leaf-content[data-type="aulyckanban-view"] .view-header {
 	display: none;
 }
 
-.workspace-leaf-content[data-type="kbtask-view"] .view-content {
+.workspace-leaf-content[data-type="aulyckanban-view"] .view-content {
 	padding: 0 !important;
 }
 
 /* 容器 */
-.xaulyc-kanban-container {
-	--xaulyc-toolbar-padding-y: 8px;
-	--xaulyc-toolbar-padding-x: 12px;
-	--xaulyc-content-padding-y: 12px;
-	--xaulyc-content-padding-left: 12px;
-	--xaulyc-content-padding-right: 12px;
-	--xaulyc-content-gap: 6px;
-	--xaulyc-nav-width: 150px;
-	--xaulyc-nav-inner-padding-x: 6px;
+.aulyckanban-kanban-container {
+	--aulyckanban-toolbar-padding-y: 8px;
+	--aulyckanban-toolbar-padding-x: 12px;
+	--aulyckanban-content-padding-y: 12px;
+	--aulyckanban-content-padding-left: 12px;
+	--aulyckanban-content-padding-right: 12px;
+	--aulyckanban-content-gap: 6px;
+	--aulyckanban-nav-width: 150px;
+	--aulyckanban-nav-inner-padding-x: 6px;
 	display: flex;
 	flex-direction: column;
 	height: 100%;
@@ -30,16 +30,16 @@
 }
 
 /* ==================== 工具栏 ==================== */
-.xaulyc-toolbar {
+.aulyckanban-toolbar {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-	padding: var(--xaulyc-toolbar-padding-y) var(--xaulyc-toolbar-padding-x);
+	padding: var(--aulyckanban-toolbar-padding-y) var(--aulyckanban-toolbar-padding-x);
 	border-bottom: 1px solid var(--background-modifier-border);
 	flex-shrink: 0;
 }
 
-.xaulyc-toolbar-left {
+.aulyckanban-toolbar-left {
 	display: flex;
 	align-items: center;
 	gap: 8px;
@@ -47,7 +47,7 @@
 
 
 
-.xaulyc-tab {
+.aulyckanban-tab {
 	padding: 6px 14px;
 	border: 1px solid var(--background-modifier-border);
 	border-radius: 6px;
@@ -64,59 +64,59 @@
 	align-items: center;
 }
 
-.xaulyc-tab:hover {
+.aulyckanban-tab:hover {
 	background: var(--background-modifier-hover);
 }
 
-.xaulyc-tab-active {
+.aulyckanban-tab-active {
 	background: var(--interactive-accent);
 	color: var(--text-on-accent);
 	border-color: var(--interactive-accent);
 }
 
-.xaulyc-tab-active:hover {
+.aulyckanban-tab-active:hover {
 	background: var(--interactive-accent-hover);
 }
 
 /* ==================== 内容区（左右分栏） ==================== */
-.xaulyc-content-area {
+.aulyckanban-content-area {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) var(--xaulyc-nav-width);
-	column-gap: var(--xaulyc-content-gap);
+	grid-template-columns: minmax(0, 1fr) var(--aulyckanban-nav-width);
+	column-gap: var(--aulyckanban-content-gap);
 	flex: 1;
 	min-height: 0;
-	padding: var(--xaulyc-content-padding-y) var(--xaulyc-content-padding-right) var(--xaulyc-content-padding-y) var(--xaulyc-content-padding-left);
+	padding: var(--aulyckanban-content-padding-y) var(--aulyckanban-content-padding-right) var(--aulyckanban-content-padding-y) var(--aulyckanban-content-padding-left);
 	overflow: hidden;
 }
 
 /* ==================== 左侧任务列表 ==================== */
-.xaulyc-task-list {
+.aulyckanban-task-list {
 	min-width: 0;
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
 }
 
-.xaulyc-task-list-header {
+.aulyckanban-task-list-header {
 	display: flex;
 	align-items: center;
 	gap: 8px;
 	margin-bottom: 10px;
 }
 
-.xaulyc-task-list-title {
+.aulyckanban-task-list-title {
 	font-size: 16px;
 	font-weight: 600;
 	color: var(--text-normal);
 }
 
-.xaulyc-task-list-count {
+.aulyckanban-task-list-count {
 	font-size: 14px;
 	font-weight: 500;
 	color: var(--text-muted);
 }
 
-.xaulyc-task-list-empty {
+.aulyckanban-task-list-empty {
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -126,26 +126,26 @@
 }
 
 /* ==================== 右侧分类导航 ==================== */
-.xaulyc-category-nav {
+.aulyckanban-category-nav {
 	width: 100%;
 	min-width: 0;
 	box-sizing: border-box;
 	display: flex;
 	flex-direction: column;
 	border-left: 1px solid var(--background-modifier-border);
-	padding-left: var(--xaulyc-nav-inner-padding-x);
-	padding-right: var(--xaulyc-nav-inner-padding-x);
+	padding-left: var(--aulyckanban-nav-inner-padding-x);
+	padding-right: var(--aulyckanban-nav-inner-padding-x);
 	overflow-y: auto;
 }
 
-.xaulyc-nav-list {
+.aulyckanban-nav-list {
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
 	flex: 1;
 }
 
-.xaulyc-nav-item {
+.aulyckanban-nav-item {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -156,20 +156,20 @@
 	user-select: none;
 }
 
-.xaulyc-nav-item:hover {
+.aulyckanban-nav-item:hover {
 	background: var(--background-modifier-hover);
 }
 
-.xaulyc-nav-item-active {
+.aulyckanban-nav-item-active {
 	background: var(--interactive-accent);
 	color: var(--text-on-accent);
 }
 
-.xaulyc-nav-item-active:hover {
+.aulyckanban-nav-item-active:hover {
 	background: var(--interactive-accent-hover);
 }
 
-.xaulyc-nav-item-title {
+.aulyckanban-nav-item-title {
 	font-size: 13px;
 	font-weight: 500;
 	overflow: hidden;
@@ -179,19 +179,19 @@
 	flex: 1;
 }
 
-.xaulyc-nav-item-count {
+.aulyckanban-nav-item-count {
 	font-size: 12px;
 	color: var(--text-muted);
 	flex-shrink: 0;
 	margin-left: 6px;
 }
 
-.xaulyc-nav-item-active .xaulyc-nav-item-count {
+.aulyckanban-nav-item-active .aulyckanban-nav-item-count {
 	color: var(--text-on-accent);
 	opacity: 0.8;
 }
 
-.xaulyc-nav-add-btn {
+.aulyckanban-nav-add-btn {
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -206,26 +206,35 @@
 	user-select: none;
 }
 
-.xaulyc-nav-add-btn:hover {
+.aulyckanban-nav-add-btn:hover {
 	background: var(--background-modifier-hover);
 	color: var(--interactive-accent);
 	border-color: var(--text-muted);
 }
 
-.xaulyc-nav-add-icon {
+.aulyckanban-nav-add-btn.aulyckanban-nav-item-editing {
+	gap: 4px;
+	padding: 0;
+	background: none;
+	border: 0;
+}
+
+.aulyckanban-nav-add-icon {
 	font-weight: 300;
 	line-height: 1;
 }
 
 /* 导航项编辑态：去掉多余层级样式 */
-.xaulyc-nav-item.xaulyc-nav-item-editing {
+.aulyckanban-nav-item.aulyckanban-nav-item-editing {
 	padding: 0;
 	background: none;
 	border: none;
 }
 
 /* 导航区内联输入框（重命名/添加） */
-.xaulyc-nav-inline-input {
+.aulyckanban-nav-inline-input {
+	flex: 1;
+	min-width: 0;
 	width: 100%;
 	padding: 8px 10px;
 	background: var(--background-primary);
@@ -238,20 +247,41 @@
 	outline: none;
 	-webkit-text-fill-color: var(--text-normal);
 	caret-color: var(--text-normal);
-	animation: xaulyc-blink 1s step-end infinite;
+	animation: aulyckanban-blink 1s step-end infinite;
 }
 
-@keyframes xaulyc-blink {
+.aulyckanban-nav-add-confirm {
+	width: 32px;
+	min-width: 32px;
+	padding: 0;
+	border: 1px solid var(--interactive-accent);
+	border-radius: 6px;
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	font-size: 16px;
+	cursor: pointer;
+}
+
+.aulyckanban-nav-add-confirm:hover {
+	background: var(--interactive-accent-hover);
+}
+
+.aulyckanban-nav-add-confirm:disabled {
+	opacity: 0.45;
+	cursor: default;
+}
+
+@keyframes aulyckanban-blink {
 	50% { caret-color: transparent; }
 }
 
-.xaulyc-nav-add-input-wrapper {
+.aulyckanban-nav-add-input-wrapper {
 	padding: 0;
 	margin-top: 4px;
 }
 
 /* ==================== 任务列表滚动区 ==================== */
-.xaulyc-tasks {
+.aulyckanban-tasks {
 	flex: 1;
 	overflow-y: auto;
 	padding: 0;
@@ -261,7 +291,7 @@
 }
 
 /* ==================== 任务卡片 ==================== */
-.xaulyc-task {
+.aulyckanban-task {
 	background: var(--background-primary);
 	border: 1px solid var(--background-modifier-border);
 	border-radius: 8px;
@@ -276,16 +306,21 @@
 	min-height: 36px;
 }
 
-.xaulyc-task:hover {
+.aulyckanban-task:hover {
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
-.xaulyc-task-completed {
+.aulyckanban-task-editing,
+.aulyckanban-task-editing:hover {
+	border-color: var(--interactive-accent);
+}
+
+.aulyckanban-task-completed {
 	opacity: 0.65;
 }
 
 /* ==================== 任务中间区域 ==================== */
-.xaulyc-task-middle {
+.aulyckanban-task-middle {
 	flex: 1;
 	min-width: 0;
 	display: flex;
@@ -293,7 +328,7 @@
 	gap: 2px;
 }
 
-.xaulyc-task-meta-row {
+.aulyckanban-task-meta-row {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -301,14 +336,14 @@
 	margin-top: 2px;
 }
 
-.xaulyc-task-actions {
+.aulyckanban-task-actions {
 	display: flex;
 	align-items: center;
 	gap: 8px;
 	flex-shrink: 0;
 }
 
-.xaulyc-task-archive {
+.aulyckanban-task-archive {
 	color: var(--text-muted);
 	cursor: pointer;
 	font-size: 14px;
@@ -326,18 +361,18 @@
 	margin-top: 0;
 }
 
-.xaulyc-task:hover .xaulyc-task-archive {
+.aulyckanban-task:hover .aulyckanban-task-archive {
 	visibility: visible;
 }
 
-.xaulyc-task-archive:hover {
+.aulyckanban-task-archive:hover {
 	color: var(--text-error);
 	transform: scale(1.15);
 }
 
 
 /* ==================== 任务内容 ==================== */
-.xaulyc-task-content {
+.aulyckanban-task-content {
 	color: var(--text-normal);
 	font-size: 14px;
 	line-height: 1.5;
@@ -346,20 +381,20 @@
 	user-select: text;
 }
 
-.xaulyc-task-content-completed {
+.aulyckanban-task-content-completed {
 	text-decoration: line-through;
 	color: var(--text-faint);
 }
 
 /* ==================== 任务时间 ==================== */
-.xaulyc-task-time {
+.aulyckanban-task-time {
 	font-size: 11px;
 	color: var(--text-faint);
 	line-height: 1.3;
 }
 
 /* ==================== 删除按钮 ==================== */
-.xaulyc-task-delete {
+.aulyckanban-task-delete {
 	color: var(--text-muted);
 	cursor: pointer;
 	font-size: 14px;
@@ -377,22 +412,22 @@
 	margin-top: 0;
 }
 
-.xaulyc-task:hover .xaulyc-task-delete {
+.aulyckanban-task:hover .aulyckanban-task-delete {
 	visibility: visible;
 }
 
-.xaulyc-task-delete:hover {
+.aulyckanban-task-delete:hover {
 	color: var(--text-error);
 	transform: scale(1.15);
 }
 
 /* ==================== 内嵌输入框 ==================== */
-.xaulyc-inline-input-wrapper {
+.aulyckanban-inline-input-wrapper {
 	margin: 0 0 10px 0;
 	padding: 0;
 }
 
-.xaulyc-inline-input {
+.aulyckanban-inline-input {
 	width: 100%;
 	padding: 8px 10px;
 	background: var(--background-primary);
@@ -411,72 +446,81 @@
 	opacity: 1;
 }
 
-.xaulyc-inline-input:focus {
+.aulyckanban-inline-input:focus {
 	border-color: var(--interactive-accent);
 	outline: none;
 }
 
-.xaulyc-inline-input::placeholder {
+.aulyckanban-inline-input::placeholder {
 	color: var(--text-muted);
 	-webkit-text-fill-color: var(--text-muted);
 }
 
 /* ==================== 内联编辑 textarea ==================== */
-.xaulyc-edit-textarea {
+.aulyckanban-edit-textarea {
+	display: block;
 	width: 100%;
-	padding: 4px 6px;
-	background: var(--background-primary);
+	min-height: 0;
+	margin: 0;
+	padding: 0;
+	background: transparent;
 	color: var(--text-normal);
-	border: 1px solid var(--interactive-accent);
-	border-radius: 4px;
+	border: 0;
+	border-radius: 0;
+	box-shadow: none;
 	font-size: 14px;
 	font-family: inherit;
 	line-height: 1.5;
+	word-break: break-word;
 	resize: none;
 	overflow: hidden;
 	box-sizing: border-box;
+	appearance: none;
 	-webkit-text-fill-color: var(--text-normal);
 	caret-color: var(--text-normal);
 	opacity: 1;
 }
 
-.xaulyc-edit-textarea:focus {
+.aulyckanban-edit-textarea:focus {
+	background: transparent;
+	border: 0;
 	outline: none;
+	box-shadow: none;
 }
 
 /* ==================== 滚动条 ==================== */
-.xaulyc-tasks::-webkit-scrollbar,
-.xaulyc-category-nav::-webkit-scrollbar {
+.aulyckanban-tasks::-webkit-scrollbar,
+.aulyckanban-category-nav::-webkit-scrollbar {
 	width: 6px;
 	height: 6px;
 }
 
-.xaulyc-tasks::-webkit-scrollbar-track,
-.xaulyc-category-nav::-webkit-scrollbar-track {
+.aulyckanban-tasks::-webkit-scrollbar-track,
+.aulyckanban-category-nav::-webkit-scrollbar-track {
 	background: var(--background-secondary);
 	border-radius: 3px;
 }
 
-.xaulyc-tasks::-webkit-scrollbar-thumb,
-.xaulyc-category-nav::-webkit-scrollbar-thumb {
+.aulyckanban-tasks::-webkit-scrollbar-thumb,
+.aulyckanban-category-nav::-webkit-scrollbar-thumb {
 	background: var(--background-modifier-border);
 	border-radius: 3px;
 }
 
-.xaulyc-tasks::-webkit-scrollbar-thumb:hover,
-.xaulyc-category-nav::-webkit-scrollbar-thumb:hover {
+.aulyckanban-tasks::-webkit-scrollbar-thumb:hover,
+.aulyckanban-category-nav::-webkit-scrollbar-thumb:hover {
 	background: var(--text-faint);
 }
 
 /* ==================== 归档视图 ==================== */
-.xaulyc-archive-container {
+.aulyckanban-archive-container {
 	flex: 1;
 	min-height: 0;
 	overflow: auto;
 	padding-top: 12px;
 }
 
-.xaulyc-archive-empty {
+.aulyckanban-archive-empty {
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -486,13 +530,13 @@
 }
 
 /* 归档列表容器 */
-.xaulyc-archive-list {
+.aulyckanban-archive-list {
 	display: flex;
 	flex-direction: column;
 	padding: 0 12px;
 }
 
-.xaulyc-archive-controls {
+.aulyckanban-archive-controls {
 	display: flex;
 	flex-direction: column;
 	align-items: stretch;
@@ -502,20 +546,20 @@
 	padding: 0 12px;
 }
 
-.xaulyc-archive-controls-row {
+.aulyckanban-archive-controls-row {
 	display: flex;
 	align-items: center;
 	gap: 8px;
 	flex-wrap: wrap;
 }
 
-.xaulyc-archive-filter-label {
+.aulyckanban-archive-filter-label {
 	font-size: 12px;
 	color: var(--text-muted);
 }
 
-.xaulyc-archive-filter-select,
-.xaulyc-archive-search {
+.aulyckanban-archive-filter-select,
+.aulyckanban-archive-search {
 	height: 30px;
 	border: 1px solid var(--background-modifier-border);
 	border-radius: 6px;
@@ -526,30 +570,30 @@
 	box-sizing: border-box;
 }
 
-.xaulyc-archive-search {
+.aulyckanban-archive-search {
 	flex: 1;
 	min-width: 180px;
 }
 
-.xaulyc-archive-sort-btn {
+.aulyckanban-archive-sort-btn {
 	height: 30px;
 	padding: 0 10px;
 	font-size: 12px;
 }
 
-.xaulyc-archive-delete-mode-btn,
-.xaulyc-archive-batch-btn {
+.aulyckanban-archive-delete-mode-btn,
+.aulyckanban-archive-batch-btn {
 	height: 30px;
 	padding: 0 10px;
 	font-size: 12px;
 }
 
-.xaulyc-archive-danger-btn {
+.aulyckanban-archive-danger-btn {
 	border-color: var(--text-error) !important;
 	color: var(--text-error) !important;
 }
 
-.xaulyc-archive-clear-btn {
+.aulyckanban-archive-clear-btn {
 	height: 30px;
 	padding: 0 10px;
 	border: 1px solid var(--background-modifier-border);
@@ -560,12 +604,12 @@
 	cursor: pointer;
 }
 
-.xaulyc-archive-clear-btn:hover {
+.aulyckanban-archive-clear-btn:hover {
 	background: var(--background-modifier-hover);
 	color: var(--text-normal);
 }
 
-.xaulyc-archive-clear-btn:disabled {
+.aulyckanban-archive-clear-btn:disabled {
 	opacity: 0.45;
 	cursor: not-allowed;
 	background: var(--background-primary);
@@ -573,11 +617,11 @@
 }
 
 /* 归档大类区块（工作/个人） */
-.xaulyc-archive-view-section {
+.aulyckanban-archive-view-section {
 	margin-bottom: 24px;
 }
 
-.xaulyc-archive-view-header {
+.aulyckanban-archive-view-header {
 	display: flex;
 	align-items: center;
 	gap: 8px;
@@ -586,24 +630,24 @@
 	border-bottom: 2px solid var(--background-modifier-border);
 }
 
-.xaulyc-archive-view-title {
+.aulyckanban-archive-view-title {
 	font-size: 17px;
 	font-weight: 700;
 	color: var(--text-normal);
 }
 
-.xaulyc-archive-view-count {
+.aulyckanban-archive-view-count {
 	font-size: 14px;
 	font-weight: 500;
 	color: var(--text-muted);
 }
 
 /* 归档分类区块 */
-.xaulyc-archive-section {
+.aulyckanban-archive-section {
 	margin-bottom: 16px;
 }
 
-.xaulyc-archive-task {
+.aulyckanban-archive-task {
 	cursor: default;
 	opacity: 0.8;
 	display: flex;
@@ -612,14 +656,14 @@
 	gap: 8px;
 }
 
-.xaulyc-archive-task-top {
+.aulyckanban-archive-task-top {
 	display: flex;
 	align-items: flex-start;
 	justify-content: space-between;
 	gap: 8px;
 }
 
-.xaulyc-archive-task-main {
+.aulyckanban-archive-task-main {
 	display: flex;
 	align-items: flex-start;
 	gap: 8px;
@@ -628,7 +672,7 @@
 	min-height: 28px;
 }
 
-.xaulyc-archive-task-bottom {
+.aulyckanban-archive-task-bottom {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -636,7 +680,7 @@
 	flex-wrap: wrap;
 }
 
-.xaulyc-archive-task-tags {
+.aulyckanban-archive-task-tags {
 	display: flex;
 	align-items: center;
 	gap: 6px;
@@ -644,11 +688,11 @@
 	min-width: 0;
 }
 
-.xaulyc-archive-task-time {
+.aulyckanban-archive-task-time {
 	white-space: nowrap;
 }
 
-.xaulyc-archive-tag {
+.aulyckanban-archive-tag {
 	display: inline-flex;
 	align-items: center;
 	height: 22px;
@@ -662,13 +706,13 @@
 	white-space: nowrap;
 }
 
-.xaulyc-archive-select-checkbox {
+.aulyckanban-archive-select-checkbox {
 	width: 16px;
 	height: 16px;
 	margin: 0;
 }
 
-.xaulyc-archive-task-actions {
+.aulyckanban-archive-task-actions {
 	display: flex;
 	align-items: center;
 	gap: 8px;
@@ -677,11 +721,11 @@
 	justify-content: flex-end;
 }
 
-.xaulyc-archive-task:hover {
+.aulyckanban-archive-task:hover {
 	box-shadow: none;
 }
 
-.xaulyc-archive-restore-btn {
+.aulyckanban-archive-restore-btn {
 	background: none;
 	border: 1px solid var(--background-modifier-border);
 	color: var(--text-muted);
@@ -697,18 +741,18 @@
 	justify-content: center;
 }
 
-.xaulyc-archive-restore-btn svg {
+.aulyckanban-archive-restore-btn svg {
 	width: 12px;
 	height: 12px;
 }
 
-.xaulyc-archive-restore-btn:hover {
+.aulyckanban-archive-restore-btn:hover {
 	background: var(--interactive-accent);
 	color: var(--text-on-accent);
 	border-color: var(--interactive-accent);
 }
 
-.xaulyc-archive-restore-btn:disabled {
+.aulyckanban-archive-restore-btn:disabled {
 	opacity: 0.45;
 	cursor: not-allowed;
 	background: transparent;
@@ -716,7 +760,7 @@
 	border-color: var(--background-modifier-border);
 }
 
-.xaulyc-archive-delete-btn {
+.aulyckanban-archive-delete-btn {
 	background: none;
 	border: 1px solid var(--background-modifier-border);
 	color: var(--text-error);
@@ -729,7 +773,7 @@
 	align-self: center;
 }
 
-.xaulyc-archive-delete-btn:hover {
+.aulyckanban-archive-delete-btn:hover {
 	background: var(--text-error);
 	color: #fff;
 	border-color: var(--text-error);
@@ -737,31 +781,31 @@
 
 /* ==================== 弹窗样式 ==================== */
 
-.xaulyc-modal-clean .modal-close-button {
+.aulyckanban-modal-clean .modal-close-button {
 	display: none;
 }
 
-.xaulyc-modal-message {
+.aulyckanban-modal-message {
 	text-align: center;
 	padding: 16px 20px;
 	line-height: 1.6;
 }
 
-.xaulyc-clear-suggestion {
+.aulyckanban-clear-suggestion {
 	text-align: center;
 	padding: 0 20px 16px;
 	color: var(--text-muted);
 	font-size: var(--font-ui-small);
 }
 
-.xaulyc-modal-buttons {
+.aulyckanban-modal-buttons {
 	display: flex;
 	justify-content: center;
 	gap: 10px;
 	padding: 12px 20px 16px;
 }
 
-.xaulyc-modal-btn {
+.aulyckanban-modal-btn {
 	padding: 6px 16px;
 	border-radius: var(--radius-s);
 	cursor: pointer;

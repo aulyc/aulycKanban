@@ -1,6 +1,6 @@
-# KBtask（Obsidian 插件）
+# aulyckanban（Obsidian 插件）
 
-`KBtask` 是一个面向 Obsidian 的任务看板插件，核心目标是用轻量、清晰的方式管理工作任务与个人任务，并支持归档、筛选与 Markdown 同步。
+`aulyckanban` 是一个面向 Obsidian 的任务看板插件，核心目标是用轻量、清晰的方式管理工作任务与个人任务，并支持归档、筛选与 Markdown 同步。
 
 ## 主要功能
 
@@ -15,14 +15,14 @@
 ## 安装方式（手动）
 
 1. 打开你的 Vault 目录，进入：
-   - `.obsidian/plugins/KBtask/`
+   - `.obsidian/plugins/aulyckanban/`
 2. 将以下文件复制到该目录：
    - `manifest.json`
    - `main.js`
    - `styles.css`
 3. 在 Obsidian 中进入：
    - `设置 -> 第三方插件`
-4. 启用 `KBtask`
+4. 启用 `aulyckanban`
 
 ## 开发与构建
 
@@ -53,8 +53,8 @@ npm run build
 - 样式文件：`styles.css`
 - 运行数据：`data.json`
 
-> 正常情况下，`data.json` 位于 Vault 的插件目录下：  
-> `.obsidian/plugins/KBtask/data.json`  
+> 正常情况下，`data.json` 位于 Vault 的插件目录下：
+> `.obsidian/plugins/aulyckanban/data.json`
 > 如果你在项目目录中看到它，通常是本地开发映射/软链接导致。
 
 ## 当前设计说明

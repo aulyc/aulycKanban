@@ -9,7 +9,7 @@ interface I18nStrings {
 
 const zh: I18nStrings = {
 	// 插件级别
-	'plugin.name': 'KBtask',
+	'plugin.name': 'aulyckanban',
 	'plugin.ribbonTip': '打开看板',
 
 	// 命令
@@ -18,7 +18,7 @@ const zh: I18nStrings = {
 	'command.focusPersonal': '聚焦：个人任务',
 
 	// 视图
-	'view.displayName': 'KBtask',
+	'view.displayName': 'aulyckanban',
 	'view.work': '💼 工作任务',
 	'view.personal': '👤 个人任务',
 
@@ -38,6 +38,7 @@ const zh: I18nStrings = {
 	'column.rename': '重命名',
 	'column.delete': '删除分类',
 	'column.addPrompt': '输入新分类名称',
+	'column.addConfirm': '添加分类',
 	'column.renamePrompt': '输入新名称',
 	'column.deleteConfirm': '确定要删除这个分类吗？',
 	'column.deleteMoveTasks': '分类下的任务将移到第一个分类中。',
@@ -134,14 +135,14 @@ const zh: I18nStrings = {
 };
 
 const en: I18nStrings = {
-	'plugin.name': 'KBtask',
+	'plugin.name': 'aulyckanban',
 	'plugin.ribbonTip': 'Open kanban board',
 
 	'command.openBoard': 'Open kanban board',
 	'command.focusWork': 'Focus: Work tasks',
 	'command.focusPersonal': 'Focus: Personal tasks',
 
-	'view.displayName': 'KBtask',
+	'view.displayName': 'aulyckanban',
 	'view.work': '💼 Work',
 	'view.personal': '👤 Personal',
 
@@ -158,6 +159,7 @@ const en: I18nStrings = {
 	'column.rename': 'Rename',
 	'column.delete': 'Delete category',
 	'column.addPrompt': 'Enter new category name',
+	'column.addConfirm': 'Add category',
 	'column.renamePrompt': 'Enter new name',
 	'column.deleteConfirm': 'Are you sure you want to delete this category?',
 	'column.deleteMoveTasks': 'Tasks will be moved to the first category.',

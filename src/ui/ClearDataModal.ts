@@ -25,34 +25,34 @@ export class ClearDataModal extends Modal {
 	onOpen(): void {
 		const { contentEl, modalEl } = this;
 		contentEl.empty();
-		modalEl.addClass('xaulyc-modal-clean');
+		modalEl.addClass('aulyckanban-modal-clean');
 
 		contentEl.createDiv({
 			text: t('settings.clear.warning'),
-			cls: 'xaulyc-modal-message',
+			cls: 'aulyckanban-modal-message',
 		});
 
-		const suggestionEl = contentEl.createDiv({ cls: 'xaulyc-clear-suggestion' });
+		const suggestionEl = contentEl.createDiv({ cls: 'aulyckanban-clear-suggestion' });
 		suggestionEl.createEl('strong', { text: '💡 ' });
 		suggestionEl.appendText(t('settings.clear.suggestion'));
 
-		const btnRow = contentEl.createDiv({ cls: 'xaulyc-modal-buttons' });
+		const btnRow = contentEl.createDiv({ cls: 'aulyckanban-modal-buttons' });
 
 		const backupBtn = btnRow.createEl('button', {
 			text: t('settings.clear.backupFirst'),
-			cls: 'xaulyc-modal-btn mod-cta',
+			cls: 'aulyckanban-modal-btn mod-cta',
 		});
 		backupBtn.addEventListener('click', () => this.onBackup());
 
 		const cancelBtn = btnRow.createEl('button', {
 			text: t('cancel'),
-			cls: 'xaulyc-modal-btn',
+			cls: 'aulyckanban-modal-btn',
 		});
 		cancelBtn.addEventListener('click', () => this.close());
 
 		const confirmBtn = btnRow.createEl('button', {
 			text: t('settings.clear.confirm'),
-			cls: 'xaulyc-modal-btn mod-warning',
+			cls: 'aulyckanban-modal-btn mod-warning',
 		});
 		confirmBtn.addEventListener('click', () => {
 			this.onConfirmClear();
