@@ -34,7 +34,7 @@ const zh = {
 	// 分类管理
 	'column.rename': '重命名',
 	'column.delete': '删除分类',
-	'column.addPrompt': '输入新分类名称',
+	'column.addPrompt': '输入新象限名称',
 	'column.deleteConfirm': '确定要删除这个分类吗？',
 	'column.deleteMoveTasks': '分类下的任务将移到第一个分类中。',
 
@@ -142,7 +142,7 @@ const en: Record<I18nKey, string> = {
 
 	'column.rename': 'Rename',
 	'column.delete': 'Delete category',
-	'column.addPrompt': 'Enter new category name',
+	'column.addPrompt': 'Enter new quadrant name',
 	'column.deleteConfirm': 'Are you sure you want to delete this category?',
 	'column.deleteMoveTasks': 'Tasks will be moved to the first category.',
 

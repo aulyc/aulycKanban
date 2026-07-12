@@ -8,6 +8,7 @@ import {
 	getNextFocusZone,
 	getTaskTypeNavigationTarget,
 	getWrappedItemIndex,
+	revealTaskTypeItem,
 	type KanbanFocusZone,
 	type TaskTypeNavigationTarget,
 } from '../utils/focusCycle';
@@ -147,6 +148,7 @@ export class KanbanView extends ItemView {
 			const target = this.getFocusTarget(nextZone);
 			target?.focus({ preventScroll: true });
 			if (nextZone === 'tasks') target?.scrollIntoView({ block: 'nearest' });
+			if (nextZone === 'view' && target) revealTaskTypeItem(target);
 		};
 		if (afterBlur) {
 			active?.blur();
@@ -202,7 +204,9 @@ export class KanbanView extends ItemView {
 		);
 		if (!target) return;
 		if (target.kind === 'add') {
-			this.contentEl.querySelector<HTMLElement>('.aulyckanban-view-add-btn')?.focus({ preventScroll: true });
+			const addButton = this.contentEl.querySelector<HTMLElement>('.aulyckanban-view-add-btn');
+			addButton?.focus({ preventScroll: true });
+			if (addButton) revealTaskTypeItem(addButton);
 		} else if (target.kind === 'archive') {
 			if (!store.isShowingArchive()) store.dispatch({ type: 'TOGGLE_ARCHIVE_VIEW' });
 			this.focusZoneAfterRender('view');
@@ -262,7 +266,9 @@ export class KanbanView extends ItemView {
 
 	private focusZoneAfterRender(zone: KanbanFocusZone): void {
 		requestAnimationFrame(() => {
-			this.getFocusTarget(zone)?.focus({ preventScroll: true });
+			const target = this.getFocusTarget(zone);
+			target?.focus({ preventScroll: true });
+			if (zone === 'view' && target) revealTaskTypeItem(target);
 		});
 	}
 

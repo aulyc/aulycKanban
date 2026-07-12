@@ -11,7 +11,12 @@ const output = ts.transpileModule(source, {
 const module = { exports: {} };
 vm.runInNewContext(output, { module, exports: module.exports });
 
-const { getNextFocusZone, getTaskTypeNavigationTarget, getWrappedItemIndex } = module.exports;
+const {
+	getHorizontalRevealScrollLeft,
+	getNextFocusZone,
+	getTaskTypeNavigationTarget,
+	getWrappedItemIndex,
+} = module.exports;
 
 test('Tab cycles view, tasks, columns, then view', () => {
 	assert.equal(getNextFocusZone(null), 'view');
@@ -32,6 +37,13 @@ test('arrow navigation wraps at both ends', () => {
 	assert.equal(getWrappedItemIndex(2, 3, 1), 0);
 	assert.equal(getWrappedItemIndex(1, 3, 1), 2);
 	assert.equal(getWrappedItemIndex(0, 0, 1), -1);
+});
+
+test('horizontal task type navigation reveals clipped items without a visible scrollbar', () => {
+	assert.equal(getHorizontalRevealScrollLeft(100, 20, 220, 0, 80), 80);
+	assert.equal(getHorizontalRevealScrollLeft(100, 20, 220, 180, 260), 140);
+	assert.equal(getHorizontalRevealScrollLeft(100, 20, 220, 40, 180), 100);
+	assert.equal(getHorizontalRevealScrollLeft(10, 20, 220, -50, 20), 0);
 });
 
 test('add and archive are the fixed last task type navigation items', () => {

@@ -24,6 +24,38 @@ export function getWrappedItemIndex(currentIndex: number, length: number, offset
 	return (safeCurrent + offset + length) % length;
 }
 
+/** 计算把横向列表项完整移入可视区所需的 scrollLeft。 */
+export function getHorizontalRevealScrollLeft(
+	currentScrollLeft: number,
+	viewportLeft: number,
+	viewportRight: number,
+	itemLeft: number,
+	itemRight: number,
+): number {
+	if (itemLeft < viewportLeft) {
+		return Math.max(0, currentScrollLeft - (viewportLeft - itemLeft));
+	}
+	if (itemRight > viewportRight) {
+		return currentScrollLeft + (itemRight - viewportRight);
+	}
+	return currentScrollLeft;
+}
+
+/** 在不显示滚动条的任务类型栏中，把键盘目标完整滚动到可视区域。 */
+export function revealTaskTypeItem(item: HTMLElement): void {
+	const strip = item.closest<HTMLElement>('.aulyckanban-view-strip');
+	if (!strip) return;
+	const viewport = strip.getBoundingClientRect();
+	const itemRect = item.getBoundingClientRect();
+	strip.scrollLeft = getHorizontalRevealScrollLeft(
+		strip.scrollLeft,
+		viewport.left,
+		viewport.right,
+		itemRect.left,
+		itemRect.right,
+	);
+}
+
 /** 普通任务类型按显示顺序排列，新增按钮和归档依次作为最后两个可选择项。 */
 export function getTaskTypeNavigationTarget(
 	viewIds: readonly string[],

@@ -2,6 +2,7 @@ import { t } from '../i18n';
 import type { KanbanStore } from '../store';
 import type { ViewKind } from '../types';
 import { createInlineInput } from './InlineInput';
+import { revealTaskTypeItem } from '../utils/focusCycle';
 import { setIcon } from 'obsidian';
 
 /** 顶部工具栏：动态任务类型 + 新增任务类型 + 统一归档 */
@@ -66,7 +67,7 @@ export class Toolbar {
 	}
 
 	private renderAddInput(parentEl: HTMLElement): void {
-		createInlineInput(parentEl, {
+		const inputEl = createInlineInput(parentEl, {
 			cls: 'aulyckanban-view-add-input',
 			placeholder: t('view.addPrompt'),
 			initialValue: this.draftTitle,
@@ -83,6 +84,7 @@ export class Toolbar {
 			},
 			onCancel: () => this.cancelAdd(),
 		});
+		requestAnimationFrame(() => revealTaskTypeItem(inputEl));
 	}
 
 	private cancelAdd(): void {
