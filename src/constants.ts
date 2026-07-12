@@ -1,4 +1,4 @@
-import type { Column, PluginSettings, BoardData } from './types';
+import type { Column, PluginSettings, BoardData, TaskView } from './types';
 import { t } from './i18n';
 
 /** 自定义视图类型标识 */
@@ -10,16 +10,11 @@ export const ARCHIVE_UNCATEGORIZED_ID = '__uncategorized';
 export const ID_PREFIX = {
 	TASK: 'task',
 	COLUMN: 'col',
+	VIEW: 'view',
 } as const;
 
 /** 备份文件格式版本 */
-export const BACKUP_VERSION = '2.0';
-
-/** 归档数据键名映射 */
-export const ARCHIVE_KEY: Record<'work' | 'personal', 'workArchive' | 'personalArchive'> = {
-	work: 'workArchive',
-	personal: 'personalArchive',
-};
+export const BACKUP_VERSION = '4.0';
 
 /** 性能配置常量 */
 export const PERFORMANCE = {
@@ -39,7 +34,7 @@ export const COLUMN_DEFINITIONS: ReadonlyArray<{ id: string; titleKey: string; o
 ];
 
 /** 当前数据 schema 版本 */
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 4;
 
 /** 默认设置 */
 export const DEFAULT_SETTINGS: PluginSettings = {
@@ -47,8 +42,10 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 	activeColumnId: 'periodic',
 	showArchive: false,
 
-	work: { filePath: '' },
-	personal: { filePath: '' },
+	viewSyncTargets: {
+		work: { filePath: '' },
+		personal: { filePath: '' },
+	},
 	archive: { filePath: '' },
 	schemaVersion: CURRENT_SCHEMA_VERSION,
 	saveDebounce: PERFORMANCE.SAVE_DEBOUNCE,
@@ -65,8 +62,9 @@ export function getDefaultBoardData(): BoardData {
 			tasks: [],
 		}));
 
-	return {
-		work: { columns: createColumns() },
-		personal: { columns: createColumns() },
-	};
+	const views: TaskView[] = [
+		{ id: 'work', title: t('view.work'), order: 0, columns: createColumns() },
+		{ id: 'personal', title: t('view.personal'), order: 1, columns: createColumns() },
+	];
+	return { views, archives: { work: { tasks: [] }, personal: { tasks: [] } } };
 }

@@ -6,7 +6,7 @@ import { autoResizeTextarea } from '../utils/dom';
 
 /**
  * 左侧任务列表组件
- * 显示当前选中分类的标题、输入框、任务卡片
+ * 显示当前选中象限的输入框和任务卡片
  */
 export class TaskList {
 	private readonly el: HTMLElement;
@@ -45,10 +45,6 @@ export class TaskList {
 			return;
 		}
 		this.el.dataset['columnId'] = column.id;
-
-		const headerEl = this.el.createDiv({ cls: 'aulyckanban-task-list-header' });
-		headerEl.createSpan({ text: column.title, cls: 'aulyckanban-task-list-title' });
-		headerEl.createSpan({ text: String(column.tasks.length), cls: 'aulyckanban-task-list-count' });
 
 		this.buildInlineInput(
 			column.id,
@@ -130,7 +126,7 @@ export class TaskList {
 			composing = false;
 		});
 
-		// Enter 提交，Shift+Enter 换行，Tab/Shift+Tab 切换分类
+		// Enter 提交，Shift+Enter 换行；Tab 由 KanbanView 在三个主要区域间切换。
 		inputEl.addEventListener('keydown', (e: KeyboardEvent) => {
 			if (e.key === 'Enter' && !e.shiftKey) {
 				if (composing || e.isComposing) {

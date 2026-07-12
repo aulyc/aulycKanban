@@ -36,7 +36,7 @@ test('non-Enter keys do not commit', () => {
 	assert.equal(shouldCommitInlineInput({ key: 'Escape', isComposing: false }, false), false);
 });
 
-test('Enter, confirmation click, and blur can only commit once', () => {
+test('an inline commit controller can only commit once', () => {
 	let commits = 0;
 	let cancels = 0;
 	const controller = createInlineCommitController(

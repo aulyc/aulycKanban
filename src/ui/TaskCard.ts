@@ -28,6 +28,9 @@ export class TaskCard {
 		this.el = document.createElement('div');
 		this.el.className = `aulyckanban-task${task.completed ? ' aulyckanban-task-completed' : ''}`;
 		this.el.draggable = true;
+		this.el.tabIndex = -1;
+		this.el.setAttribute('role', 'button');
+		this.el.setAttribute('aria-label', task.content);
 		this.el.dataset['taskId'] = task.id;
 		this.el.dataset['columnId'] = columnId;
 
@@ -47,6 +50,12 @@ export class TaskCard {
 		setTextWithLineBreaks(contentEl, task.content);
 
 		contentEl.addEventListener('click', (e: MouseEvent) => {
+			e.stopPropagation();
+			this.enterEditMode(contentEl);
+		});
+		this.el.addEventListener('keydown', (e: KeyboardEvent) => {
+			if (e.key !== 'Enter' || e.target !== this.el) return;
+			e.preventDefault();
 			e.stopPropagation();
 			this.enterEditMode(contentEl);
 		});
@@ -108,31 +117,37 @@ export class TaskCard {
 		textarea.value = currentText;
 
 		autoResizeTextarea(textarea);
+		let finished = false;
+		const finish = (content: string, restoreCardFocus: boolean): void => {
+			if (finished) return;
+			finished = true;
+			this.saveEdit(content, restoreCardFocus);
+		};
 
 		// Enter 保存，Shift+Enter 换行，Escape 取消
 		textarea.addEventListener('keydown', (e: KeyboardEvent) => {
 			if (e.key === 'Enter' && !e.shiftKey) {
 				e.preventDefault();
 				e.stopPropagation();
-				this.saveEdit(textarea.value.trim());
+				finish(textarea.value.trim() || currentText, true);
 			}
 			if (e.key === 'Escape') {
 				e.preventDefault();
-				this.saveEdit(currentText);
+				finish(currentText, true);
 			}
 		});
 
 		// 失焦自动保存
 		textarea.addEventListener('blur', () => {
 			const newVal = textarea.value.trim();
-			this.saveEdit(newVal || currentText);
+			finish(newVal || currentText, false);
 		});
 
 		textarea.focus();
 		textarea.setSelectionRange(textarea.value.length, textarea.value.length);
 	}
 
-	private saveEdit(content: string): void {
+	private saveEdit(content: string, restoreCardFocus: boolean): void {
 		this.el.removeClass('aulyckanban-task-editing');
 
 		if (content === this.task.content) {
@@ -141,12 +156,24 @@ export class TaskCard {
 				type: 'EDIT_TASK',
 				payload: { columnId: this.columnId, taskId: this.task.id, content: this.task.content },
 			});
+			if (restoreCardFocus) this.focusCardAfterRender();
 			return;
 		}
 
 		this.store.dispatch({
 			type: 'EDIT_TASK',
 			payload: { columnId: this.columnId, taskId: this.task.id, content },
+		});
+		if (restoreCardFocus) this.focusCardAfterRender();
+	}
+
+	private focusCardAfterRender(): void {
+		const boardEl = this.el.closest<HTMLElement>('.aulyckanban-kanban-container');
+		requestAnimationFrame(() => {
+			const card = Array.from(boardEl?.querySelectorAll<HTMLElement>('.aulyckanban-task') ?? [])
+				.find((item) => item.dataset['taskId'] === this.task.id);
+			card?.focus({ preventScroll: true });
+			card?.scrollIntoView({ block: 'nearest' });
 		});
 	}
 

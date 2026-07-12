@@ -6,6 +6,18 @@ import { KanbanSettingTab } from './ui/KanbanSettingTab';
 import { KanbanStore } from './store';
 import { VaultSyncService } from './services/syncService';
 import { PluginDataRepository } from './services/repository';
+import type { ActionType } from './types';
+
+/** 会同时影响全部任务类型的操作 */
+const MULTI_VIEW_MUTATION_ACTIONS: ReadonlySet<ActionType> = new Set([
+	'ADD_VIEW',
+	'ADD_COLUMN',
+	'RENAME_COLUMN',
+	'DELETE_COLUMN',
+	'REORDER_COLUMNS',
+	'SET_BOARD_DATA',
+	'CLEAR_ALL_DATA',
+]);
 
 export default class KanbanPlugin extends Plugin {
 	store: KanbanStore;
@@ -34,9 +46,10 @@ export default class KanbanPlugin extends Plugin {
 		this.unsubscribeSync = this.store.subscribe(() => {
 			if (!this.store.lastActionMutatedData) return;
 
-			const syncSettings = this.store.getSettings();
-			const currentView = syncSettings.currentView;
-			if (syncSettings[currentView].filePath) {
+			const actionType = this.store.lastActionType;
+			if (actionType && MULTI_VIEW_MUTATION_ACTIONS.has(actionType)) {
+				this.syncService.scheduleSyncAllViews();
+			} else {
 				this.syncService.scheduleSyncCurrentView();
 			}
 		});
@@ -147,7 +160,10 @@ export default class KanbanPlugin extends Plugin {
 			}
 
 			if (leaf) {
-				workspace.revealLeaf(leaf);
+				await workspace.revealLeaf(leaf);
+				if (leaf.view instanceof KanbanView) {
+					leaf.view.focusBoard();
+				}
 			}
 		} catch (error) {
 			console.error('[aulyckanban] Failed to activate view:', error);

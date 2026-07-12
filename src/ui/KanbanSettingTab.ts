@@ -79,30 +79,30 @@ export class KanbanSettingTab extends PluginSettingTab {
 
 		const settings = this.plugin.store.getSettings();
 
-		this.buildSyncPathSetting(containerEl, {
-			nameKey: 'settings.sync.workPath.name',
-			descKey: 'settings.sync.workPath.desc',
-			placeholderKey: 'settings.sync.workPath.placeholder',
-			currentPath: settings.work.filePath,
-			otherPaths: [settings.personal.filePath, settings.archive?.filePath ?? ''],
-			payload: (filePath) => ({ work: { filePath } }),
-		});
-
-		this.buildSyncPathSetting(containerEl, {
-			nameKey: 'settings.sync.personalPath.name',
-			descKey: 'settings.sync.personalPath.desc',
-			placeholderKey: 'settings.sync.personalPath.placeholder',
-			currentPath: settings.personal.filePath,
-			otherPaths: [settings.work.filePath, settings.archive?.filePath ?? ''],
-			payload: (filePath) => ({ personal: { filePath } }),
-		});
+		for (const view of this.plugin.store.getTaskViews()) {
+			const currentPath = settings.viewSyncTargets[view.id]?.filePath ?? '';
+			const otherPaths = [
+				...Object.entries(settings.viewSyncTargets)
+					.filter(([id]) => id !== view.id)
+					.map(([, target]) => target.filePath),
+				settings.archive?.filePath ?? '',
+			];
+			this.buildSyncPathSetting(containerEl, {
+				name: `${view.title}${t('settings.sync.viewPath.suffix')}`,
+				desc: t('settings.sync.viewPath.desc'),
+				placeholder: `${view.title}.md`,
+				currentPath,
+				otherPaths,
+				payload: (filePath) => ({ viewSyncTargets: { [view.id]: { filePath } } }),
+			});
+		}
 
 		this.buildSyncPathSetting(containerEl, {
 			nameKey: 'settings.sync.archivePath.name',
 			descKey: 'settings.sync.archivePath.desc',
 			placeholderKey: 'settings.sync.archivePath.placeholder',
 			currentPath: settings.archive?.filePath ?? '',
-			otherPaths: [settings.work.filePath, settings.personal.filePath],
+			otherPaths: Object.values(settings.viewSyncTargets).map((target) => target.filePath),
 			payload: (filePath) => ({ archive: { filePath } }),
 		});
 
@@ -115,20 +115,23 @@ export class KanbanSettingTab extends PluginSettingTab {
 	private buildSyncPathSetting(
 		containerEl: HTMLElement,
 		opts: {
-			nameKey: string;
-			descKey: string;
-			placeholderKey: string;
+			nameKey?: string;
+			descKey?: string;
+			placeholderKey?: string;
+			name?: string;
+			desc?: string;
+			placeholder?: string;
 			currentPath: string;
 			otherPaths: string[];
 			payload: (filePath: string) => Partial<import('../types').PluginSettings>;
 		},
 	): void {
 		new Setting(containerEl)
-			.setName(t(opts.nameKey))
-			.setDesc(t(opts.descKey))
+			.setName(opts.name ?? t(opts.nameKey ?? ''))
+			.setDesc(opts.desc ?? t(opts.descKey ?? ''))
 			.addText((text) => {
 				text
-					.setPlaceholder(t(opts.placeholderKey))
+					.setPlaceholder(opts.placeholder ?? t(opts.placeholderKey ?? ''))
 					.setValue(opts.currentPath)
 					.onChange(async (value) => {
 						const normalized = value.trim() ? normalizePath(value.trim()) : '';

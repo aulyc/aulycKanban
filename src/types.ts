@@ -2,8 +2,8 @@
  * 看板数据类型定义
  */
 
-/** 视图类型：工作 / 个人 */
-export type ViewKind = 'work' | 'personal';
+/** 动态任务类型 ID */
+export type ViewKind = string;
 
 /** 单个任务 */
 export interface Task {
@@ -27,9 +27,16 @@ export interface Column {
 	tasks: Task[];
 }
 
-/** 单视图数据 */
+/** 单视图数据：象限定义与另一视图共享，tasks 内容独立 */
 export interface ViewData {
 	columns: Column[];
+}
+
+/** 顶部任务类型（工作、个人或用户自定义类型） */
+export interface TaskView extends ViewData {
+	id: ViewKind;
+	title: string;
+	order: number;
 }
 
 /** 归档数据（按视图） */
@@ -37,12 +44,10 @@ export interface ArchiveData {
 	tasks: Task[];
 }
 
-/** 完整看板数据（双视图 + 归档） */
+/** 完整看板数据（动态任务类型 + 按类型归档） */
 export interface BoardData {
-	work: ViewData;
-	personal: ViewData;
-	workArchive?: ArchiveData;
-	personalArchive?: ArchiveData;
+	views: TaskView[];
+	archives: Record<ViewKind, ArchiveData>;
 }
 
 /** 同步目标配置 */
@@ -58,8 +63,8 @@ export interface PluginSettings {
 	/** 是否正在查看归档 */
 	showArchive: boolean;
 
-	work: SyncTarget;
-	personal: SyncTarget;
+	/** 每个任务类型对应的同步文件 */
+	viewSyncTargets: Record<ViewKind, SyncTarget>;
 	/** 归档同步文件路径 */
 	archive: SyncTarget;
 	schemaVersion: number;
@@ -83,6 +88,7 @@ export type Action =
 	| { type: 'TOGGLE_TASK'; payload: { columnId: string; taskId: string } }
 	| { type: 'MOVE_TASK'; payload: { taskId: string; fromColumnId: string; toColumnId: string; targetIndex: number } }
 	| { type: 'SWITCH_VIEW'; payload: { view: ViewKind } }
+	| { type: 'ADD_VIEW'; payload: { title: string } }
 	| { type: 'SELECT_COLUMN'; payload: { columnId: string } }
 	| { type: 'ADD_COLUMN'; payload: { title: string } }
 	| { type: 'RENAME_COLUMN'; payload: { columnId: string; title: string } }

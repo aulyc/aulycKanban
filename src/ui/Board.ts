@@ -34,6 +34,7 @@ export class Board {
 
 		// 归档视图容器
 		this.archiveContainerEl = this.containerEl.createDiv({ cls: 'aulyckanban-archive-container' });
+		this.archiveContainerEl.setAttribute('tabindex', '-1');
 		this.archiveView = new ArchiveView(this.archiveContainerEl, this.store);
 	}
 

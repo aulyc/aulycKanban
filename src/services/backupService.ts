@@ -22,10 +22,8 @@ export class BackupService {
 		try {
 			const boardData = this.store.getBoardData();
 			const dataToBackup = {
-				work: boardData.work,
-				personal: boardData.personal,
-				workArchive: boardData.workArchive ?? { tasks: [] },
-				personalArchive: boardData.personalArchive ?? { tasks: [] },
+				views: boardData.views,
+				archives: boardData.archives,
 				backupTime: new Date().toISOString(),
 				version: BACKUP_VERSION,
 			};
@@ -97,7 +95,7 @@ export class BackupService {
 
 	/**
 	 * 校验并迁移导入数据
-	 * 支持新格式（双视图）和旧格式（单 columns 数组）
+	 * 支持动态任务类型格式和旧格式
 	 */
 	private validateAndMigrate(data: Record<string, unknown>): BoardData | null {
 		if (!isMigratableBoardData(data)) return null;

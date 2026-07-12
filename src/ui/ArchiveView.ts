@@ -1,4 +1,4 @@
-import type { Task, Column } from '../types';
+import type { Task, ViewKind } from '../types';
 import type { KanbanStore } from '../store';
 import { setIcon } from 'obsidian';
 import { t } from '../i18n';
@@ -8,7 +8,7 @@ import { ARCHIVE_UNCATEGORIZED_ID } from '../constants';
 
 /**
  * 归档视图组件
- * 合并展示工作+个人归档，按大类分隔，各自按分类分组
+ * 合并展示全部任务类型的归档，并保留来源任务类型与象限
  */
 export class ArchiveView {
 	private readonly containerEl: HTMLElement;
@@ -40,9 +40,7 @@ export class ArchiveView {
 		this.containerEl.empty();
 
 		const boardData = this.store.getBoardData();
-		const workArchive = boardData.workArchive?.tasks ?? [];
-		const personalArchive = boardData.personalArchive?.tasks ?? [];
-		const allItems = this.buildArchiveItems(workArchive, personalArchive);
+		const allItems = this.buildArchiveItems();
 		const filtered = this.applyFilters(allItems);
 		this.syncSelectionWithFiltered(filtered);
 
@@ -83,8 +81,8 @@ export class ArchiveView {
 	private renderFilters(
 		controlsEl: HTMLElement,
 		boardData: Readonly<ReturnType<KanbanStore['getBoardData']>>,
-		allItems: Array<{ task: Task; viewKind: 'work' | 'personal' }>,
-		filteredItems: Array<{ task: Task; viewKind: 'work' | 'personal' }>,
+		allItems: Array<{ task: Task; viewKind: ViewKind }>,
+		filteredItems: Array<{ task: Task; viewKind: ViewKind }>,
 		restoreSearchFocus: boolean,
 		searchSelectionStart: number | null,
 		searchSelectionEnd: number | null,
@@ -243,45 +241,29 @@ export class ArchiveView {
 		selectEl: HTMLSelectElement,
 		boardData: Readonly<ReturnType<KanbanStore['getBoardData']>>,
 	): void {
-		const appendViewCols = (viewKind: 'work' | 'personal', columns: Column[]): void => {
-			const viewTitle = viewKind === 'work' ? t('view.work') : t('view.personal');
-			for (const col of columns) {
-				this.addOption(
-					selectEl,
-					`${viewKind}:${col.id}`,
-					`${viewTitle} / ${col.title}`,
-				);
-			}
-			this.addOption(
-				selectEl,
-				`${viewKind}:${ARCHIVE_UNCATEGORIZED_ID}`,
-				`${viewTitle} / ${t('archive.other')}`,
-			);
-		};
-		appendViewCols('work', boardData.work.columns);
-		appendViewCols('personal', boardData.personal.columns);
+		for (const col of boardData.views[0]?.columns ?? []) {
+			this.addOption(selectEl, col.id, col.title);
+		}
+		this.addOption(selectEl, ARCHIVE_UNCATEGORIZED_ID, t('archive.other'));
 	}
 
-	private buildArchiveItems(workTasks: Task[], personalTasks: Task[]): Array<{
+	private buildArchiveItems(): Array<{
 		task: Task;
-		viewKind: 'work' | 'personal';
+		viewKind: ViewKind;
 	}> {
-		return [
-			...workTasks.map((task) => ({ task, viewKind: 'work' as const })),
-			...personalTasks.map((task) => ({ task, viewKind: 'personal' as const })),
-		];
+		return this.store.getTaskViews().flatMap((view) =>
+			this.store.getArchive(view.id).map((task) => ({ task, viewKind: view.id })),
+		);
 	}
 
 	private applyFilters(
-		items: Array<{ task: Task; viewKind: 'work' | 'personal' }>,
-	): Array<{ task: Task; viewKind: 'work' | 'personal' }> {
+		items: Array<{ task: Task; viewKind: ViewKind }>,
+	): Array<{ task: Task; viewKind: ViewKind }> {
 		const keyword = this.searchKeyword.trim().toLowerCase();
-		const filtered = items.filter(({ task, viewKind }) => {
+		const filtered = items.filter(({ task }) => {
 			if (this.selectedCategory !== 'all') {
-				const [filterView, filterCol] = this.selectedCategory.split(':');
-				if (filterView !== viewKind) return false;
 				const sourceCol = task.sourceColumnId ?? ARCHIVE_UNCATEGORIZED_ID;
-				if (filterCol !== sourceCol) return false;
+				if (this.selectedCategory !== sourceCol) return false;
 			}
 			if (keyword && !task.content.toLowerCase().includes(keyword)) return false;
 			return true;
@@ -300,7 +282,7 @@ export class ArchiveView {
 		return new Date(task.archivedAt ?? task.completedAt ?? task.createdAt).getTime();
 	}
 
-	private syncSelectionWithFiltered(filteredItems: Array<{ task: Task; viewKind: 'work' | 'personal' }>): void {
+	private syncSelectionWithFiltered(filteredItems: Array<{ task: Task; viewKind: ViewKind }>): void {
 		if (!this.deleteMode) return;
 		const validIds = new Set(filteredItems.map((item) => item.task.id));
 		for (const id of Array.from(this.selectedTaskIds)) {
@@ -310,22 +292,21 @@ export class ArchiveView {
 
 	private resolveTaskCategory(
 		task: Task,
-		viewKind: 'work' | 'personal',
+		_viewKind: ViewKind,
 		boardData: Readonly<ReturnType<KanbanStore['getBoardData']>>,
 	): string {
 		const sourceColId = task.sourceColumnId ?? ARCHIVE_UNCATEGORIZED_ID;
 		if (sourceColId === ARCHIVE_UNCATEGORIZED_ID) {
 			return t('archive.other');
 		}
-		const columns = viewKind === 'work' ? boardData.work.columns : boardData.personal.columns;
-		const matched = columns.find((col) => col.id === sourceColId);
+		const matched = boardData.views[0]?.columns.find((col) => col.id === sourceColId);
 		return matched?.title ?? t('archive.other');
 	}
 
 	private renderArchiveCard(
 		parentEl: HTMLElement,
 		task: Task,
-		viewKind: 'work' | 'personal',
+		viewKind: ViewKind,
 		boardData: Readonly<ReturnType<KanbanStore['getBoardData']>>,
 	): void {
 		const cardEl = parentEl.createDiv({ cls: 'aulyckanban-task aulyckanban-archive-task' });
@@ -377,7 +358,7 @@ export class ArchiveView {
 		const tagsEl = bottomEl.createDiv({ cls: 'aulyckanban-archive-task-tags' });
 		tagsEl.createSpan({
 			cls: 'aulyckanban-archive-tag',
-			text: viewKind === 'work' ? t('view.work') : t('view.personal'),
+			text: boardData.views.find((view) => view.id === viewKind)?.title ?? viewKind,
 		});
 		tagsEl.createSpan({
 			cls: 'aulyckanban-archive-tag',

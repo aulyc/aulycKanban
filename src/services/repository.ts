@@ -35,11 +35,30 @@ export class PluginDataRepository {
 
 			const data = raw as Record<string, unknown>;
 
-			const settings: PluginSettings = data['settings']
-				? { ...DEFAULT_SETTINGS, ...(data['settings'] as Partial<PluginSettings>) }
-				: { ...DEFAULT_SETTINGS };
+			const rawSettings = data['settings'] && typeof data['settings'] === 'object'
+				? data['settings'] as Record<string, unknown>
+				: {};
+			const rawTargets = rawSettings['viewSyncTargets'] && typeof rawSettings['viewSyncTargets'] === 'object'
+				? rawSettings['viewSyncTargets'] as PluginSettings['viewSyncTargets']
+				: {};
+			const legacyWork = rawSettings['work'] as { filePath?: string } | undefined;
+			const legacyPersonal = rawSettings['personal'] as { filePath?: string } | undefined;
+			const settings: PluginSettings = {
+				...DEFAULT_SETTINGS,
+				...(rawSettings as Partial<PluginSettings>),
+				viewSyncTargets: {
+					work: { filePath: legacyWork?.filePath ?? DEFAULT_SETTINGS.viewSyncTargets.work?.filePath ?? '' },
+					personal: { filePath: legacyPersonal?.filePath ?? DEFAULT_SETTINGS.viewSyncTargets.personal?.filePath ?? '' },
+					...rawTargets,
+				},
+				archive: {
+					...DEFAULT_SETTINGS.archive,
+					...(rawSettings['archive'] as PluginSettings['archive'] | undefined),
+				},
+			};
 
 			const board = migrateBoardData(data['board']);
+			for (const view of board.views) settings.viewSyncTargets[view.id] ??= { filePath: '' };
 
 			settings.schemaVersion = CURRENT_SCHEMA_VERSION;
 

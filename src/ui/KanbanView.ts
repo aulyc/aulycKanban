@@ -3,6 +3,14 @@ import { VIEW_TYPE_KANBAN } from '../constants';
 import { t } from '../i18n';
 import type KanbanPlugin from '../main';
 import { Board } from './Board';
+import { clearResizeHost, updateResizeHost } from '../utils/resizeHost';
+import {
+	getNextFocusZone,
+	getTaskTypeNavigationTarget,
+	getWrappedItemIndex,
+	type KanbanFocusZone,
+	type TaskTypeNavigationTarget,
+} from '../utils/focusCycle';
 
 /**
  * 看板主视图
@@ -15,6 +23,7 @@ export class KanbanView extends ItemView {
 	private isClosing = false;
 	private tabHandler: ((e: KeyboardEvent) => void) | null = null;
 	private renderQueued = false;
+	private resizeHostEl: HTMLElement | null = null;
 
 	constructor(leaf: WorkspaceLeaf, plugin: KanbanPlugin) {
 		super(leaf);
@@ -41,6 +50,7 @@ export class KanbanView extends ItemView {
 		container.addClass('aulyckanban-kanban-container');
 		// 让容器可聚焦，接收键盘事件
 		container.setAttribute('tabindex', '0');
+		this.resizeHostEl = updateResizeHost(this.resizeHostEl, this.containerEl);
 
 		this.board = new Board(container, this.plugin.store);
 		this.board.render();
@@ -51,17 +61,41 @@ export class KanbanView extends ItemView {
 			this.requestRender();
 		});
 
-		// 视图级别监听 Tab 切换分类
+		// Tab 在任务类型、任务内容、象限间循环；归档作为固定在最右侧的特殊任务类型。
 		this.tabHandler = (e: KeyboardEvent) => {
+			const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 			if (e.key === 'Tab') {
-				// 如果正在重命名分类（nav-inline-input 聚焦），不拦截
-				const active = document.activeElement;
-				if (active?.classList.contains('aulyckanban-nav-inline-input')) return;
-
 				e.preventDefault();
 				e.stopPropagation();
-				this.switchToNextCategory();
-				this.refocusContainer();
+				this.focusNextZone(e.shiftKey, active?.matches(
+					'.aulyckanban-view-add-input, .aulyckanban-nav-inline-input, '
+					+ '.aulyckanban-inline-input, .aulyckanban-edit-textarea',
+				) ?? false);
+				return;
+			}
+
+			if (active?.matches(
+				'.aulyckanban-view-add-input, .aulyckanban-nav-inline-input, '
+				+ '.aulyckanban-inline-input, .aulyckanban-edit-textarea',
+			)) return;
+			const zone = this.getFocusZone(active);
+			if (zone === 'view' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+				e.preventDefault();
+				e.stopPropagation();
+				this.selectAdjacentView(e.key === 'ArrowLeft' ? -1 : 1);
+			} else if (zone === 'columns' && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+				e.preventDefault();
+				e.stopPropagation();
+				this.selectAdjacentColumn(e.key === 'ArrowUp' ? -1 : 1);
+			} else if (zone === 'tasks' && !this.plugin.store.isShowingArchive()) {
+				if (
+					active?.matches('.aulyckanban-task')
+					&& (e.key === 'ArrowUp' || e.key === 'ArrowDown')
+				) {
+					e.preventDefault();
+					e.stopPropagation();
+					this.selectAdjacentTask(e.key === 'ArrowUp' ? -1 : 1);
+				}
 			}
 		};
 		container.addEventListener('keydown', this.tabHandler, true);
@@ -69,6 +103,8 @@ export class KanbanView extends ItemView {
 
 	async onClose(): Promise<void> {
 		this.isClosing = true;
+		clearResizeHost(this.resizeHostEl);
+		this.resizeHostEl = null;
 
 		if (this.tabHandler) {
 			this.contentEl.removeEventListener('keydown', this.tabHandler, true);
@@ -86,34 +122,141 @@ export class KanbanView extends ItemView {
 		}
 	}
 
-	/**
-	 * 切换到下一个分类（循环）
-	 */
-	private switchToNextCategory(): void {
-		const store = this.plugin.store;
-		if (store.isShowingArchive()) return;
+	/** Obsidian 拖拽或移动分栏时重新识别宽度宿主。 */
+	onResize(): void {
+		this.resizeHostEl = updateResizeHost(this.resizeHostEl, this.containerEl);
+	}
 
-		const columns = store.getCurrentColumns();
-		if (columns.length === 0) return;
+	/** 从 Ribbon 或命令打开看板后，让首次 Tab 直接进入焦点循环。 */
+	focusBoard(): void {
+		requestAnimationFrame(() => {
+			if (this.isClosing) return;
+			this.contentEl.focus({ preventScroll: true });
+		});
+	}
 
-		const activeId = store.getActiveColumnId();
-		const currentIndex = columns.findIndex((c) => c.id === activeId);
-
-		let targetIndex = currentIndex + 1;
-		if (targetIndex >= columns.length) targetIndex = 0;
-
-		const targetCol = columns[targetIndex];
-		if (targetCol) {
-			store.dispatch({
-				type: 'SELECT_COLUMN',
-				payload: { columnId: targetCol.id },
-			});
+	private focusNextZone(reverse: boolean, afterBlur = false): void {
+		const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+		const currentZone = this.getFocusZone(active);
+		const nextZone = getNextFocusZone(currentZone, reverse, !this.plugin.store.isShowingArchive());
+		const focusTarget = (): void => {
+			const target = this.getFocusTarget(nextZone);
+			target?.focus({ preventScroll: true });
+			if (nextZone === 'tasks') target?.scrollIntoView({ block: 'nearest' });
+		};
+		if (afterBlur) {
+			active?.blur();
+			requestAnimationFrame(focusTarget);
+		} else {
+			focusTarget();
 		}
 	}
 
-	private refocusContainer(): void {
+	private getFocusZone(element: HTMLElement | null): KanbanFocusZone | null {
+		if (!element || !this.contentEl.contains(element)) return null;
+		if (element.closest('.aulyckanban-toolbar')) return 'view';
+		if (element.closest('.aulyckanban-task-list')) return 'tasks';
+		if (element.closest('.aulyckanban-archive-container')) return 'tasks';
+		if (element.closest('.aulyckanban-category-nav')) return 'columns';
+		return null;
+	}
+
+	private getFocusTarget(zone: KanbanFocusZone): HTMLElement | null {
+		switch (zone) {
+			case 'view':
+				if (this.plugin.store.isShowingArchive()) {
+					return this.contentEl.querySelector<HTMLElement>('.aulyckanban-archive-btn');
+				}
+				return this.contentEl.querySelector<HTMLElement>(
+					'.aulyckanban-view-tab.aulyckanban-tab-active',
+				) ?? this.contentEl.querySelector<HTMLElement>('.aulyckanban-view-tab');
+			case 'tasks':
+				if (this.plugin.store.isShowingArchive()) {
+					return this.contentEl.querySelector<HTMLElement>(
+						'.aulyckanban-archive-search, .aulyckanban-archive-container',
+					);
+				}
+				return this.contentEl.querySelector<HTMLElement>('.aulyckanban-task')
+					?? this.contentEl.querySelector<HTMLElement>('.aulyckanban-inline-input');
+			case 'columns':
+				return this.contentEl.querySelector<HTMLElement>(
+					'.aulyckanban-nav-item-active',
+				) ?? this.contentEl.querySelector<HTMLElement>('.aulyckanban-nav-item');
+		}
+	}
+
+	private selectAdjacentView(offset: number): void {
+		const store = this.plugin.store;
+		const views = store.getTaskViews();
+		const focusedTarget = this.getFocusedTaskTypeTarget();
+		const target = getTaskTypeNavigationTarget(
+			views.map((view) => view.id),
+			store.getCurrentView(),
+			store.isShowingArchive(),
+			offset,
+			focusedTarget,
+		);
+		if (!target) return;
+		if (target.kind === 'add') {
+			this.contentEl.querySelector<HTMLElement>('.aulyckanban-view-add-btn')?.focus({ preventScroll: true });
+		} else if (target.kind === 'archive') {
+			if (!store.isShowingArchive()) store.dispatch({ type: 'TOGGLE_ARCHIVE_VIEW' });
+			this.focusZoneAfterRender('view');
+		} else {
+			if (store.isShowingArchive() || store.getCurrentView() !== target.id) {
+				store.dispatch({ type: 'SWITCH_VIEW', payload: { view: target.id } });
+			}
+			this.focusZoneAfterRender('view');
+		}
+	}
+
+	private getFocusedTaskTypeTarget(): TaskTypeNavigationTarget | null {
+		const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+		if (!active || !this.contentEl.contains(active)) return null;
+		if (active.closest('.aulyckanban-view-add-btn')) return { kind: 'add' };
+		if (active.closest('.aulyckanban-archive-btn')) return { kind: 'archive' };
+		const viewTab = active.closest<HTMLElement>('.aulyckanban-view-tab');
+		const viewId = viewTab?.dataset['viewId'];
+		return viewId ? { kind: 'view', id: viewId } : null;
+	}
+
+	private selectAdjacentColumn(offset: number): void {
+		const store = this.plugin.store;
+		const items = Array.from(this.contentEl.querySelectorAll<HTMLElement>(
+			'.aulyckanban-nav-item:not(.aulyckanban-nav-item-editing), '
+			+ '.aulyckanban-nav-add-btn:not(.aulyckanban-nav-item-editing)',
+		));
+		const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+		const focusedItem = active?.closest<HTMLElement>('.aulyckanban-nav-item, .aulyckanban-nav-add-btn') ?? null;
+		const fallbackItem = items.find((item) => item.dataset['columnId'] === store.getActiveColumnId()) ?? null;
+		const currentItem = focusedItem ?? fallbackItem;
+		const currentIndex = currentItem ? items.indexOf(currentItem) : -1;
+		const target = items[getWrappedItemIndex(currentIndex, items.length, offset)];
+		if (!target) return;
+		if (target.classList.contains('aulyckanban-nav-add-btn')) {
+			target.focus({ preventScroll: true });
+			return;
+		}
+		const columnId = target.dataset['columnId'];
+		if (!columnId) return;
+		if (columnId !== store.getActiveColumnId()) {
+			store.dispatch({ type: 'SELECT_COLUMN', payload: { columnId } });
+		}
+		this.focusZoneAfterRender('columns');
+	}
+
+	private selectAdjacentTask(offset: number): void {
+		const tasks = Array.from(this.contentEl.querySelectorAll<HTMLElement>('.aulyckanban-task'));
+		const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+		const currentIndex = active ? tasks.indexOf(active) : -1;
+		const target = tasks[getWrappedItemIndex(currentIndex, tasks.length, offset)];
+		target?.focus({ preventScroll: true });
+		target?.scrollIntoView({ block: 'nearest' });
+	}
+
+	private focusZoneAfterRender(zone: KanbanFocusZone): void {
 		requestAnimationFrame(() => {
-			this.contentEl.focus({ preventScroll: true });
+			this.getFocusTarget(zone)?.focus({ preventScroll: true });
 		});
 	}
 

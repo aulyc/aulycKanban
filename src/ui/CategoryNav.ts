@@ -2,7 +2,6 @@ import { Menu } from 'obsidian';
 import type { KanbanStore } from '../store';
 import { t } from '../i18n';
 import { shouldCommitInlineInput } from '../utils/keyboard';
-import { createInlineCommitController } from '../utils/inlineCommit';
 
 /**
  * 右侧分类导航组件
@@ -37,6 +36,7 @@ export class CategoryNav {
 
 			const itemEl = listEl.createDiv({
 				cls: `aulyckanban-nav-item ${isActive ? 'aulyckanban-nav-item-active' : ''}`,
+				attr: { tabindex: '-1', role: 'button' },
 			});
 			itemEl.dataset['columnId'] = column.id;
 
@@ -64,6 +64,11 @@ export class CategoryNav {
 					payload: { columnId: column.id },
 				});
 			});
+			itemEl.addEventListener('keydown', (e: KeyboardEvent) => {
+				if (e.key !== 'Enter' && e.key !== ' ') return;
+				e.preventDefault();
+				this.store.dispatch({ type: 'SELECT_COLUMN', payload: { columnId: column.id } });
+			});
 
 			// 右键菜单
 			itemEl.addEventListener('contextmenu', (e: MouseEvent) => {
@@ -74,31 +79,20 @@ export class CategoryNav {
 		}
 
 		// 添加分类按钮（紧跟在分类列表下方）
-		const addBtn = listEl.createDiv({ cls: 'aulyckanban-nav-add-btn' });
+		const addBtn = listEl.createDiv({
+			cls: 'aulyckanban-nav-add-btn',
+			attr: { tabindex: '-1', role: 'button', 'aria-label': t('column.addPrompt') },
+		});
 		if (this.isAdding) {
 			addBtn.addClass('aulyckanban-nav-item-editing');
 			const input = addBtn.createEl('input', {
 				cls: 'aulyckanban-nav-inline-input',
 				attr: { type: 'text', placeholder: t('column.addPrompt') },
 			});
-			const confirmBtn = addBtn.createEl('button', {
-				cls: 'aulyckanban-nav-add-confirm',
-				attr: { type: 'button', 'aria-label': t('column.addConfirm') },
-			});
-			confirmBtn.setText('✓');
 			input.value = this.draftTitle;
-			confirmBtn.disabled = !input.value.trim();
 			let composing = false;
-			const finish = createInlineCommitController(
-				() => {
-					this.draftTitle = input.value;
-					this.commitAdd();
-				},
-				() => this.cancelEditing(),
-			);
 			input.addEventListener('input', () => {
 				this.draftTitle = input.value;
-				confirmBtn.disabled = !input.value.trim();
 			});
 			input.addEventListener('compositionstart', () => {
 				composing = true;
@@ -111,29 +105,25 @@ export class CategoryNav {
 				if (shouldCommitInlineInput(e, composing)) {
 					e.preventDefault();
 					e.stopPropagation();
-					finish.commit();
+					this.draftTitle = input.value;
+					this.commitAdd();
 				}
 				if (e.key === 'Escape') {
 					e.preventDefault();
-					finish.cancel();
+					this.cancelEditing();
 				}
 			});
-			input.addEventListener('blur', () => {
-				finish.commit();
-			});
-			confirmBtn.addEventListener('mousedown', (e: MouseEvent) => {
-				// 保持输入框焦点，避免 blur 抢先移除确认按钮。
-				e.preventDefault();
-			});
-			confirmBtn.addEventListener('click', (e: MouseEvent) => {
-				e.preventDefault();
-				e.stopPropagation();
-				finish.commit();
-			});
+			input.addEventListener('blur', () => this.cancelEditing());
 			this.focusInput(input);
 		} else {
 			addBtn.createSpan({ text: '+', cls: 'aulyckanban-nav-add-icon' });
 			addBtn.addEventListener('click', (e: MouseEvent) => {
+				e.preventDefault();
+				e.stopPropagation();
+				this.startInlineAdd();
+			});
+			addBtn.addEventListener('keydown', (e: KeyboardEvent) => {
+				if (e.key !== 'Enter' && e.key !== ' ') return;
 				e.preventDefault();
 				e.stopPropagation();
 				this.startInlineAdd();

@@ -1,235 +1,141 @@
-import { normalizePath, Notice, TFile, Vault } from 'obsidian';
+import { Notice, normalizePath, TFile, Vault } from 'obsidian';
 import type { KanbanStore } from '../store';
-import type { Task, Column } from '../types';
+import type { Task, TaskView, ViewKind } from '../types';
 import { t } from '../i18n';
 import { generateMarkdown } from '../utils/markdown';
 import { formatDateTime, formatDateTimeMinute } from '../utils/datetime';
-import { PERFORMANCE, ARCHIVE_UNCATEGORIZED_ID } from '../constants';
+import { ARCHIVE_UNCATEGORIZED_ID, PERFORMANCE } from '../constants';
 
-/** 同步区块标记 */
 const SYNC_START = '<!-- XAULYC_KANBAN:START -->';
 const SYNC_END = '<!-- XAULYC_KANBAN:END -->';
 
-/**
- * Vault 笔记同步服务
- * 将看板数据和归档数据同步到 Obsidian 笔记文件
- */
 export class VaultSyncService {
-	private readonly vault: Vault;
-	private readonly store: KanbanStore;
 	private syncTimeout: ReturnType<typeof setTimeout> | null = null;
+	private pendingAllViews = false;
 
-	constructor(vault: Vault, store: KanbanStore) {
-		this.vault = vault;
-		this.store = store;
-	}
+	constructor(private readonly vault: Vault, private readonly store: KanbanStore) {}
 
-	/**
-	 * 计划一次同步（去抖）- 看板 + 归档
-	 */
-	scheduleSyncCurrentView(): void {
-		if (this.syncTimeout) {
-			clearTimeout(this.syncTimeout);
-		}
-		const debounce = this.store.getSettings().syncDebounce ?? PERFORMANCE.SYNC_DEBOUNCE;
+	scheduleSyncCurrentView(): void { this.scheduleSync(false); }
+	scheduleSyncAllViews(): void { this.scheduleSync(true); }
+
+	private scheduleSync(allViews: boolean): void {
+		if (allViews) this.pendingAllViews = true;
+		if (this.syncTimeout) clearTimeout(this.syncTimeout);
 		this.syncTimeout = setTimeout(() => {
-			void this.syncCurrentView(true);
+			const syncAll = this.pendingAllViews;
+			this.pendingAllViews = false;
+			if (syncAll) void this.syncAllViews(true);
+			else void this.syncCurrentView(true);
 			void this.syncArchive(true);
 			this.syncTimeout = null;
-		}, debounce);
+		}, this.store.getSettings().syncDebounce ?? PERFORMANCE.SYNC_DEBOUNCE);
 	}
 
-	/**
-	 * 同步当前视图到笔记
-	 */
 	async syncCurrentView(silent = false): Promise<void> {
-		const settings = this.store.getSettings();
-		const currentView = settings.currentView;
-		const syncTarget = settings[currentView];
+		await this.syncView(this.store.getCurrentView(), silent);
+	}
 
-		if (!syncTarget.filePath) {
-			if (!silent) {
-				new Notice(t('sync.noTarget'));
-			}
+	private async syncAllViews(silent: boolean): Promise<void> {
+		await Promise.all(this.store.getTaskViews().map((view) => this.syncView(view.id, silent)));
+	}
+
+	private async syncView(viewId: ViewKind, silent: boolean): Promise<void> {
+		const target = this.store.getSettings().viewSyncTargets[viewId];
+		if (!target?.filePath) {
+			if (!silent) new Notice(t('sync.noTarget'));
 			return;
 		}
-
-		const columns = this.store.getCurrentColumns();
-		const markdown = generateMarkdown(columns);
-		const filePath = normalizePath(syncTarget.filePath);
-
+		const view = this.store.getView(viewId);
+		if (!view) return;
 		try {
-			await this.writeToFile(filePath, markdown, silent);
+			await this.writeToFile(normalizePath(target.filePath), generateMarkdown([
+				...view.columns,
+			].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))), silent);
 		} catch (error) {
-			const msg = error instanceof Error ? error.message : String(error);
-			if (!silent) {
-				new Notice(`${t('sync.fail')}：${msg}`);
-			}
+			if (!silent) new Notice(`${t('sync.fail')}：${error instanceof Error ? error.message : String(error)}`);
 		}
 	}
 
-	/**
-	 * 同步归档到笔记
-	 */
 	async syncArchive(silent = false): Promise<void> {
-		const settings = this.store.getSettings();
-
-		if (!settings.archive?.filePath) return;
-
-		const filePath = normalizePath(settings.archive.filePath);
-		const boardData = this.store.getBoardData();
-
-		// 合并工作 + 个人归档
-		const workArchive = boardData.workArchive?.tasks ?? [];
-		const personalArchive = boardData.personalArchive?.tasks ?? [];
-
-		const markdown = this.generateArchiveMarkdown(workArchive, personalArchive);
-
+		const path = this.store.getSettings().archive?.filePath;
+		if (!path) return;
 		try {
-			await this.writeToFile(filePath, markdown, silent);
+			await this.writeToFile(normalizePath(path), this.generateArchiveMarkdown(), silent);
 		} catch (error) {
-			const msg = error instanceof Error ? error.message : String(error);
-			if (!silent) {
-				new Notice(`${t('sync.fail')}：${msg}`);
-			}
+			if (!silent) new Notice(`${t('sync.fail')}：${error instanceof Error ? error.message : String(error)}`);
 		}
 	}
 
-	/**
-	 * 生成归档 Markdown
-	 * 按当前分类展示，工作和个人分别展示，含归档时间
-	 */
-	private generateArchiveMarkdown(workTasks: Task[], personalTasks: Task[]): string {
-		const now = formatDateTime(new Date());
-
-		let md = `> ${t('md.syncTime')}：${now}\n\n`;
-
-		const totalCount = workTasks.length + personalTasks.length;
-		md += `## ${t('md.archiveStats')}\n\n`;
-		md += `- ${t('md.archiveTotal')}：${totalCount}\n`;
-		md += `- ${t('md.archiveWork')}：${workTasks.length}\n`;
-		md += `- ${t('md.archivePersonal')}：${personalTasks.length}\n\n`;
-
-		const boardData = this.store.getBoardData();
-
-		if (workTasks.length > 0) {
-			md += `## ${t('md.archiveWorkHeading')}\n\n`;
-			md += this.renderArchiveByColumn(workTasks, boardData.work.columns);
+	private generateArchiveMarkdown(): string {
+		const views = this.store.getTaskViews();
+		const total = views.reduce((count, view) => count + this.store.getArchive(view.id).length, 0);
+		let markdown = `> ${t('md.syncTime')}：${formatDateTime(new Date())}\n\n`;
+		markdown += `## ${t('md.archiveStats')}\n\n- ${t('md.archiveTotal')}：${total}\n`;
+		for (const view of views) markdown += `- ${view.title}：${this.store.getArchive(view.id).length}\n`;
+		markdown += '\n';
+		for (const view of views) {
+			const tasks = this.store.getArchive(view.id);
+			if (tasks.length === 0) continue;
+			markdown += `## ${view.title}\n\n${this.renderArchiveByColumn(tasks, view)}`;
 		}
-
-		if (personalTasks.length > 0) {
-			md += `## ${t('md.archivePersonalHeading')}\n\n`;
-			md += this.renderArchiveByColumn(personalTasks, boardData.personal.columns);
-		}
-
-		return md;
+		return markdown;
 	}
 
-	/**
-	 * 按分类渲染归档任务
-	 */
-	private renderArchiveByColumn(tasks: Task[], columns: Column[]): string {
-		let md = '';
-
-		const grouped = new Map<string, Task[]>();
-		for (const col of columns) {
-			grouped.set(col.id, []);
-		}
+	private renderArchiveByColumn(tasks: Task[], view: TaskView): string {
+		const grouped = new Map<string, Task[]>(view.columns.map((column) => [column.id, []]));
 		grouped.set(ARCHIVE_UNCATEGORIZED_ID, []);
-
 		for (const task of tasks) {
-			const colId = task.sourceColumnId ?? ARCHIVE_UNCATEGORIZED_ID;
-			const list = grouped.get(colId);
-			if (list) {
-				list.push(task);
-			} else {
-				grouped.get(ARCHIVE_UNCATEGORIZED_ID)?.push(task);
-			}
+			const key = grouped.has(task.sourceColumnId ?? '') ? task.sourceColumnId! : ARCHIVE_UNCATEGORIZED_ID;
+			grouped.get(key)?.push(task);
 		}
-
-		for (const col of columns) {
-			const colTasks = grouped.get(col.id) ?? [];
-			if (colTasks.length === 0) continue;
-
-			md += `### ${col.title}\n\n`;
-
-			const sorted = [...colTasks].sort((a, b) => {
-				const aTime = new Date(a.archivedAt ?? a.createdAt).getTime();
-				const bTime = new Date(b.archivedAt ?? b.createdAt).getTime();
-				return bTime - aTime;
-			});
-
-			for (const task of sorted) {
-				const archiveTime = formatDateTimeMinute(task.archivedAt ?? task.completedAt ?? task.createdAt);
-				md += `- [x] ${task.content}  *(${t('archive.archivedAt')} ${archiveTime})*\n`;
+		let markdown = '';
+		const render = (title: string, columnTasks: Task[]): void => {
+			if (columnTasks.length === 0) return;
+			markdown += `### ${title}\n\n`;
+			for (const task of [...columnTasks].sort((a, b) => this.taskTime(b) - this.taskTime(a))) {
+				const time = formatDateTimeMinute(task.archivedAt ?? task.completedAt ?? task.createdAt);
+				markdown += `- [x] ${task.content}  *(${t('archive.archivedAt')} ${time})*\n`;
 			}
-			md += '\n';
-		}
-
-		const otherTasks = grouped.get(ARCHIVE_UNCATEGORIZED_ID) ?? [];
-		if (otherTasks.length > 0) {
-			md += `### ${t('archive.other')}\n\n`;
-			for (const task of otherTasks) {
-				const archiveTime = formatDateTimeMinute(task.archivedAt ?? task.completedAt ?? task.createdAt);
-				md += `- [x] ${task.content}  *(${t('archive.archivedAt')} ${archiveTime})*\n`;
-			}
-			md += '\n';
-		}
-
-		return md;
+			markdown += '\n';
+		};
+		for (const column of view.columns) render(column.title, grouped.get(column.id) ?? []);
+		render(t('archive.other'), grouped.get(ARCHIVE_UNCATEGORIZED_ID) ?? []);
+		return markdown;
 	}
 
+	private taskTime(task: Task): number {
+		return new Date(task.archivedAt ?? task.completedAt ?? task.createdAt).getTime();
+	}
 
-
-	/**
-	 * 写入文件
-	 */
 	private async writeToFile(filePath: string, markdown: string, silent: boolean): Promise<void> {
-		const wrappedContent = `${SYNC_START}\n${markdown}\n${SYNC_END}`;
-
-		const existingFile = this.vault.getAbstractFileByPath(filePath);
-
-		if (existingFile instanceof TFile) {
-			await this.vault.process(existingFile, (data: string) => {
-				const startIdx = data.indexOf(SYNC_START);
-				const endIdx = data.indexOf(SYNC_END);
-
-				if (startIdx !== -1 && endIdx !== -1) {
-					return data.substring(0, startIdx) + wrappedContent + data.substring(endIdx + SYNC_END.length);
-				} else {
-					return data + '\n\n' + wrappedContent;
-				}
+		const wrapped = `${SYNC_START}\n${markdown}\n${SYNC_END}`;
+		const existing = this.vault.getAbstractFileByPath(filePath);
+		if (existing instanceof TFile) {
+			await this.vault.process(existing, (data) => {
+				const start = data.indexOf(SYNC_START);
+				const end = data.indexOf(SYNC_END);
+				return start >= 0 && end >= 0
+					? data.substring(0, start) + wrapped + data.substring(end + SYNC_END.length)
+					: `${data}\n\n${wrapped}`;
 			});
-
-			if (!silent) {
-				new Notice(t('sync.updated'));
-			}
-		} else {
-			const dir = filePath.substring(0, filePath.lastIndexOf('/'));
-			if (dir) {
-				const dirExists = this.vault.getAbstractFileByPath(dir);
-				if (!dirExists) {
-					await this.vault.createFolder(dir);
-				}
-			}
-
-			await this.vault.create(filePath, wrappedContent);
-
-			if (!silent) {
-				new Notice(t('sync.exported'));
-			}
+			if (!silent) new Notice(t('sync.updated'));
+			return;
 		}
+		const directory = filePath.substring(0, filePath.lastIndexOf('/'));
+		if (directory && !this.vault.getAbstractFileByPath(directory)) await this.vault.createFolder(directory);
+		await this.vault.create(filePath, wrapped);
+		if (!silent) new Notice(t('sync.exported'));
 	}
 
 	flush(): void {
-		const hadPending = this.syncTimeout !== null;
-		if (this.syncTimeout) {
-			clearTimeout(this.syncTimeout);
-			this.syncTimeout = null;
-		}
-		if (hadPending) {
-			void this.syncCurrentView(true);
-			void this.syncArchive(true);
-		}
+		const pending = this.syncTimeout !== null;
+		const allViews = this.pendingAllViews;
+		if (this.syncTimeout) clearTimeout(this.syncTimeout);
+		this.syncTimeout = null;
+		this.pendingAllViews = false;
+		if (!pending) return;
+		if (allViews) void this.syncAllViews(true);
+		else void this.syncCurrentView(true);
+		void this.syncArchive(true);
 	}
 }

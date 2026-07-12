@@ -1,470 +1,308 @@
-import type { Action, ActionType, BoardData, PluginSettings, ViewKind, Task, Column, ArchiveData } from './types';
-import { getDefaultBoardData, PERFORMANCE, ID_PREFIX, ARCHIVE_KEY } from './constants';
+import type { Action, ActionType, ArchiveData, BoardData, Column, PluginSettings, Task, TaskView, ViewKind } from './types';
+import { getDefaultBoardData, ID_PREFIX, PERFORMANCE } from './constants';
 import type KanbanPlugin from './main';
+import { synchronizeSharedColumnDefinitions } from './services/sharedColumns';
 
 type Listener = () => void;
 
-/** 会修改看板数据的 Action 类型（需要触发 md 同步） */
-const DATA_MUTATION_ACTIONS: ReadonlySet<ActionType> = new Set<ActionType>([
-	'ADD_TASK',
-	'EDIT_TASK',
-	'DELETE_TASK',
-	'TOGGLE_TASK',
-	'MOVE_TASK',
-	'RESTORE_TASK',
-	'DELETE_ARCHIVE_TASKS',
-	'SET_BOARD_DATA',
-	'CLEAR_ALL_DATA',
-	'ADD_COLUMN',
-	'RENAME_COLUMN',
-	'DELETE_COLUMN',
-	'REORDER_COLUMNS',
+const DATA_MUTATION_ACTIONS: ReadonlySet<ActionType> = new Set([
+	'ADD_TASK', 'EDIT_TASK', 'DELETE_TASK', 'TOGGLE_TASK', 'MOVE_TASK',
+	'ADD_VIEW', 'ADD_COLUMN', 'RENAME_COLUMN', 'DELETE_COLUMN', 'REORDER_COLUMNS',
+	'RESTORE_TASK', 'DELETE_ARCHIVE_TASKS', 'SET_BOARD_DATA', 'CLEAR_ALL_DATA',
 ]);
 
-/** 需要持久化到 data.json 的 Action（包含数据变更和设置变更） */
-const PERSIST_ACTIONS: ReadonlySet<ActionType> = new Set<ActionType>([
+const PERSIST_ACTIONS: ReadonlySet<ActionType> = new Set([
 	...DATA_MUTATION_ACTIONS,
 	'UPDATE_SETTINGS',
 ]);
 
-/**
- * 看板状态管理
- * 单一数据源，所有 UI 通过 subscribe 监听变化
- */
 export class KanbanStore {
 	private readonly settings: PluginSettings;
 	private board: BoardData;
 	private readonly plugin: KanbanPlugin;
-	private readonly listeners: Set<Listener> = new Set();
+	private readonly listeners = new Set<Listener>();
 	private saveTimeout: ReturnType<typeof setTimeout> | null = null;
 	private _lastActionMutatedData = false;
+	private _lastActionType: ActionType | null = null;
 
 	constructor(settings: PluginSettings, board: BoardData, plugin: KanbanPlugin) {
-		this.settings = { ...settings };
-		this.board = this.ensureColumnOrder(board);
+		this.settings = {
+			...settings,
+			viewSyncTargets: { ...settings.viewSyncTargets },
+			archive: { ...settings.archive },
+		};
+		this.board = this.prepareBoard(board);
 		this.plugin = plugin;
+		this.ensureCurrentView();
+		this.ensureActiveColumn();
 	}
 
-	// ==================== 读取 ====================
+	getSettings(): Readonly<PluginSettings> { return this.settings; }
+	getBoardData(): Readonly<BoardData> { return this.board; }
+	getCurrentView(): ViewKind { return this.settings.currentView; }
+	getTaskViews(): TaskView[] { return [...this.board.views].sort((a, b) => a.order - b.order); }
+	getView(viewId: ViewKind): TaskView | undefined { return this.board.views.find((view) => view.id === viewId); }
+	getCurrentTaskView(): TaskView | undefined { return this.getView(this.settings.currentView); }
+	isShowingArchive(): boolean { return this.settings.showArchive; }
 
-	getSettings(): Readonly<PluginSettings> {
-		return this.settings;
-	}
-
-	getBoardData(): Readonly<BoardData> {
-		return this.board;
-	}
-
-	getCurrentView(): ViewKind {
-		return this.settings.currentView;
-	}
-
-	isShowingArchive(): boolean {
-		return this.settings.showArchive;
-	}
-
-	/** 获取当前选中的分类 ID */
 	getActiveColumnId(): string {
 		const columns = this.getCurrentColumns();
-		const activeId = this.settings.activeColumnId;
-		// 如果 activeColumnId 无效，选第一个
-		if (columns.some((c) => c.id === activeId)) {
-			return activeId;
-		}
-		return columns[0]?.id ?? '';
+		return columns.some((column) => column.id === this.settings.activeColumnId)
+			? this.settings.activeColumnId
+			: columns[0]?.id ?? '';
 	}
 
-	/** 获取当前选中分类的数据 */
 	getActiveColumn(): Column | undefined {
-		const activeId = this.getActiveColumnId();
-		return this.getCurrentColumns().find((c) => c.id === activeId);
+		return this.getCurrentColumns().find((column) => column.id === this.getActiveColumnId());
 	}
 
-	/** 获取当前视图的列（按 order 排序） */
 	getCurrentColumns(): Column[] {
-		const viewData = this.board[this.settings.currentView];
-		const columns = viewData?.columns ?? [];
-		return [...columns].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+		return [...(this.getCurrentTaskView()?.columns ?? [])]
+			.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 	}
 
-	/** 获取当前视图的归档任务 */
-	getCurrentArchive(): Task[] {
-		return this.board[ARCHIVE_KEY[this.settings.currentView]]?.tasks ?? [];
-	}
+	getCurrentArchive(): Task[] { return this.board.archives[this.settings.currentView]?.tasks ?? []; }
+	getArchive(viewId: ViewKind): Task[] { return this.board.archives[viewId]?.tasks ?? []; }
 
-	/** 在指定列中查找任务 */
 	findTask(columnId: string, taskId: string): Task | undefined {
-		const column = this.getCurrentColumns().find((c) => c.id === columnId);
-		return column?.tasks.find((t) => t.id === taskId);
+		return this.getCurrentColumns().find((column) => column.id === columnId)?.tasks.find((task) => task.id === taskId);
 	}
 
-	/** 上一次 dispatch 是否修改了看板数据 */
-	get lastActionMutatedData(): boolean {
-		return this._lastActionMutatedData;
+	get lastActionMutatedData(): boolean { return this._lastActionMutatedData; }
+	get lastActionType(): ActionType | null { return this._lastActionType; }
+
+	subscribe(listener: Listener): () => void {
+		this.listeners.add(listener);
+		return () => this.listeners.delete(listener);
 	}
 
-	// ==================== 订阅 ====================
-
-	subscribe(fn: Listener): () => void {
-		this.listeners.add(fn);
-		return () => {
-			this.listeners.delete(fn);
-		};
-	}
-
-	private notify(): void {
-		this.listeners.forEach((fn) => fn());
-	}
-
-	// ==================== 操作 ====================
+	private notify(): void { this.listeners.forEach((listener) => listener()); }
 
 	dispatch(action: Action): void {
 		switch (action.type) {
-			case 'ADD_TASK':
-				this.addTask(action.payload.columnId, action.payload.content);
-				break;
-			case 'EDIT_TASK':
-				this.editTask(action.payload.columnId, action.payload.taskId, action.payload.content);
-				break;
-			case 'DELETE_TASK':
-				this.deleteTask(action.payload.columnId, action.payload.taskId);
-				break;
-			case 'TOGGLE_TASK':
-				this.toggleTask(action.payload.columnId, action.payload.taskId);
-				break;
-			case 'MOVE_TASK':
-				this.moveTask(
-					action.payload.taskId,
-					action.payload.fromColumnId,
-					action.payload.toColumnId,
-					action.payload.targetIndex,
-				);
-				break;
+			case 'ADD_TASK': this.addTask(action.payload.columnId, action.payload.content); break;
+			case 'EDIT_TASK': this.editTask(action.payload.columnId, action.payload.taskId, action.payload.content); break;
+			case 'DELETE_TASK': this.deleteTask(action.payload.columnId, action.payload.taskId); break;
+			case 'TOGGLE_TASK': this.toggleTask(action.payload.columnId, action.payload.taskId); break;
+			case 'MOVE_TASK': this.moveTask(action.payload.taskId, action.payload.fromColumnId, action.payload.toColumnId, action.payload.targetIndex); break;
 			case 'SWITCH_VIEW':
-				this.settings.currentView = action.payload.view;
+				if (this.getView(action.payload.view)) this.settings.currentView = action.payload.view;
 				this.settings.showArchive = false;
 				this.ensureActiveColumn();
 				break;
-			case 'SELECT_COLUMN':
-				this.settings.activeColumnId = action.payload.columnId;
-				break;
-			case 'ADD_COLUMN':
-				this.addColumn(action.payload.title);
-				break;
-			case 'RENAME_COLUMN':
-				this.renameColumn(action.payload.columnId, action.payload.title);
-				break;
-			case 'DELETE_COLUMN':
-				this.deleteColumn(action.payload.columnId, action.payload.moveTasks ?? true);
-				break;
-			case 'REORDER_COLUMNS':
-				this.reorderColumns(action.payload.columnIds);
-				break;
-			case 'TOGGLE_ARCHIVE_VIEW':
-				this.settings.showArchive = !this.settings.showArchive;
-				break;
-			case 'RESTORE_TASK':
-				this.restoreTask(action.payload.taskId);
-				break;
-			case 'DELETE_ARCHIVE_TASKS':
-				this.deleteArchiveTasks(action.payload.taskIds);
-				break;
+			case 'ADD_VIEW': this.addView(action.payload.title); break;
+			case 'SELECT_COLUMN': this.settings.activeColumnId = action.payload.columnId; break;
+			case 'ADD_COLUMN': this.addColumn(action.payload.title); break;
+			case 'RENAME_COLUMN': this.renameColumn(action.payload.columnId, action.payload.title); break;
+			case 'DELETE_COLUMN': this.deleteColumn(action.payload.columnId, action.payload.moveTasks ?? true); break;
+			case 'REORDER_COLUMNS': this.reorderColumns(action.payload.columnIds); break;
+			case 'TOGGLE_ARCHIVE_VIEW': this.settings.showArchive = !this.settings.showArchive; break;
+			case 'RESTORE_TASK': this.restoreTask(action.payload.taskId); break;
+			case 'DELETE_ARCHIVE_TASKS': this.deleteArchiveTasks(action.payload.taskIds); break;
 			case 'SET_BOARD_DATA':
-				this.board = this.ensureColumnOrder(action.payload.board);
+				this.board = this.prepareBoard(action.payload.board);
+				this.ensureCurrentView();
 				this.ensureActiveColumn();
 				break;
 			case 'CLEAR_ALL_DATA':
 				this.board = getDefaultBoardData();
+				this.ensureCurrentView();
 				this.ensureActiveColumn();
 				break;
-			case 'UPDATE_SETTINGS':
-				this.updateSettings(action.payload);
-				break;
+			case 'UPDATE_SETTINGS': this.updateSettings(action.payload); break;
 		}
 
+		this._lastActionType = action.type;
 		this._lastActionMutatedData = DATA_MUTATION_ACTIONS.has(action.type);
 		this.notify();
-		if (PERSIST_ACTIONS.has(action.type)) {
-			this.scheduleSave();
-		}
+		if (PERSIST_ACTIONS.has(action.type)) this.scheduleSave();
 	}
 
-	// ==================== 任务操作 ====================
-
-	private addTask(columnId: string, content: string): void {
+	private addTask(columnId: string, rawContent: string): void {
 		const column = this.getRawColumn(columnId);
-		if (!column) return;
-
+		const content = rawContent.trim();
+		if (!column || !content) return;
 		const now = new Date().toISOString();
-		const task: Task = {
-			id: `${ID_PREFIX.TASK}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
-			content,
-			completed: false,
-			createdAt: now,
-			updatedAt: now,
-		};
-
-		column.tasks.unshift(task);
+		column.tasks.unshift({
+			id: this.generateId(ID_PREFIX.TASK), content, completed: false,
+			createdAt: now, updatedAt: now,
+		});
 	}
 
-	private editTask(columnId: string, taskId: string, content: string): void {
+	private editTask(columnId: string, taskId: string, rawContent: string): void {
 		const task = this.findTask(columnId, taskId);
-		if (task) {
-			task.content = content;
-			task.updatedAt = new Date().toISOString();
-		}
+		const content = rawContent.trim();
+		if (!task || !content) return;
+		task.content = content;
+		task.updatedAt = new Date().toISOString();
 	}
 
 	private deleteTask(columnId: string, taskId: string): void {
 		const column = this.getRawColumn(columnId);
 		if (!column) return;
-
-		const index = column.tasks.findIndex((t) => t.id === taskId);
-		if (index > -1) {
-			column.tasks.splice(index, 1);
-		}
+		const index = column.tasks.findIndex((task) => task.id === taskId);
+		if (index >= 0) column.tasks.splice(index, 1);
 	}
 
 	private toggleTask(columnId: string, taskId: string): void {
 		const column = this.getRawColumn(columnId);
-		if (!column) return;
-
-		const task = column.tasks.find((t) => t.id === taskId);
-		if (!task) return;
-
+		const task = column?.tasks.find((candidate) => candidate.id === taskId);
+		if (!column || !task) return;
 		task.completed = !task.completed;
-
-		if (task.completed) {
-			const now = new Date().toISOString();
-			task.completedAt = now;
-			task.archivedAt = now;
-			task.sourceColumnId = columnId;
-
-			const idx = column.tasks.indexOf(task);
-			if (idx > -1) {
-				column.tasks.splice(idx, 1);
-			}
-
-			this.getOrCreateArchive().tasks.unshift(task);
-		}
+		if (!task.completed) return;
+		const now = new Date().toISOString();
+		task.completedAt = now;
+		task.archivedAt = now;
+		task.sourceColumnId = columnId;
+		column.tasks.splice(column.tasks.indexOf(task), 1);
+		this.getOrCreateArchive(this.settings.currentView).tasks.unshift(task);
 	}
 
 	private restoreTask(taskId: string): void {
-		// 在工作和个人归档中都查找
-		let archive: ArchiveData | undefined;
-		let targetView: 'work' | 'personal' = this.settings.currentView;
-
-		const workArchive = this.board.workArchive;
-		const personalArchive = this.board.personalArchive;
-
-		if (workArchive?.tasks.some((t) => t.id === taskId)) {
-			archive = workArchive;
-			targetView = 'work';
-		} else if (personalArchive?.tasks.some((t) => t.id === taskId)) {
-			archive = personalArchive;
-			targetView = 'personal';
-		}
-
-		if (!archive) return;
-
-		const idx = archive.tasks.findIndex((t) => t.id === taskId);
-		if (idx === -1) return;
-
-		const task = archive.tasks[idx];
-		if (!task) return;
-
-		archive.tasks.splice(idx, 1);
-
-		task.completed = false;
-		delete task.completedAt;
-		delete task.archivedAt;
-
-		const viewData = this.board[targetView];
-		const targetColumnId = task.sourceColumnId ?? viewData?.columns[0]?.id ?? '';
-		delete task.sourceColumnId;
-		const column = viewData?.columns.find((c) => c.id === targetColumnId);
-		if (column) {
-			column.tasks.unshift(task);
-		} else {
-			const firstCol = viewData?.columns[0];
-			if (firstCol) {
-				firstCol.tasks.unshift(task);
-			}
+		for (const view of this.getTaskViews()) {
+			const archive = this.board.archives[view.id];
+			const index = archive?.tasks.findIndex((task) => task.id === taskId) ?? -1;
+			if (!archive || index < 0) continue;
+			const [task] = archive.tasks.splice(index, 1);
+			if (!task) return;
+			task.completed = false;
+			delete task.completedAt;
+			delete task.archivedAt;
+			const column = view.columns.find((candidate) => candidate.id === task.sourceColumnId) ?? view.columns[0];
+			delete task.sourceColumnId;
+			column?.tasks.unshift(task);
+			return;
 		}
 	}
 
 	private deleteArchiveTasks(taskIds: string[]): void {
-		if (taskIds.length === 0) return;
-		const idSet = new Set(taskIds);
-
-		if (this.board.workArchive?.tasks) {
-			this.board.workArchive.tasks = this.board.workArchive.tasks.filter((task) => !idSet.has(task.id));
-		}
-		if (this.board.personalArchive?.tasks) {
-			this.board.personalArchive.tasks = this.board.personalArchive.tasks.filter(
-				(task) => !idSet.has(task.id),
-			);
+		const ids = new Set(taskIds);
+		for (const archive of Object.values(this.board.archives)) {
+			archive.tasks = archive.tasks.filter((task) => !ids.has(task.id));
 		}
 	}
 
-	private moveTask(
-		taskId: string,
-		fromColumnId: string,
-		toColumnId: string,
-		targetIndex: number,
-	): void {
-		const fromColumn = this.getRawColumn(fromColumnId);
-		const toColumn = this.getRawColumn(toColumnId);
-		if (!fromColumn || !toColumn) return;
-
-		const taskIndex = fromColumn.tasks.findIndex((t) => t.id === taskId);
-		if (taskIndex === -1) return;
-
-		if (fromColumnId === toColumnId && taskIndex === targetIndex) return;
-
-		const [task] = fromColumn.tasks.splice(taskIndex, 1);
+	private moveTask(taskId: string, fromColumnId: string, toColumnId: string, targetIndex: number): void {
+		const from = this.getRawColumn(fromColumnId);
+		const to = this.getRawColumn(toColumnId);
+		if (!from || !to) return;
+		const index = from.tasks.findIndex((task) => task.id === taskId);
+		if (index < 0 || (from === to && index === targetIndex)) return;
+		const [task] = from.tasks.splice(index, 1);
 		if (!task) return;
-
-		if (fromColumnId === toColumnId) {
-			if (targetIndex >= 0 && targetIndex <= toColumn.tasks.length) {
-				toColumn.tasks.splice(targetIndex, 0, task);
-			} else {
-				toColumn.tasks.push(task);
-			}
-		} else {
-			toColumn.tasks.unshift(task);
-		}
+		if (from === to && targetIndex >= 0 && targetIndex <= to.tasks.length) to.tasks.splice(targetIndex, 0, task);
+		else to.tasks.unshift(task);
 	}
 
-	// ==================== 分类操作 ====================
-
-	private addColumn(title: string): void {
-		const columns = this.getRawColumns();
-		const maxOrder = columns.reduce((max, c) => Math.max(max, c.order ?? 0), -1);
-
-		const newCol: Column = {
-			id: `${ID_PREFIX.COLUMN}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-			title,
-			order: maxOrder + 1,
-			tasks: [],
-		};
-
-		columns.push(newCol);
-		this.settings.activeColumnId = newCol.id;
+	private addView(rawTitle: string): void {
+		const title = rawTitle.trim();
+		if (!title) return;
+		const template = this.getTaskViews()[0];
+		if (!template) return;
+		const id = this.generateId(ID_PREFIX.VIEW);
+		this.board.views.push({
+			id, title,
+			order: this.board.views.reduce((max, view) => Math.max(max, view.order), -1) + 1,
+			columns: template.columns.map((column) => ({ ...column, tasks: [] })),
+		});
+		this.board.archives[id] = { tasks: [] };
+		this.settings.viewSyncTargets[id] = { filePath: '' };
+		this.settings.currentView = id;
+		this.settings.showArchive = false;
+		this.ensureActiveColumn();
 	}
 
-	private renameColumn(columnId: string, newTitle: string): void {
-		const column = this.getRawColumn(columnId);
-		if (column) {
-			column.title = newTitle;
+	private addColumn(rawTitle: string): void {
+		const title = rawTitle.trim();
+		if (!title) return;
+		const maxOrder = this.getCurrentColumns().reduce((max, column) => Math.max(max, column.order ?? 0), -1);
+		const id = this.generateId(ID_PREFIX.COLUMN);
+		for (const view of this.board.views) view.columns.push({ id, title, order: maxOrder + 1, tasks: [] });
+		this.settings.activeColumnId = id;
+	}
+
+	private renameColumn(columnId: string, rawTitle: string): void {
+		const title = rawTitle.trim();
+		if (!title) return;
+		for (const view of this.board.views) {
+			const column = view.columns.find((candidate) => candidate.id === columnId);
+			if (column) column.title = title;
 		}
 	}
 
 	private deleteColumn(columnId: string, moveTasks: boolean): void {
-		const columns = this.getRawColumns();
-		if (columns.length <= 1) return; // 至少保留一个
-
-		const idx = columns.findIndex((c) => c.id === columnId);
-		if (idx === -1) return;
-
-		const column = columns[idx];
-		if (!column) return;
-
-		if (moveTasks && column.tasks.length > 0) {
-			// 将任务移到第一个非当前的分类
-			const target = columns.find((c) => c.id !== columnId);
-			if (target) {
-				target.tasks.push(...column.tasks);
+		if (this.getCurrentColumns().length <= 1) return;
+		for (const view of this.board.views) {
+			const index = view.columns.findIndex((column) => column.id === columnId);
+			if (index < 0) continue;
+			const column = view.columns[index];
+			const target = [...view.columns]
+				.filter((candidate) => candidate.id !== columnId)
+				.sort((a, b) => (a.order ?? 0) - (b.order ?? 0))[0];
+			if (moveTasks && target && column) target.tasks.push(...column.tasks);
+			view.columns.splice(index, 1);
+			for (const task of this.board.archives[view.id]?.tasks ?? []) {
+				if (task.sourceColumnId !== columnId) continue;
+				if (moveTasks && target) task.sourceColumnId = target.id;
+				else delete task.sourceColumnId;
 			}
 		}
-
-		columns.splice(idx, 1);
-
-		// 如果删的是当前选中的，切换到第一个
-		if (this.settings.activeColumnId === columnId) {
-			this.settings.activeColumnId = columns[0]?.id ?? '';
-		}
+		if (this.settings.activeColumnId === columnId) this.ensureActiveColumn();
 	}
 
 	private reorderColumns(columnIds: string[]): void {
-		const columns = this.getRawColumns();
-		for (let i = 0; i < columnIds.length; i++) {
-			const col = columns.find((c) => c.id === columnIds[i]);
-			if (col) {
-				col.order = i;
-			}
+		for (const view of this.board.views) {
+			columnIds.forEach((id, order) => {
+				const column = view.columns.find((candidate) => candidate.id === id);
+				if (column) column.order = order;
+			});
 		}
+	}
+
+	private getRawColumns(): Column[] { return this.getCurrentTaskView()?.columns ?? []; }
+	private getRawColumn(columnId: string): Column | undefined { return this.getRawColumns().find((column) => column.id === columnId); }
+	private getOrCreateArchive(viewId: ViewKind): ArchiveData { return this.board.archives[viewId] ??= { tasks: [] }; }
+
+	private prepareBoard(board: BoardData): BoardData {
+		for (const view of board.views) {
+			view.columns.forEach((column, index) => { column.order ??= index; });
+			board.archives[view.id] ??= { tasks: [] };
+		}
+		return synchronizeSharedColumnDefinitions(board);
+	}
+
+	private ensureCurrentView(): void {
+		if (!this.getView(this.settings.currentView)) this.settings.currentView = this.getTaskViews()[0]?.id ?? '';
 	}
 
 	private ensureActiveColumn(): void {
 		const columns = this.getCurrentColumns();
-		if (!columns.some((c) => c.id === this.settings.activeColumnId)) {
+		if (!columns.some((column) => column.id === this.settings.activeColumnId)) {
 			this.settings.activeColumnId = columns[0]?.id ?? '';
 		}
 	}
 
-	// ==================== 内部辅助 ====================
-
-	/** 获取当前视图的原始列数组引用（不排序，用于修改） */
-	private getRawColumns(): Column[] {
-		const viewData = this.board[this.settings.currentView];
-		return viewData?.columns ?? [];
-	}
-
-	/** 获取原始列引用（用于修改） */
-	private getRawColumn(columnId: string): Column | undefined {
-		return this.getRawColumns().find((c) => c.id === columnId);
-	}
-
-	private getOrCreateArchive(): ArchiveData {
-		const archiveKey = ARCHIVE_KEY[this.settings.currentView];
-		const archive = (this.board[archiveKey] ??= { tasks: [] });
-		return archive;
-	}
-
-	/** 确保旧数据中的列有 order 字段 */
-	private ensureColumnOrder(board: BoardData): BoardData {
-		const ensureView = (columns: Column[]): void => {
-			for (let i = 0; i < columns.length; i++) {
-				const col = columns[i];
-				if (col && col.order === undefined) {
-					col.order = i;
-				}
-			}
-		};
-		if (board.work?.columns) ensureView(board.work.columns);
-		if (board.personal?.columns) ensureView(board.personal.columns);
-		board.workArchive ??= { tasks: [] };
-		board.personalArchive ??= { tasks: [] };
-		return board;
-	}
-
 	private updateSettings(partial: Partial<PluginSettings>): void {
-		if (partial.currentView !== undefined) this.settings.currentView = partial.currentView;
+		if (partial.currentView !== undefined && this.getView(partial.currentView)) this.settings.currentView = partial.currentView;
 		if (partial.activeColumnId !== undefined) this.settings.activeColumnId = partial.activeColumnId;
 		if (partial.showArchive !== undefined) this.settings.showArchive = partial.showArchive;
-
 		if (partial.schemaVersion !== undefined) this.settings.schemaVersion = partial.schemaVersion;
 		if (partial.saveDebounce !== undefined) this.settings.saveDebounce = partial.saveDebounce;
 		if (partial.syncDebounce !== undefined) this.settings.syncDebounce = partial.syncDebounce;
-
-		if (partial.work) {
-			this.settings.work = { ...this.settings.work, ...partial.work };
+		if (partial.viewSyncTargets) {
+			for (const [id, target] of Object.entries(partial.viewSyncTargets)) {
+				this.settings.viewSyncTargets[id] = { ...(this.settings.viewSyncTargets[id] ?? { filePath: '' }), ...target };
+			}
 		}
-		if (partial.personal) {
-			this.settings.personal = { ...this.settings.personal, ...partial.personal };
-		}
-		if (partial.archive) {
-			this.settings.archive = { ...this.settings.archive, ...partial.archive };
-		}
+		if (partial.archive) this.settings.archive = { ...this.settings.archive, ...partial.archive };
 	}
 
-	// ==================== 持久化 ====================
+	private generateId(prefix: string): string {
+		return `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+	}
 
 	private scheduleSave(): void {
-		if (this.saveTimeout) {
-			clearTimeout(this.saveTimeout);
-		}
+		if (this.saveTimeout) clearTimeout(this.saveTimeout);
 		const debounce = this.settings.saveDebounce ?? PERFORMANCE.SAVE_DEBOUNCE;
 		this.saveTimeout = setTimeout(() => {
 			void this.plugin.persistData();
@@ -477,19 +315,13 @@ export class KanbanStore {
 			clearTimeout(this.saveTimeout);
 			this.saveTimeout = null;
 		}
-		try {
-			await this.plugin.persistData();
-		} catch (error) {
-			this.scheduleSave();
-			throw error;
-		}
+		try { await this.plugin.persistData(); }
+		catch (error) { this.scheduleSave(); throw error; }
 	}
 
 	destroy(): void {
 		this.listeners.clear();
-		if (this.saveTimeout) {
-			clearTimeout(this.saveTimeout);
-			this.saveTimeout = null;
-		}
+		if (this.saveTimeout) clearTimeout(this.saveTimeout);
+		this.saveTimeout = null;
 	}
 }
