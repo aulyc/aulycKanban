@@ -5,17 +5,6 @@ import { synchronizeSharedColumnDefinitions } from './services/sharedColumns';
 
 type Listener = () => void;
 
-const DATA_MUTATION_ACTIONS: ReadonlySet<ActionType> = new Set([
-	'ADD_TASK', 'EDIT_TASK', 'DELETE_TASK', 'TOGGLE_TASK',
-	'ADD_VIEW', 'ADD_COLUMN', 'RENAME_COLUMN', 'DELETE_COLUMN', 'REORDER_COLUMNS',
-	'RESTORE_TASK', 'DELETE_ARCHIVE_TASKS', 'SET_BOARD_DATA', 'CLEAR_ALL_DATA',
-]);
-
-const PERSIST_ACTIONS: ReadonlySet<ActionType> = new Set([
-	...DATA_MUTATION_ACTIONS,
-	'UPDATE_SETTINGS',
-]);
-
 /** 防抖保存失败后的最大自动重试次数，避免磁盘永久不可写时无限循环 */
 const MAX_SAVE_RETRIES = 2;
 
@@ -26,6 +15,7 @@ export class KanbanStore {
 	private readonly listeners = new Set<Listener>();
 	private saveTimeout: ReturnType<typeof setTimeout> | null = null;
 	private saveFailureCount = 0;
+	private destroyed = false;
 	private _lastActionMutatedData = false;
 	private _lastActionType: ActionType | null = null;
 
@@ -100,113 +90,134 @@ export class KanbanStore {
 	private notify(): void { this.listeners.forEach((listener) => listener()); }
 
 	dispatch(action: Action): void {
+		let didMutateData = false;
+		let shouldPersist = false;
 		switch (action.type) {
-			case 'ADD_TASK': this.addTask(action.payload.columnId, action.payload.content); break;
-			case 'EDIT_TASK': this.editTask(action.payload.columnId, action.payload.taskId, action.payload.content); break;
-			case 'DELETE_TASK': this.deleteTask(action.payload.columnId, action.payload.taskId); break;
-			case 'TOGGLE_TASK': this.toggleTask(action.payload.columnId, action.payload.taskId); break;
+			case 'ADD_TASK': didMutateData = this.addTask(action.payload.columnId, action.payload.content); break;
+			case 'EDIT_TASK': didMutateData = this.editTask(action.payload.columnId, action.payload.taskId, action.payload.content); break;
+			case 'DELETE_TASK': didMutateData = this.deleteTask(action.payload.columnId, action.payload.taskId); break;
+			case 'TOGGLE_TASK': didMutateData = this.toggleTask(action.payload.columnId, action.payload.taskId); break;
 			case 'SWITCH_VIEW':
 				if (this.getView(action.payload.view)) this.settings.currentView = action.payload.view;
 				this.settings.showArchive = false;
 				this.ensureActiveColumn();
 				break;
-			case 'ADD_VIEW': this.addView(action.payload.title); break;
+			case 'ADD_VIEW': didMutateData = this.addView(action.payload.title); break;
 			case 'SELECT_COLUMN': this.settings.activeColumnId = action.payload.columnId; break;
-			case 'ADD_COLUMN': this.addColumn(action.payload.title); break;
-			case 'RENAME_COLUMN': this.renameColumn(action.payload.columnId, action.payload.title); break;
-			case 'DELETE_COLUMN': this.deleteColumn(action.payload.columnId, action.payload.moveTasks ?? true); break;
-			case 'REORDER_COLUMNS': this.reorderColumns(action.payload.columnIds); break;
+			case 'ADD_COLUMN': didMutateData = this.addColumn(action.payload.title); break;
+			case 'RENAME_COLUMN': didMutateData = this.renameColumn(action.payload.columnId, action.payload.title); break;
+			case 'DELETE_COLUMN': didMutateData = this.deleteColumn(action.payload.columnId, action.payload.moveTasks ?? true); break;
+			case 'REORDER_COLUMNS': didMutateData = this.reorderColumns(action.payload.columnIds); break;
 			case 'TOGGLE_ARCHIVE_VIEW': this.settings.showArchive = !this.settings.showArchive; break;
-			case 'RESTORE_TASK': this.restoreTask(action.payload.taskId); break;
-			case 'DELETE_ARCHIVE_TASKS': this.deleteArchiveTasks(action.payload.taskIds); break;
+			case 'RESTORE_TASK': didMutateData = this.restoreTask(action.payload.taskId); break;
+			case 'DELETE_ARCHIVE_TASKS': didMutateData = this.deleteArchiveTasks(action.payload.taskIds); break;
 			case 'SET_BOARD_DATA':
 				this.board = this.prepareBoard(action.payload.board);
 				this.ensureCurrentView();
 				this.ensureActiveColumn();
+				didMutateData = true;
 				break;
 			case 'CLEAR_ALL_DATA':
 				this.board = getDefaultBoardData();
 				this.ensureCurrentView();
 				this.ensureActiveColumn();
+				didMutateData = true;
 				break;
-			case 'UPDATE_SETTINGS': this.updateSettings(action.payload); break;
+			case 'UPDATE_SETTINGS':
+				this.updateSettings(action.payload);
+				shouldPersist = true;
+				break;
 		}
 
 		this._lastActionType = action.type;
-		this._lastActionMutatedData = DATA_MUTATION_ACTIONS.has(action.type);
+		this._lastActionMutatedData = didMutateData;
 		this.notify();
-		if (PERSIST_ACTIONS.has(action.type)) this.scheduleSave();
+		if (didMutateData || shouldPersist) this.scheduleSave();
 	}
 
-	private addTask(columnId: string, rawContent: string): void {
+	private addTask(columnId: string, rawContent: string): boolean {
 		const column = this.getRawColumn(columnId);
 		const content = rawContent.trim();
-		if (!column || !content) return;
+		if (!column || !content) return false;
 		const now = new Date().toISOString();
 		column.tasks.unshift({
 			id: this.generateId(ID_PREFIX.TASK), content, completed: false,
 			createdAt: now, updatedAt: now,
 		});
+		return true;
 	}
 
-	private editTask(columnId: string, taskId: string, rawContent: string): void {
+	private editTask(columnId: string, taskId: string, rawContent: string): boolean {
 		const task = this.findTask(columnId, taskId);
 		const content = rawContent.trim();
-		if (!task || !content || task.content === content) return;
+		if (!task || !content || task.content === content) return false;
 		task.content = content;
 		task.updatedAt = new Date().toISOString();
+		return true;
 	}
 
-	private deleteTask(columnId: string, taskId: string): void {
+	private deleteTask(columnId: string, taskId: string): boolean {
 		const column = this.getRawColumn(columnId);
-		if (!column) return;
+		if (!column) return false;
 		const index = column.tasks.findIndex((task) => task.id === taskId);
-		if (index >= 0) column.tasks.splice(index, 1);
+		if (index < 0) return false;
+		column.tasks.splice(index, 1);
+		return true;
 	}
 
-	private toggleTask(columnId: string, taskId: string): void {
+	private toggleTask(columnId: string, taskId: string): boolean {
 		const column = this.getRawColumn(columnId);
 		const task = column?.tasks.find((candidate) => candidate.id === taskId);
-		if (!column || !task) return;
+		if (!column || !task) return false;
 		task.completed = !task.completed;
-		if (!task.completed) return;
+		if (!task.completed) return true;
 		const now = new Date().toISOString();
 		task.completedAt = now;
 		task.archivedAt = now;
 		task.sourceColumnId = columnId;
 		column.tasks.splice(column.tasks.indexOf(task), 1);
 		this.getOrCreateArchive(this.settings.currentView).tasks.unshift(task);
+		return true;
 	}
 
-	private restoreTask(taskId: string): void {
+	private restoreTask(taskId: string): boolean {
 		for (const view of this.getTaskViews()) {
 			const archive = this.board.archives[view.id];
 			const index = archive?.tasks.findIndex((task) => task.id === taskId) ?? -1;
 			if (!archive || index < 0) continue;
+			const archivedTask = archive.tasks[index];
+			if (!archivedTask) return false;
+			const column = view.columns.find((candidate) => candidate.id === archivedTask.sourceColumnId) ?? view.columns[0];
+			if (!column) return false;
 			const [task] = archive.tasks.splice(index, 1);
-			if (!task) return;
+			if (!task) return false;
 			task.completed = false;
 			delete task.completedAt;
 			delete task.archivedAt;
-			const column = view.columns.find((candidate) => candidate.id === task.sourceColumnId) ?? view.columns[0];
 			delete task.sourceColumnId;
-			column?.tasks.unshift(task);
-			return;
+			column.tasks.unshift(task);
+			return true;
 		}
+		return false;
 	}
 
-	private deleteArchiveTasks(taskIds: string[]): void {
+	private deleteArchiveTasks(taskIds: string[]): boolean {
 		const ids = new Set(taskIds);
+		if (ids.size === 0) return false;
+		let changed = false;
 		for (const archive of Object.values(this.board.archives)) {
+			const previousLength = archive.tasks.length;
 			archive.tasks = archive.tasks.filter((task) => !ids.has(task.id));
+			if (archive.tasks.length !== previousLength) changed = true;
 		}
+		return changed;
 	}
 
-	private addView(rawTitle: string): void {
+	private addView(rawTitle: string): boolean {
 		const title = rawTitle.trim();
-		if (!title) return;
+		if (!title) return false;
 		const template = this.getTaskViews()[0];
-		if (!template) return;
+		if (!template) return false;
 		const id = this.generateId(ID_PREFIX.VIEW);
 		this.board.views.push({
 			id, title,
@@ -218,28 +229,35 @@ export class KanbanStore {
 		this.settings.currentView = id;
 		this.settings.showArchive = false;
 		this.ensureActiveColumn();
+		return true;
 	}
 
-	private addColumn(rawTitle: string): void {
+	private addColumn(rawTitle: string): boolean {
 		const title = rawTitle.trim();
-		if (!title) return;
+		if (!title) return false;
 		const maxOrder = this.getCurrentColumns().reduce((max, column) => Math.max(max, column.order ?? 0), -1);
 		const id = this.generateId(ID_PREFIX.COLUMN);
 		for (const view of this.board.views) view.columns.push({ id, title, order: maxOrder + 1, tasks: [] });
 		this.settings.activeColumnId = id;
+		return true;
 	}
 
-	private renameColumn(columnId: string, rawTitle: string): void {
+	private renameColumn(columnId: string, rawTitle: string): boolean {
 		const title = rawTitle.trim();
-		if (!title) return;
+		if (!title) return false;
+		let changed = false;
 		for (const view of this.board.views) {
 			const column = view.columns.find((candidate) => candidate.id === columnId);
-			if (column) column.title = title;
+			if (!column || column.title === title) continue;
+			column.title = title;
+			changed = true;
 		}
+		return changed;
 	}
 
-	private deleteColumn(columnId: string, moveTasks: boolean): void {
-		if (this.getCurrentColumns().length <= 1) return;
+	private deleteColumn(columnId: string, moveTasks: boolean): boolean {
+		if (this.getCurrentColumns().length <= 1) return false;
+		let changed = false;
 		for (const view of this.board.views) {
 			const index = view.columns.findIndex((column) => column.id === columnId);
 			if (index < 0) continue;
@@ -254,17 +272,23 @@ export class KanbanStore {
 				if (moveTasks && target) task.sourceColumnId = target.id;
 				else delete task.sourceColumnId;
 			}
+			changed = true;
 		}
 		if (this.settings.activeColumnId === columnId) this.ensureActiveColumn();
+		return changed;
 	}
 
-	private reorderColumns(columnIds: string[]): void {
+	private reorderColumns(columnIds: string[]): boolean {
+		let changed = false;
 		for (const view of this.board.views) {
 			columnIds.forEach((id, order) => {
 				const column = view.columns.find((candidate) => candidate.id === id);
-				if (column) column.order = order;
+				if (!column || column.order === order) return;
+				column.order = order;
+				changed = true;
 			});
 		}
+		return changed;
 	}
 
 	private getRawColumns(): Column[] { return this.getCurrentTaskView()?.columns ?? []; }
@@ -309,19 +333,24 @@ export class KanbanStore {
 		return `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 	}
 
-	private scheduleSave(): void {
+	private scheduleSave(isRetry = false): void {
+		if (this.destroyed) return;
+		if (!isRetry) this.saveFailureCount = 0;
 		if (this.saveTimeout) clearTimeout(this.saveTimeout);
 		const debounce = this.settings.saveDebounce ?? PERFORMANCE.SAVE_DEBOUNCE;
 		this.saveTimeout = setTimeout(() => {
 			this.saveTimeout = null;
-			this.plugin.persistData().then(
+			this.plugin.persistData(!isRetry).then(
 				() => { this.saveFailureCount = 0; },
-				() => {
-					// persistData 已向用户提示失败，这里只负责限次重试
-					if (++this.saveFailureCount <= MAX_SAVE_RETRIES) this.scheduleSave();
-				},
+				() => this.scheduleRetry(),
 			);
 		}, debounce);
+	}
+
+	private scheduleRetry(): void {
+		if (this.destroyed || this.saveFailureCount >= MAX_SAVE_RETRIES) return;
+		this.saveFailureCount += 1;
+		this.scheduleSave(true);
 	}
 
 	async saveNow(): Promise<void> {
@@ -329,15 +358,24 @@ export class KanbanStore {
 			clearTimeout(this.saveTimeout);
 			this.saveTimeout = null;
 		}
+		this.saveFailureCount = 0;
 		try {
 			await this.plugin.persistData();
 			this.saveFailureCount = 0;
-		} catch (error) { this.scheduleSave(); throw error; }
+		} catch (error) {
+			this.scheduleRetry();
+			throw error;
+		}
 	}
 
 	destroy(): void {
+		if (this.destroyed) return;
+		this.destroyed = true;
 		this.listeners.clear();
+		const hasPendingSave = this.saveTimeout !== null;
 		if (this.saveTimeout) clearTimeout(this.saveTimeout);
 		this.saveTimeout = null;
+		// Obsidian 的 onunload 不等待异步清理；这里先同步发起最后一次写入，避免丢失防抖窗口内的数据。
+		if (hasPendingSave) void this.plugin.persistData().catch(() => {});
 	}
 }

@@ -54,6 +54,18 @@ function createStore(board, currentView = 'personal', activeColumnId = 'base') {
 	return new KanbanStore(settings(currentView, activeColumnId), board, { persistData: async () => {} });
 }
 
+function delay(ms) {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitFor(predicate, timeoutMs = 200) {
+	const startedAt = Date.now();
+	while (!predicate()) {
+		if (Date.now() - startedAt >= timeoutMs) throw new Error('Timed out waiting for condition');
+		await delay(5);
+	}
+}
+
 function definitions(columns) {
 	return columns.map(({ id, title, order }) => ({ id, title, order }));
 }
@@ -146,20 +158,59 @@ test('archive quadrant counts span every task type and legacy tasks fall back to
 	store.destroy();
 });
 
-test('editing a task with unchanged content does not bump updatedAt or mark data mutated', () => {
-	const store = createStore({
+test('editing a task with unchanged content does not bump updatedAt, mark data mutated, or persist', async () => {
+	let saveAttempts = 0;
+	const store = new KanbanStore({ ...settings(), saveDebounce: 1 }, {
 		views: [view('personal', '个人', [column('base', '基础', [task('t1', '内容')])], 0)],
 		archives: { personal: { tasks: [] } },
-	});
+	}, { persistData: async () => { saveAttempts += 1; } });
 
 	store.dispatch({ type: 'EDIT_TASK', payload: { columnId: 'base', taskId: 't1', content: '内容' } });
 	assert.equal(store.getView('personal').columns[0].tasks[0].updatedAt, undefined);
+	assert.equal(store.lastActionMutatedData, false);
+	await delay(20);
+	assert.equal(saveAttempts, 0);
 
 	store.dispatch({ type: 'EDIT_TASK', payload: { columnId: 'base', taskId: 't1', content: '新内容' } });
 	const changed = store.getView('personal').columns[0].tasks[0];
 	assert.equal(changed.content, '新内容');
 	assert.notEqual(changed.updatedAt, undefined);
+	assert.equal(store.lastActionMutatedData, true);
 	store.destroy();
+});
+
+test('saveNow performs at most two automatic retries after a failure', async () => {
+	let saveAttempts = 0;
+	const store = new KanbanStore({ ...settings(), saveDebounce: 1 }, {
+		views: [view('personal', '个人', [column('base', '基础')], 0)],
+		archives: { personal: { tasks: [] } },
+	}, {
+		persistData: async () => {
+			saveAttempts += 1;
+			throw new Error('save failed');
+		},
+	});
+
+	await assert.rejects(store.saveNow(), /save failed/);
+	await waitFor(() => saveAttempts === 3);
+	await delay(20);
+	assert.equal(saveAttempts, 3);
+	store.destroy();
+});
+
+test('destroy flushes a pending debounced save exactly once', async () => {
+	let saveAttempts = 0;
+	const store = new KanbanStore({ ...settings(), saveDebounce: 100 }, {
+		views: [view('personal', '个人', [column('base', '基础')], 0)],
+		archives: { personal: { tasks: [] } },
+	}, { persistData: async () => { saveAttempts += 1; } });
+
+	store.dispatch({ type: 'ADD_TASK', payload: { columnId: 'base', content: '待保存' } });
+	assert.equal(saveAttempts, 0);
+	store.destroy();
+	assert.equal(saveAttempts, 1);
+	await delay(120);
+	assert.equal(saveAttempts, 1);
 });
 
 test('rename, reorder, and delete quadrants apply to all task types and archives', () => {

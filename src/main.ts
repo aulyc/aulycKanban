@@ -173,7 +173,7 @@ export default class KanbanPlugin extends Plugin {
 	/**
 	 * 持久化数据到磁盘；失败时提示用户并向上抛出，由调用方决定是否重试
 	 */
-	async persistData(): Promise<void> {
+	async persistData(notifyFailure = true): Promise<void> {
 		try {
 			await this.repository.save(
 				this.store.getSettings(),
@@ -181,7 +181,8 @@ export default class KanbanPlugin extends Plugin {
 			);
 		} catch (error) {
 			console.error('[aulyckanban] Failed to save data:', error);
-			new Notice(t('save.fail'));
+			// 同一轮自动重试只在首次失败时提示，避免重复 Notice 干扰用户。
+			if (notifyFailure) new Notice(t('save.fail'));
 			throw error;
 		}
 	}
