@@ -6,7 +6,7 @@ import { synchronizeSharedColumnDefinitions } from './services/sharedColumns';
 type Listener = () => void;
 
 const DATA_MUTATION_ACTIONS: ReadonlySet<ActionType> = new Set([
-	'ADD_TASK', 'EDIT_TASK', 'DELETE_TASK', 'TOGGLE_TASK', 'MOVE_TASK',
+	'ADD_TASK', 'EDIT_TASK', 'DELETE_TASK', 'TOGGLE_TASK',
 	'ADD_VIEW', 'ADD_COLUMN', 'RENAME_COLUMN', 'DELETE_COLUMN', 'REORDER_COLUMNS',
 	'RESTORE_TASK', 'DELETE_ARCHIVE_TASKS', 'SET_BOARD_DATA', 'CLEAR_ALL_DATA',
 ]);
@@ -16,12 +16,16 @@ const PERSIST_ACTIONS: ReadonlySet<ActionType> = new Set([
 	'UPDATE_SETTINGS',
 ]);
 
+/** 防抖保存失败后的最大自动重试次数，避免磁盘永久不可写时无限循环 */
+const MAX_SAVE_RETRIES = 2;
+
 export class KanbanStore {
 	private readonly settings: PluginSettings;
 	private board: BoardData;
 	private readonly plugin: KanbanPlugin;
 	private readonly listeners = new Set<Listener>();
 	private saveTimeout: ReturnType<typeof setTimeout> | null = null;
+	private saveFailureCount = 0;
 	private _lastActionMutatedData = false;
 	private _lastActionType: ActionType | null = null;
 
@@ -64,6 +68,23 @@ export class KanbanStore {
 	getCurrentArchive(): Task[] { return this.board.archives[this.settings.currentView]?.tasks ?? []; }
 	getArchive(viewId: ViewKind): Task[] { return this.board.archives[viewId]?.tasks ?? []; }
 
+	/** 归档任务所属象限；旧数据缺少或引用已删除象限时归入第一个象限。 */
+	getArchiveColumnId(task: Task): string {
+		const columns = this.getCurrentColumns();
+		if (task.sourceColumnId && columns.some((column) => column.id === task.sourceColumnId)) {
+			return task.sourceColumnId;
+		}
+		return columns[0]?.id ?? '';
+	}
+
+	/** 汇总全部任务类型中指定象限的归档任务数。 */
+	getArchiveTaskCount(columnId: string): number {
+		return this.getTaskViews().reduce((count, view) => (
+			count + this.getArchive(view.id)
+				.filter((task) => this.getArchiveColumnId(task) === columnId).length
+		), 0);
+	}
+
 	findTask(columnId: string, taskId: string): Task | undefined {
 		return this.getCurrentColumns().find((column) => column.id === columnId)?.tasks.find((task) => task.id === taskId);
 	}
@@ -84,7 +105,6 @@ export class KanbanStore {
 			case 'EDIT_TASK': this.editTask(action.payload.columnId, action.payload.taskId, action.payload.content); break;
 			case 'DELETE_TASK': this.deleteTask(action.payload.columnId, action.payload.taskId); break;
 			case 'TOGGLE_TASK': this.toggleTask(action.payload.columnId, action.payload.taskId); break;
-			case 'MOVE_TASK': this.moveTask(action.payload.taskId, action.payload.fromColumnId, action.payload.toColumnId, action.payload.targetIndex); break;
 			case 'SWITCH_VIEW':
 				if (this.getView(action.payload.view)) this.settings.currentView = action.payload.view;
 				this.settings.showArchive = false;
@@ -132,7 +152,7 @@ export class KanbanStore {
 	private editTask(columnId: string, taskId: string, rawContent: string): void {
 		const task = this.findTask(columnId, taskId);
 		const content = rawContent.trim();
-		if (!task || !content) return;
+		if (!task || !content || task.content === content) return;
 		task.content = content;
 		task.updatedAt = new Date().toISOString();
 	}
@@ -180,18 +200,6 @@ export class KanbanStore {
 		for (const archive of Object.values(this.board.archives)) {
 			archive.tasks = archive.tasks.filter((task) => !ids.has(task.id));
 		}
-	}
-
-	private moveTask(taskId: string, fromColumnId: string, toColumnId: string, targetIndex: number): void {
-		const from = this.getRawColumn(fromColumnId);
-		const to = this.getRawColumn(toColumnId);
-		if (!from || !to) return;
-		const index = from.tasks.findIndex((task) => task.id === taskId);
-		if (index < 0 || (from === to && index === targetIndex)) return;
-		const [task] = from.tasks.splice(index, 1);
-		if (!task) return;
-		if (from === to && targetIndex >= 0 && targetIndex <= to.tasks.length) to.tasks.splice(targetIndex, 0, task);
-		else to.tasks.unshift(task);
 	}
 
 	private addView(rawTitle: string): void {
@@ -305,8 +313,14 @@ export class KanbanStore {
 		if (this.saveTimeout) clearTimeout(this.saveTimeout);
 		const debounce = this.settings.saveDebounce ?? PERFORMANCE.SAVE_DEBOUNCE;
 		this.saveTimeout = setTimeout(() => {
-			void this.plugin.persistData();
 			this.saveTimeout = null;
+			this.plugin.persistData().then(
+				() => { this.saveFailureCount = 0; },
+				() => {
+					// persistData 已向用户提示失败，这里只负责限次重试
+					if (++this.saveFailureCount <= MAX_SAVE_RETRIES) this.scheduleSave();
+				},
+			);
 		}, debounce);
 	}
 
@@ -315,8 +329,10 @@ export class KanbanStore {
 			clearTimeout(this.saveTimeout);
 			this.saveTimeout = null;
 		}
-		try { await this.plugin.persistData(); }
-		catch (error) { this.scheduleSave(); throw error; }
+		try {
+			await this.plugin.persistData();
+			this.saveFailureCount = 0;
+		} catch (error) { this.scheduleSave(); throw error; }
 	}
 
 	destroy(): void {

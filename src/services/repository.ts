@@ -73,10 +73,6 @@ export class PluginDataRepository {
 	}
 
 	async save(settings: PluginSettings, board: BoardData): Promise<void> {
-		try {
-			await this.saveDataFn({ settings, board });
-		} catch (error) {
-			console.error('[aulyckanban] Failed to save data:', error);
-		}
+		await this.saveDataFn({ settings, board });
 	}
 }

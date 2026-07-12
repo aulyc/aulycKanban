@@ -1,8 +1,9 @@
+import type { App } from 'obsidian';
 import type { Task } from '../types';
 import type { KanbanStore } from '../store';
 import { TaskCard } from './TaskCard';
 import { t } from '../i18n';
-import { autoResizeTextarea } from '../utils/dom';
+import { createInlineInput } from './InlineInput';
 
 /**
  * 左侧任务列表组件
@@ -10,13 +11,15 @@ import { autoResizeTextarea } from '../utils/dom';
  */
 export class TaskList {
 	private readonly el: HTMLElement;
+	private readonly app: App;
 	private readonly store: KanbanStore;
 	private readonly inputDraftByColumn = new Map<string, string>();
 	private readonly scrollTopByColumn = new Map<string, number>();
 	/** 按 taskId 缓存已创建的 DOM 元素和快照，避免每次全量重建 */
 	private cardCache = new Map<string, { el: HTMLElement; snapshot: string }>();
 
-	constructor(parentEl: HTMLElement, store: KanbanStore) {
+	constructor(parentEl: HTMLElement, app: App, store: KanbanStore) {
+		this.app = app;
 		this.store = store;
 		this.el = parentEl.createDiv({ cls: 'aulyckanban-task-list' });
 	}
@@ -76,7 +79,7 @@ export class TaskList {
 				tasksEl.appendChild(cached.el);
 				newCache.set(task.id, cached);
 			} else {
-				const card = new TaskCard(this.store, column.id, task);
+				const card = new TaskCard(this.app, this.store, column.id, task);
 				const cardEl = card.getEl();
 				tasksEl.appendChild(cardEl);
 				newCache.set(task.id, { el: cardEl, snapshot: snap });
@@ -104,58 +107,30 @@ export class TaskList {
 	): void {
 		const inputWrapper = this.el.createDiv({ cls: 'aulyckanban-inline-input-wrapper' });
 
-		const inputEl = inputWrapper.createEl('textarea', {
+		// Enter 提交，Shift+Enter 换行；Tab 由 KanbanView 在三个主要区域间切换。
+		const inputEl = createInlineInput(inputWrapper, {
+			multiline: true,
+			persistent: true,
 			cls: 'aulyckanban-inline-input',
-			attr: {
-				placeholder: t('task.inputPlaceholder'),
-				rows: '1',
+			placeholder: t('task.inputPlaceholder'),
+			initialValue: draft,
+			focusOnMount: restoreFocus,
+			...(selectionStart !== null && selectionEnd !== null
+				? { selection: { start: selectionStart, end: selectionEnd } }
+				: {}),
+			onInput: (value) => this.inputDraftByColumn.set(columnId, value),
+			onCommit: (value) => {
+				const content = value.trim();
+				if (!content) return;
+				inputEl.value = '';
+				inputEl.style.height = 'auto';
+				this.inputDraftByColumn.set(columnId, '');
+				this.store.dispatch({
+					type: 'ADD_TASK',
+					payload: { columnId, content },
+				});
 			},
 		});
-
-		inputEl.value = draft;
-		autoResizeTextarea(inputEl);
-		let composing = false;
-
-		inputEl.addEventListener('input', () => {
-			this.inputDraftByColumn.set(columnId, inputEl.value);
-		});
-		inputEl.addEventListener('compositionstart', () => {
-			composing = true;
-		});
-		inputEl.addEventListener('compositionend', () => {
-			composing = false;
-		});
-
-		// Enter 提交，Shift+Enter 换行；Tab 由 KanbanView 在三个主要区域间切换。
-		inputEl.addEventListener('keydown', (e: KeyboardEvent) => {
-			if (e.key === 'Enter' && !e.shiftKey) {
-				if (composing || e.isComposing) {
-					return;
-				}
-				e.preventDefault();
-				e.stopPropagation();
-				const content = inputEl.value.trim();
-				if (content) {
-					inputEl.value = '';
-					inputEl.style.height = 'auto';
-					this.inputDraftByColumn.set(columnId, '');
-					this.store.dispatch({
-						type: 'ADD_TASK',
-						payload: { columnId, content },
-					});
-				}
-			}
-
-		});
-
-		if (restoreFocus) {
-			requestAnimationFrame(() => {
-				inputEl.focus({ preventScroll: true });
-				if (selectionStart !== null && selectionEnd !== null) {
-					inputEl.setSelectionRange(selectionStart, selectionEnd);
-				}
-			});
-		}
 	}
 
 	getEl(): HTMLElement {

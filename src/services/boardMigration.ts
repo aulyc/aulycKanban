@@ -1,5 +1,6 @@
 import type { ArchiveData, BoardData, Column, TaskView, ViewData } from '../types';
 import { getDefaultBoardData } from '../constants';
+import { t } from '../i18n';
 import { synchronizeSharedColumnDefinitions } from './sharedColumns';
 
 export function isMigratableBoardData(data: Record<string, unknown>): boolean {
@@ -58,8 +59,8 @@ export function migrateBoardData(raw: unknown): BoardData {
 	if (obj['work'] && obj['personal']) {
 		if (!isValidViewData(obj['work']) || !isValidViewData(obj['personal'])) return getDefaultBoardData();
 		const views: TaskView[] = [
-			{ id: 'work', title: '💼 工作任务', order: 0, columns: sanitizeColumns((obj['work'] as ViewData).columns) },
-			{ id: 'personal', title: '👤 个人任务', order: 1, columns: sanitizeColumns((obj['personal'] as ViewData).columns) },
+			{ id: 'work', title: t('view.work'), order: 0, columns: sanitizeColumns((obj['work'] as ViewData).columns) },
+			{ id: 'personal', title: t('view.personal'), order: 1, columns: sanitizeColumns((obj['personal'] as ViewData).columns) },
 		];
 		return synchronizeSharedColumnDefinitions({
 			views,
@@ -76,8 +77,8 @@ export function migrateBoardData(raw: unknown): BoardData {
 		const personalColumns = columns.map((column) => ({ ...column, tasks: [] }));
 		return {
 			views: [
-				{ id: 'work', title: '💼 工作任务', order: 0, columns },
-				{ id: 'personal', title: '👤 个人任务', order: 1, columns: personalColumns },
+				{ id: 'work', title: t('view.work'), order: 0, columns },
+				{ id: 'personal', title: t('view.personal'), order: 1, columns: personalColumns },
 			],
 			archives: { work: { tasks: [] }, personal: { tasks: [] } },
 		};

@@ -1,8 +1,11 @@
+import type { App } from 'obsidian';
 import type { Task } from '../types';
 import type { KanbanStore } from '../store';
 import { t } from '../i18n';
 import { formatDateTimeMinute } from '../utils/datetime';
-import { setTextWithLineBreaks, autoResizeTextarea } from '../utils/dom';
+import { setTextWithLineBreaks } from '../utils/dom';
+import { ConfirmModal } from './ConfirmModal';
+import { createInlineInput } from './InlineInput';
 
 /**
  * 任务卡片组件
@@ -12,22 +15,24 @@ import { setTextWithLineBreaks, autoResizeTextarea } from '../utils/dom';
  */
 export class TaskCard {
 	private readonly el: HTMLElement;
+	private readonly app: App;
 	private readonly store: KanbanStore;
 	private readonly columnId: string;
 	private readonly task: Task;
 
 	constructor(
+		app: App,
 		store: KanbanStore,
 		columnId: string,
 		task: Task,
 	) {
+		this.app = app;
 		this.store = store;
 		this.columnId = columnId;
 		this.task = task;
 
 		this.el = document.createElement('div');
 		this.el.className = `aulyckanban-task${task.completed ? ' aulyckanban-task-completed' : ''}`;
-		this.el.draggable = true;
 		this.el.tabIndex = -1;
 		this.el.setAttribute('role', 'button');
 		this.el.setAttribute('aria-label', task.content);
@@ -63,8 +68,7 @@ export class TaskCard {
 		// 底部信息行：时间（左） + 操作图标（右）
 		const metaRowEl = middleEl.createDiv({ cls: 'aulyckanban-task-meta-row' });
 		const timeEl = metaRowEl.createDiv({ cls: 'aulyckanban-task-time' });
-		const timeStr = this.formatTime(task.updatedAt ?? task.createdAt);
-		timeEl.setText(timeStr);
+		timeEl.setText(formatDateTimeMinute(task.updatedAt ?? task.createdAt));
 
 		const actionsEl = metaRowEl.createDiv({ cls: 'aulyckanban-task-actions' });
 
@@ -74,11 +78,13 @@ export class TaskCard {
 		});
 		archiveBtn.addEventListener('click', (e: MouseEvent) => {
 			e.stopPropagation();
-			if (!confirm(t('task.confirm.archive'))) return;
-			this.store.dispatch({
-				type: 'TOGGLE_TASK',
-				payload: { columnId: this.columnId, taskId: this.task.id },
-			});
+			new ConfirmModal(this.app, {
+				message: t('task.confirm.archive'),
+				onConfirm: () => this.store.dispatch({
+					type: 'TOGGLE_TASK',
+					payload: { columnId: this.columnId, taskId: this.task.id },
+				}),
+			}).open();
 		});
 
 		// 删除按钮（两次点击确认）
@@ -88,11 +94,14 @@ export class TaskCard {
 		});
 		deleteBtn.addEventListener('click', (e: MouseEvent) => {
 			e.stopPropagation();
-			if (!confirm(t('task.confirm.delete'))) return;
-			this.store.dispatch({
-				type: 'DELETE_TASK',
-				payload: { columnId: this.columnId, taskId: this.task.id },
-			});
+			new ConfirmModal(this.app, {
+				message: t('task.confirm.delete'),
+				isDestructive: true,
+				onConfirm: () => this.store.dispatch({
+					type: 'DELETE_TASK',
+					payload: { columnId: this.columnId, taskId: this.task.id },
+				}),
+			}).open();
 		});
 	}
 
@@ -107,55 +116,28 @@ export class TaskCard {
 
 		const currentText = this.task.content;
 
-		// 隐藏原文本
+		// 隐藏原文本，换成编辑框：Enter 保存，Shift+Enter 换行，Escape 取消，失焦自动保存
 		contentEl.empty();
-
-		const textarea = contentEl.createEl('textarea', {
+		createInlineInput(contentEl, {
+			multiline: true,
 			cls: 'aulyckanban-edit-textarea',
-			attr: { rows: '1' },
+			initialValue: currentText,
+			focusOnMount: true,
+			blurBehavior: 'commit',
+			onCommit: (value, trigger) => {
+				this.saveEdit(value.trim() || currentText, trigger === 'enter', contentEl);
+			},
+			onCancel: () => this.saveEdit(currentText, true, contentEl),
 		});
-		textarea.value = currentText;
-
-		autoResizeTextarea(textarea);
-		let finished = false;
-		const finish = (content: string, restoreCardFocus: boolean): void => {
-			if (finished) return;
-			finished = true;
-			this.saveEdit(content, restoreCardFocus);
-		};
-
-		// Enter 保存，Shift+Enter 换行，Escape 取消
-		textarea.addEventListener('keydown', (e: KeyboardEvent) => {
-			if (e.key === 'Enter' && !e.shiftKey) {
-				e.preventDefault();
-				e.stopPropagation();
-				finish(textarea.value.trim() || currentText, true);
-			}
-			if (e.key === 'Escape') {
-				e.preventDefault();
-				finish(currentText, true);
-			}
-		});
-
-		// 失焦自动保存
-		textarea.addEventListener('blur', () => {
-			const newVal = textarea.value.trim();
-			finish(newVal || currentText, false);
-		});
-
-		textarea.focus();
-		textarea.setSelectionRange(textarea.value.length, textarea.value.length);
 	}
 
-	private saveEdit(content: string, restoreCardFocus: boolean): void {
+	private saveEdit(content: string, restoreCardFocus: boolean, contentEl: HTMLElement): void {
 		this.el.removeClass('aulyckanban-task-editing');
 
 		if (content === this.task.content) {
-			// 内容未变也需要刷新 UI（退出编辑模式）
-			this.store.dispatch({
-				type: 'EDIT_TASK',
-				payload: { columnId: this.columnId, taskId: this.task.id, content: this.task.content },
-			});
+			// 内容未变（取消编辑）：只在本地退出编辑态，不触发数据变更和保存
+			contentEl.empty();
+			setTextWithLineBreaks(contentEl, this.task.content);
 			if (restoreCardFocus) this.focusCardAfterRender();
 			return;
 		}
@@ -175,13 +157,6 @@ export class TaskCard {
 			card?.focus({ preventScroll: true });
 			card?.scrollIntoView({ block: 'nearest' });
 		});
-	}
-
-	/**
-	 * 格式化时间显示（完整年月日+时间）
-	 */
-	private formatTime(isoStr: string): string {
-		return formatDateTimeMinute(isoStr);
 	}
 
 	getEl(): HTMLElement {

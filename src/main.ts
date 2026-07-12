@@ -1,4 +1,4 @@
-import { Plugin, WorkspaceLeaf } from 'obsidian';
+import { Notice, Plugin, WorkspaceLeaf } from 'obsidian';
 import { VIEW_TYPE_KANBAN } from './constants';
 import { initI18n, t } from './i18n';
 import { KanbanView } from './ui/KanbanView';
@@ -171,12 +171,18 @@ export default class KanbanPlugin extends Plugin {
 	}
 
 	/**
-	 * 持久化数据到磁盘
+	 * 持久化数据到磁盘；失败时提示用户并向上抛出，由调用方决定是否重试
 	 */
 	async persistData(): Promise<void> {
-		await this.repository.save(
-			this.store.getSettings(),
-			this.store.getBoardData(),
-		);
+		try {
+			await this.repository.save(
+				this.store.getSettings(),
+				this.store.getBoardData(),
+			);
+		} catch (error) {
+			console.error('[aulyckanban] Failed to save data:', error);
+			new Notice(t('save.fail'));
+			throw error;
+		}
 	}
 }

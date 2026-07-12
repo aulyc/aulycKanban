@@ -4,20 +4,17 @@ export type TaskTypeNavigationTarget =
 	| { kind: 'add' }
 	| { kind: 'archive' };
 
-const STANDARD_FOCUS_ORDER: readonly KanbanFocusZone[] = ['view', 'tasks', 'columns'];
-const ARCHIVE_FOCUS_ORDER: readonly KanbanFocusZone[] = ['view', 'tasks'];
+const FOCUS_ORDER: readonly KanbanFocusZone[] = ['view', 'tasks', 'columns'];
 
-/** 获取看板主要区域中的下一个焦点区域；归档模式自动跳过象限。 */
+/** 获取看板主要区域中的下一个焦点区域。 */
 export function getNextFocusZone(
 	current: KanbanFocusZone | null,
 	reverse = false,
-	includeColumns = true,
 ): KanbanFocusZone {
-	const focusOrder = includeColumns ? STANDARD_FOCUS_ORDER : ARCHIVE_FOCUS_ORDER;
-	if (current === null) return reverse ? focusOrder[focusOrder.length - 1] ?? 'view' : 'view';
-	const index = focusOrder.indexOf(current);
+	if (current === null) return reverse ? FOCUS_ORDER[FOCUS_ORDER.length - 1] ?? 'view' : 'view';
+	const index = FOCUS_ORDER.indexOf(current);
 	const offset = reverse ? -1 : 1;
-	return focusOrder[(index + offset + focusOrder.length) % focusOrder.length] ?? 'view';
+	return FOCUS_ORDER[(index + offset + FOCUS_ORDER.length) % FOCUS_ORDER.length] ?? 'view';
 }
 
 /** 计算方向键循环选择时的目标下标。 */

@@ -86,7 +86,6 @@ export type Action =
 	| { type: 'EDIT_TASK'; payload: { columnId: string; taskId: string; content: string } }
 	| { type: 'DELETE_TASK'; payload: { columnId: string; taskId: string } }
 	| { type: 'TOGGLE_TASK'; payload: { columnId: string; taskId: string } }
-	| { type: 'MOVE_TASK'; payload: { taskId: string; fromColumnId: string; toColumnId: string; targetIndex: number } }
 	| { type: 'SWITCH_VIEW'; payload: { view: ViewKind } }
 	| { type: 'ADD_VIEW'; payload: { title: string } }
 	| { type: 'SELECT_COLUMN'; payload: { columnId: string } }

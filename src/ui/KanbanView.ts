@@ -52,7 +52,7 @@ export class KanbanView extends ItemView {
 		container.setAttribute('tabindex', '0');
 		this.resizeHostEl = updateResizeHost(this.resizeHostEl, this.containerEl);
 
-		this.board = new Board(container, this.plugin.store);
+		this.board = new Board(container, this.app, this.plugin.store);
 		this.board.render();
 
 		// 订阅 store 变化，自动重渲染
@@ -74,7 +74,11 @@ export class KanbanView extends ItemView {
 				return;
 			}
 
-			if (active?.matches(
+			const isEmptyTaskInputArrow = active instanceof HTMLTextAreaElement
+				&& active.matches('.aulyckanban-inline-input')
+				&& active.value.trim().length === 0
+				&& (e.key === 'ArrowUp' || e.key === 'ArrowDown');
+			if (!isEmptyTaskInputArrow && active?.matches(
 				'.aulyckanban-view-add-input, .aulyckanban-nav-inline-input, '
 				+ '.aulyckanban-inline-input, .aulyckanban-edit-textarea',
 			)) return;
@@ -89,12 +93,12 @@ export class KanbanView extends ItemView {
 				this.selectAdjacentColumn(e.key === 'ArrowUp' ? -1 : 1);
 			} else if (zone === 'tasks' && !this.plugin.store.isShowingArchive()) {
 				if (
-					active?.matches('.aulyckanban-task')
+					active?.matches('.aulyckanban-task, .aulyckanban-inline-input')
 					&& (e.key === 'ArrowUp' || e.key === 'ArrowDown')
 				) {
 					e.preventDefault();
 					e.stopPropagation();
-					this.selectAdjacentTask(e.key === 'ArrowUp' ? -1 : 1);
+					this.selectAdjacentTaskItem(e.key === 'ArrowUp' ? -1 : 1);
 				}
 			}
 		};
@@ -138,7 +142,7 @@ export class KanbanView extends ItemView {
 	private focusNextZone(reverse: boolean, afterBlur = false): void {
 		const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 		const currentZone = this.getFocusZone(active);
-		const nextZone = getNextFocusZone(currentZone, reverse, !this.plugin.store.isShowingArchive());
+		const nextZone = getNextFocusZone(currentZone, reverse);
 		const focusTarget = (): void => {
 			const target = this.getFocusTarget(nextZone);
 			target?.focus({ preventScroll: true });
@@ -245,11 +249,13 @@ export class KanbanView extends ItemView {
 		this.focusZoneAfterRender('columns');
 	}
 
-	private selectAdjacentTask(offset: number): void {
-		const tasks = Array.from(this.contentEl.querySelectorAll<HTMLElement>('.aulyckanban-task'));
+	private selectAdjacentTaskItem(offset: number): void {
+		const items = Array.from(this.contentEl.querySelectorAll<HTMLElement>(
+			'.aulyckanban-inline-input, .aulyckanban-task',
+		));
 		const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-		const currentIndex = active ? tasks.indexOf(active) : -1;
-		const target = tasks[getWrappedItemIndex(currentIndex, tasks.length, offset)];
+		const currentIndex = active ? items.indexOf(active) : -1;
+		const target = items[getWrappedItemIndex(currentIndex, items.length, offset)];
 		target?.focus({ preventScroll: true });
 		target?.scrollIntoView({ block: 'nearest' });
 	}

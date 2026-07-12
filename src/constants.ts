@@ -1,5 +1,6 @@
 import type { Column, PluginSettings, BoardData, TaskView } from './types';
 import { t } from './i18n';
+import type { I18nKey } from './i18n';
 
 /** 自定义视图类型标识 */
 export const VIEW_TYPE_KANBAN = 'aulyckanban-view';
@@ -25,7 +26,7 @@ export const PERFORMANCE = {
 } as const;
 
 /** 默认列定义模板（带 order） */
-export const COLUMN_DEFINITIONS: ReadonlyArray<{ id: string; titleKey: string; order: number }> = [
+export const COLUMN_DEFINITIONS: ReadonlyArray<{ id: string; titleKey: I18nKey; order: number }> = [
 	{ id: 'periodic', titleKey: 'column.periodic', order: 0 },
 	{ id: 'urgent-important', titleKey: 'column.urgentImportant', order: 1 },
 	{ id: 'important-not-urgent', titleKey: 'column.importantNotUrgent', order: 2 },

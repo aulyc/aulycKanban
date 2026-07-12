@@ -1,5 +1,6 @@
 import { App, Notice, normalizePath, PluginSettingTab, Setting } from 'obsidian';
 import { t } from '../i18n';
+import type { PluginSettings } from '../types';
 import type KanbanPlugin from '../main';
 import { BackupService } from '../services/backupService';
 import { ClearDataModal } from './ClearDataModal';
@@ -98,40 +99,35 @@ export class KanbanSettingTab extends PluginSettingTab {
 		}
 
 		this.buildSyncPathSetting(containerEl, {
-			nameKey: 'settings.sync.archivePath.name',
-			descKey: 'settings.sync.archivePath.desc',
-			placeholderKey: 'settings.sync.archivePath.placeholder',
+			name: t('settings.sync.archivePath.name'),
+			desc: t('settings.sync.archivePath.desc'),
+			placeholder: t('settings.sync.archivePath.placeholder'),
 			currentPath: settings.archive?.filePath ?? '',
 			otherPaths: Object.values(settings.viewSyncTargets).map((target) => target.filePath),
 			payload: (filePath) => ({ archive: { filePath } }),
 		});
 
-		const hintEl = containerEl.createDiv({ cls: 'setting-item-description' });
-		hintEl.style.marginTop = '8px';
-		hintEl.style.paddingLeft = '16px';
+		const hintEl = containerEl.createDiv({ cls: 'setting-item-description aulyckanban-settings-hint' });
 		hintEl.setText(`💡 ${t('settings.sync.hint')}`);
 	}
 
 	private buildSyncPathSetting(
 		containerEl: HTMLElement,
 		opts: {
-			nameKey?: string;
-			descKey?: string;
-			placeholderKey?: string;
-			name?: string;
-			desc?: string;
-			placeholder?: string;
+			name: string;
+			desc: string;
+			placeholder: string;
 			currentPath: string;
 			otherPaths: string[];
-			payload: (filePath: string) => Partial<import('../types').PluginSettings>;
+			payload: (filePath: string) => Partial<PluginSettings>;
 		},
 	): void {
 		new Setting(containerEl)
-			.setName(opts.name ?? t(opts.nameKey ?? ''))
-			.setDesc(opts.desc ?? t(opts.descKey ?? ''))
+			.setName(opts.name)
+			.setDesc(opts.desc)
 			.addText((text) => {
 				text
-					.setPlaceholder(opts.placeholder ?? t(opts.placeholderKey ?? ''))
+					.setPlaceholder(opts.placeholder)
 					.setValue(opts.currentPath)
 					.onChange(async (value) => {
 						const normalized = value.trim() ? normalizePath(value.trim()) : '';
@@ -146,7 +142,8 @@ export class KanbanSettingTab extends PluginSettingTab {
 							type: 'UPDATE_SETTINGS',
 							payload: opts.payload(normalized),
 						});
-						await this.plugin.store.saveNow();
+						// 保存失败时 persistData 已提示用户并安排重试
+						await this.plugin.store.saveNow().catch(() => {});
 					});
 				this.attachFileSuggest(text.inputEl);
 			});
@@ -159,7 +156,11 @@ export class KanbanSettingTab extends PluginSettingTab {
 
 	private async clearAllDataAndSave(): Promise<void> {
 		this.plugin.store.dispatch({ type: 'CLEAR_ALL_DATA' });
-		await this.plugin.store.saveNow();
-		new Notice(t('settings.clear.success'));
+		try {
+			await this.plugin.store.saveNow();
+			new Notice(t('settings.clear.success'));
+		} catch {
+			// persistData 已提示保存失败并安排重试
+		}
 	}
 }

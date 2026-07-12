@@ -124,6 +124,44 @@ test('a new quadrant appears in every existing task type while task contents sta
 	store.destroy();
 });
 
+test('archive quadrant counts span every task type and legacy tasks fall back to the first quadrant', () => {
+	const views = ['work', 'personal', 'project'].map((id, order) => view(id, id, [
+		column('base', '基础'),
+		column('second', '第二', [], 1),
+	], order));
+	const board = {
+		views,
+		archives: {
+			work: { tasks: [{ ...task('work-second'), sourceColumnId: 'second' }] },
+			personal: { tasks: [task('personal-legacy')] },
+			project: { tasks: [{ ...task('project-removed'), sourceColumnId: 'removed' }] },
+		},
+	};
+	const store = createStore(board, 'project', 'second');
+
+	assert.equal(store.getArchiveTaskCount('second'), 1);
+	assert.equal(store.getArchiveTaskCount('base'), 2);
+	assert.equal(store.getArchiveColumnId(board.archives.personal.tasks[0]), 'base');
+	assert.equal(store.getArchiveColumnId(board.archives.project.tasks[0]), 'base');
+	store.destroy();
+});
+
+test('editing a task with unchanged content does not bump updatedAt or mark data mutated', () => {
+	const store = createStore({
+		views: [view('personal', '个人', [column('base', '基础', [task('t1', '内容')])], 0)],
+		archives: { personal: { tasks: [] } },
+	});
+
+	store.dispatch({ type: 'EDIT_TASK', payload: { columnId: 'base', taskId: 't1', content: '内容' } });
+	assert.equal(store.getView('personal').columns[0].tasks[0].updatedAt, undefined);
+
+	store.dispatch({ type: 'EDIT_TASK', payload: { columnId: 'base', taskId: 't1', content: '新内容' } });
+	const changed = store.getView('personal').columns[0].tasks[0];
+	assert.equal(changed.content, '新内容');
+	assert.notEqual(changed.updatedAt, undefined);
+	store.destroy();
+});
+
 test('rename, reorder, and delete quadrants apply to all task types and archives', () => {
 	const views = ['work', 'personal', 'project'].map((id, order) => view(id, id, [
 		column('base', '基础'),

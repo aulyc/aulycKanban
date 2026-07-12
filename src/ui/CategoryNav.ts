@@ -1,7 +1,9 @@
 import { Menu } from 'obsidian';
+import type { App } from 'obsidian';
 import type { KanbanStore } from '../store';
 import { t } from '../i18n';
-import { shouldCommitInlineInput } from '../utils/keyboard';
+import { ConfirmModal } from './ConfirmModal';
+import { createInlineInput } from './InlineInput';
 
 /**
  * 右侧分类导航组件
@@ -9,13 +11,15 @@ import { shouldCommitInlineInput } from '../utils/keyboard';
  */
 export class CategoryNav {
 	private readonly el: HTMLElement;
+	private readonly app: App;
 	private readonly store: KanbanStore;
 	private editingColumnId: string | null = null;
 	private isAdding = false;
 	private draftTitle = '';
 	private shouldFocusInput = false;
 
-	constructor(parentEl: HTMLElement, store: KanbanStore) {
+	constructor(parentEl: HTMLElement, app: App, store: KanbanStore) {
+		this.app = app;
 		this.store = store;
 		this.el = parentEl.createDiv({ cls: 'aulyckanban-category-nav' });
 		this.render();
@@ -26,13 +30,16 @@ export class CategoryNav {
 
 		const columns = this.store.getCurrentColumns();
 		const activeId = this.store.getActiveColumnId();
+		const isArchive = this.store.isShowingArchive();
 
 		// 分类列表
 		const listEl = this.el.createDiv({ cls: 'aulyckanban-nav-list' });
 
 		for (const column of columns) {
 			const isActive = column.id === activeId;
-			const taskCount = column.tasks?.length ?? 0;
+			const taskCount = isArchive
+				? this.store.getArchiveTaskCount(column.id)
+				: column.tasks?.length ?? 0;
 
 			const itemEl = listEl.createDiv({
 				cls: `aulyckanban-nav-item ${isActive ? 'aulyckanban-nav-item-active' : ''}`,
@@ -85,36 +92,19 @@ export class CategoryNav {
 		});
 		if (this.isAdding) {
 			addBtn.addClass('aulyckanban-nav-item-editing');
-			const input = addBtn.createEl('input', {
+			createInlineInput(addBtn, {
 				cls: 'aulyckanban-nav-inline-input',
-				attr: { type: 'text', placeholder: t('column.addPrompt') },
-			});
-			input.value = this.draftTitle;
-			let composing = false;
-			input.addEventListener('input', () => {
-				this.draftTitle = input.value;
-			});
-			input.addEventListener('compositionstart', () => {
-				composing = true;
-			});
-			input.addEventListener('compositionend', () => {
-				composing = false;
-				this.draftTitle = input.value;
-			});
-			input.addEventListener('keydown', (e: KeyboardEvent) => {
-				if (shouldCommitInlineInput(e, composing)) {
-					e.preventDefault();
-					e.stopPropagation();
-					this.draftTitle = input.value;
+				placeholder: t('column.addPrompt'),
+				initialValue: this.draftTitle,
+				focusOnMount: this.consumeFocusRequest(),
+				blurBehavior: 'cancel',
+				onInput: (value) => { this.draftTitle = value; },
+				onCommit: (value) => {
+					this.draftTitle = value;
 					this.commitAdd();
-				}
-				if (e.key === 'Escape') {
-					e.preventDefault();
-					this.cancelEditing();
-				}
+				},
+				onCancel: () => this.cancelEditing(),
 			});
-			input.addEventListener('blur', () => this.cancelEditing());
-			this.focusInput(input);
 		} else {
 			addBtn.createSpan({ text: '+', cls: 'aulyckanban-nav-add-icon' });
 			addBtn.addEventListener('click', (e: MouseEvent) => {
@@ -185,40 +175,19 @@ export class CategoryNav {
 	private renderInlineEditor(itemEl: HTMLElement, columnId: string, currentTitle: string): void {
 		itemEl.addClass('aulyckanban-nav-item-editing');
 		itemEl.empty();
-		const input = itemEl.createEl('input', {
+		createInlineInput(itemEl, {
 			cls: 'aulyckanban-nav-inline-input',
-			attr: { type: 'text' },
-		});
-		input.value = this.draftTitle || currentTitle;
-		let composing = false;
-		input.addEventListener('input', () => {
-			this.draftTitle = input.value;
-		});
-		input.addEventListener('compositionstart', () => {
-			composing = true;
-		});
-		input.addEventListener('compositionend', () => {
-			composing = false;
-			this.draftTitle = input.value;
-		});
-		input.addEventListener('keydown', (e: KeyboardEvent) => {
-			if (shouldCommitInlineInput(e, composing)) {
-				e.preventDefault();
-				e.stopPropagation();
+			initialValue: this.draftTitle || currentTitle,
+			focusOnMount: this.consumeFocusRequest(),
+			blurBehavior: 'commit',
+			stopClickPropagation: true,
+			onInput: (value) => { this.draftTitle = value; },
+			onCommit: (value) => {
+				this.draftTitle = value;
 				this.commitRename(columnId, currentTitle);
-			}
-			if (e.key === 'Escape') {
-				e.preventDefault();
-				this.cancelEditing();
-			}
+			},
+			onCancel: () => this.cancelEditing(),
 		});
-		input.addEventListener('blur', () => {
-			this.commitRename(columnId, currentTitle);
-		});
-		input.addEventListener('click', (e: MouseEvent) => {
-			e.stopPropagation();
-		});
-		this.focusInput(input);
 	}
 
 	private commitRename(columnId: string, currentTitle: string): void {
@@ -251,18 +220,15 @@ export class CategoryNav {
 		this.render();
 	}
 
-	private focusInput(input: HTMLInputElement): void {
-		if (!this.shouldFocusInput) return;
+	/** 读取并清除一次性聚焦标记：仅在刚进入编辑态的那次渲染聚焦输入框 */
+	private consumeFocusRequest(): boolean {
+		const shouldFocus = this.shouldFocusInput;
 		this.shouldFocusInput = false;
-		requestAnimationFrame(() => {
-			input.focus();
-			const len = input.value.length;
-			input.setSelectionRange(len, len);
-		});
+		return shouldFocus;
 	}
 
 	/**
-	 * 删除分类确认（两次点击）
+	 * 删除分类确认
 	 */
 	private handleDeleteColumn(columnId: string): void {
 		const columns = this.store.getCurrentColumns();
@@ -277,12 +243,14 @@ export class CategoryNav {
 			msg += '\n' + t('column.deleteMoveTasks');
 		}
 
-		if (confirm(msg)) {
-			this.store.dispatch({
+		new ConfirmModal(this.app, {
+			message: msg,
+			isDestructive: true,
+			onConfirm: () => this.store.dispatch({
 				type: 'DELETE_COLUMN',
 				payload: { columnId, moveTasks: true },
-			});
-		}
+			}),
+		}).open();
 	}
 
 	getEl(): HTMLElement {

@@ -4,6 +4,7 @@ import type { Task, TaskView, ViewKind } from '../types';
 import { t } from '../i18n';
 import { generateMarkdown } from '../utils/markdown';
 import { formatDateTime, formatDateTimeMinute } from '../utils/datetime';
+import { getArchivedAtIso, getArchivedAtTime } from '../utils/task';
 import { ARCHIVE_UNCATEGORIZED_ID, PERFORMANCE } from '../constants';
 
 const SYNC_START = '<!-- XAULYC_KANBAN:START -->';
@@ -92,8 +93,8 @@ export class VaultSyncService {
 		const render = (title: string, columnTasks: Task[]): void => {
 			if (columnTasks.length === 0) return;
 			markdown += `### ${title}\n\n`;
-			for (const task of [...columnTasks].sort((a, b) => this.taskTime(b) - this.taskTime(a))) {
-				const time = formatDateTimeMinute(task.archivedAt ?? task.completedAt ?? task.createdAt);
+			for (const task of [...columnTasks].sort((a, b) => getArchivedAtTime(b) - getArchivedAtTime(a))) {
+				const time = formatDateTimeMinute(getArchivedAtIso(task));
 				markdown += `- [x] ${task.content}  *(${t('archive.archivedAt')} ${time})*\n`;
 			}
 			markdown += '\n';
@@ -101,10 +102,6 @@ export class VaultSyncService {
 		for (const column of view.columns) render(column.title, grouped.get(column.id) ?? []);
 		render(t('archive.other'), grouped.get(ARCHIVE_UNCATEGORIZED_ID) ?? []);
 		return markdown;
-	}
-
-	private taskTime(task: Task): number {
-		return new Date(task.archivedAt ?? task.completedAt ?? task.createdAt).getTime();
 	}
 
 	private async writeToFile(filePath: string, markdown: string, silent: boolean): Promise<void> {

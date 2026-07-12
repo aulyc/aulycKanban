@@ -52,6 +52,27 @@ test('an inline commit controller can only commit once', () => {
 	assert.equal(cancels, 0);
 });
 
+test('a rejected commit keeps the controller alive for a later commit', () => {
+	let attempts = 0;
+	let cancels = 0;
+	const controller = createInlineCommitController(
+		() => {
+			attempts += 1;
+			if (attempts === 1) return false;
+			return true;
+		},
+		() => cancels++,
+	);
+
+	controller.commit(); // 内容为空被拒绝，编辑态保持
+	controller.commit(); // 第二次提交成功
+	controller.commit(); // 已结束，忽略
+	controller.cancel();
+
+	assert.equal(attempts, 2);
+	assert.equal(cancels, 0);
+});
+
 test('cancelling prevents a later commit', () => {
 	let commits = 0;
 	let cancels = 0;

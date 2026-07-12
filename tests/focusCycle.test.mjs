@@ -27,15 +27,6 @@ test('Shift+Tab cycles in reverse order', () => {
 	assert.equal(getNextFocusZone('view', true), 'columns');
 });
 
-test('archive mode skips the unavailable columns zone', () => {
-	assert.equal(getNextFocusZone(null, false, false), 'view');
-	assert.equal(getNextFocusZone('view', false, false), 'tasks');
-	assert.equal(getNextFocusZone('tasks', false, false), 'view');
-	assert.equal(getNextFocusZone(null, true, false), 'tasks');
-	assert.equal(getNextFocusZone('view', true, false), 'tasks');
-	assert.equal(getNextFocusZone('tasks', true, false), 'view');
-});
-
 test('arrow navigation wraps at both ends', () => {
 	assert.equal(getWrappedItemIndex(0, 3, -1), 2);
 	assert.equal(getWrappedItemIndex(2, 3, 1), 0);

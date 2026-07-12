@@ -1,10 +1,16 @@
 import type { Task, ViewKind } from '../types';
 import type { KanbanStore } from '../store';
 import { setIcon } from 'obsidian';
+import type { App } from 'obsidian';
 import { t } from '../i18n';
+import { ConfirmModal } from './ConfirmModal';
 import { formatDateTimeMinute } from '../utils/datetime';
 import { setTextWithLineBreaks } from '../utils/dom';
+import { getArchivedAtIso, getArchivedAtTime } from '../utils/task';
+import { createInlineInput } from './InlineInput';
 import { ARCHIVE_UNCATEGORIZED_ID } from '../constants';
+
+const SEARCH_DEBOUNCE_MS = 300;
 
 /**
  * 归档视图组件
@@ -12,18 +18,18 @@ import { ARCHIVE_UNCATEGORIZED_ID } from '../constants';
  */
 export class ArchiveView {
 	private readonly containerEl: HTMLElement;
+	private readonly app: App;
 	private readonly store: KanbanStore;
-	private selectedCategory = 'all';
 	private sortOrder: 'desc' | 'asc' = 'desc';
 	private searchKeyword = '';
 	private searchInputValue = '';
 	private deleteMode = false;
-	private searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 	private readonly selectedTaskIds = new Set<string>();
 	private listScrollTop = 0;
 
-	constructor(containerEl: HTMLElement, store: KanbanStore) {
+	constructor(containerEl: HTMLElement, app: App, store: KanbanStore) {
 		this.containerEl = containerEl;
+		this.app = app;
 		this.store = store;
 	}
 
@@ -47,7 +53,6 @@ export class ArchiveView {
 		const controlsEl = this.containerEl.createDiv({ cls: 'aulyckanban-archive-controls' });
 		this.renderFilters(
 			controlsEl,
-			boardData,
 			allItems,
 			filtered,
 			restoreSearchFocus,
@@ -80,7 +85,6 @@ export class ArchiveView {
 	 */
 	private renderFilters(
 		controlsEl: HTMLElement,
-		boardData: Readonly<ReturnType<KanbanStore['getBoardData']>>,
 		allItems: Array<{ task: Task; viewKind: ViewKind }>,
 		filteredItems: Array<{ task: Task; viewKind: ViewKind }>,
 		restoreSearchFocus: boolean,
@@ -88,20 +92,6 @@ export class ArchiveView {
 		searchSelectionEnd: number | null,
 	): void {
 		const filterRow = controlsEl.createDiv({ cls: 'aulyckanban-archive-controls-row' });
-		const categorySelect = filterRow.createEl('select', { cls: 'aulyckanban-archive-filter-select' });
-		categorySelect.setAttribute('aria-label', t('archive.filter.category'));
-		this.addOption(
-			categorySelect,
-			'all',
-			`${t('archive.filter.category')}：${t('archive.filter.allCategories')}`,
-		);
-		this.populateCategoryOptions(categorySelect, boardData);
-		categorySelect.value = this.selectedCategory;
-		categorySelect.addEventListener('change', () => {
-			this.selectedCategory = categorySelect.value;
-			this.render();
-		});
-
 		const sortSelect = filterRow.createEl('select', { cls: 'aulyckanban-archive-filter-select' });
 		sortSelect.setAttribute('aria-label', t('archive.sort.label'));
 		this.addOption(sortSelect, 'desc', `${t('archive.sort.label')}：${t('archive.sort.newest')}`);
@@ -151,39 +141,47 @@ export class ArchiveView {
 			deleteSelectedBtn.addEventListener('click', () => {
 				const ids = Array.from(this.selectedTaskIds);
 				if (ids.length === 0) return;
-				if (!confirm(t('archive.confirm.deleteSelected'))) return;
-				this.selectedTaskIds.clear();
-				this.store.dispatch({ type: 'DELETE_ARCHIVE_TASKS', payload: { taskIds: ids } });
+				new ConfirmModal(this.app, {
+					message: t('archive.confirm.deleteSelected'),
+					isDestructive: true,
+					onConfirm: () => {
+						this.selectedTaskIds.clear();
+						this.store.dispatch({ type: 'DELETE_ARCHIVE_TASKS', payload: { taskIds: ids } });
+					},
+				}).open();
 			});
 
-			const deleteAllBtn = actionRow.createEl('button', { cls: 'aulyckanban-archive-batch-btn aulyckanban-archive-danger-btn' });
-			deleteAllBtn.setText(t('archive.delete.all'));
-			deleteAllBtn.disabled = allItems.length === 0;
-			deleteAllBtn.addEventListener('click', () => {
-				const allIds = allItems.map((item) => item.task.id);
-				if (allIds.length === 0) return;
-				if (!confirm(t('archive.confirm.deleteAll'))) return;
-				this.selectedTaskIds.clear();
-				this.store.dispatch({ type: 'DELETE_ARCHIVE_TASKS', payload: { taskIds: allIds } });
+			const deleteFilteredBtn = actionRow.createEl('button', { cls: 'aulyckanban-archive-batch-btn aulyckanban-archive-danger-btn' });
+			deleteFilteredBtn.setText(t('archive.delete.filtered'));
+			deleteFilteredBtn.disabled = filteredIds.length === 0;
+			deleteFilteredBtn.addEventListener('click', () => {
+				if (filteredIds.length === 0) return;
+				new ConfirmModal(this.app, {
+					message: t('archive.confirm.deleteFiltered').replace('{count}', String(filteredIds.length)),
+					isDestructive: true,
+					onConfirm: () => {
+						this.selectedTaskIds.clear();
+						this.store.dispatch({ type: 'DELETE_ARCHIVE_TASKS', payload: { taskIds: filteredIds } });
+					},
+				}).open();
 			});
 		}
-		const searchInput = bottomRow.createEl('input', {
+		createInlineInput(bottomRow, {
 			cls: 'aulyckanban-archive-search',
-			attr: { type: 'text', placeholder: t('archive.searchPlaceholder') },
-		});
-		searchInput.value = this.searchInputValue;
-
-		let composing = false;
-		searchInput.addEventListener('compositionstart', () => {
-			composing = true;
-		});
-		searchInput.addEventListener('keydown', (e: KeyboardEvent) => {
-			if (e.key !== 'Enter') return;
-			if (composing || e.isComposing) return;
-			e.preventDefault();
-			if (this.searchDebounceTimer) clearTimeout(this.searchDebounceTimer);
-			this.searchKeyword = this.searchInputValue.trim();
-			this.render();
+			placeholder: t('archive.searchPlaceholder'),
+			initialValue: this.searchInputValue,
+			persistent: true,
+			debounceMs: SEARCH_DEBOUNCE_MS,
+			focusOnMount: restoreSearchFocus,
+			...(searchSelectionStart !== null && searchSelectionEnd !== null
+				? { selection: { start: searchSelectionStart, end: searchSelectionEnd } }
+				: {}),
+			onInput: (value) => {
+				this.searchInputValue = value;
+				updateClearButtonState();
+			},
+			onDebounced: (value) => this.applySearch(value),
+			onCommit: (value) => this.applySearch(value),
 		});
 
 		const clearBtn = bottomRow.createEl('button', { cls: 'aulyckanban-archive-clear-btn' });
@@ -193,41 +191,15 @@ export class ArchiveView {
 		};
 		updateClearButtonState();
 		clearBtn.addEventListener('click', () => {
-			if (this.searchDebounceTimer) clearTimeout(this.searchDebounceTimer);
 			this.searchInputValue = '';
 			this.searchKeyword = '';
 			this.render();
 		});
-		searchInput.addEventListener('input', () => {
-			this.searchInputValue = searchInput.value;
-			updateClearButtonState();
-			if (composing) return;
-			if (this.searchDebounceTimer) clearTimeout(this.searchDebounceTimer);
-			this.searchDebounceTimer = setTimeout(() => {
-				this.searchDebounceTimer = null;
-				this.searchKeyword = this.searchInputValue.trim();
-				this.render();
-			}, 300);
-		});
-		searchInput.addEventListener('compositionend', () => {
-			composing = false;
-			if (this.searchDebounceTimer) clearTimeout(this.searchDebounceTimer);
-			this.searchDebounceTimer = setTimeout(() => {
-				this.searchDebounceTimer = null;
-				this.searchKeyword = this.searchInputValue.trim();
-				this.render();
-			}, 300);
-		});
+	}
 
-		if (restoreSearchFocus) {
-			requestAnimationFrame(() => {
-				searchInput.focus({ preventScroll: true });
-				if (searchSelectionStart !== null && searchSelectionEnd !== null) {
-					searchInput.setSelectionRange(searchSelectionStart, searchSelectionEnd);
-				}
-			});
-		}
-
+	private applySearch(value: string): void {
+		this.searchKeyword = value.trim();
+		this.render();
 	}
 
 	private addOption(selectEl: HTMLSelectElement, value: string, label: string): void {
@@ -235,16 +207,6 @@ export class ArchiveView {
 		option.value = value;
 		option.text = label;
 		selectEl.add(option);
-	}
-
-	private populateCategoryOptions(
-		selectEl: HTMLSelectElement,
-		boardData: Readonly<ReturnType<KanbanStore['getBoardData']>>,
-	): void {
-		for (const col of boardData.views[0]?.columns ?? []) {
-			this.addOption(selectEl, col.id, col.title);
-		}
-		this.addOption(selectEl, ARCHIVE_UNCATEGORIZED_ID, t('archive.other'));
 	}
 
 	private buildArchiveItems(): Array<{
@@ -260,26 +222,20 @@ export class ArchiveView {
 		items: Array<{ task: Task; viewKind: ViewKind }>,
 	): Array<{ task: Task; viewKind: ViewKind }> {
 		const keyword = this.searchKeyword.trim().toLowerCase();
+		const activeColumnId = this.store.getActiveColumnId();
 		const filtered = items.filter(({ task }) => {
-			if (this.selectedCategory !== 'all') {
-				const sourceCol = task.sourceColumnId ?? ARCHIVE_UNCATEGORIZED_ID;
-				if (this.selectedCategory !== sourceCol) return false;
-			}
+			if (this.store.getArchiveColumnId(task) !== activeColumnId) return false;
 			if (keyword && !task.content.toLowerCase().includes(keyword)) return false;
 			return true;
 		});
 
 		filtered.sort((a, b) => {
-			const aTime = this.getTaskTime(a.task);
-			const bTime = this.getTaskTime(b.task);
+			const aTime = getArchivedAtTime(a.task);
+			const bTime = getArchivedAtTime(b.task);
 			return this.sortOrder === 'desc' ? bTime - aTime : aTime - bTime;
 		});
 
 		return filtered;
-	}
-
-	private getTaskTime(task: Task): number {
-		return new Date(task.archivedAt ?? task.completedAt ?? task.createdAt).getTime();
 	}
 
 	private syncSelectionWithFiltered(filteredItems: Array<{ task: Task; viewKind: ViewKind }>): void {
@@ -340,18 +296,14 @@ export class ArchiveView {
 		restoreBtn.addEventListener('click', (e: MouseEvent) => {
 			if (this.deleteMode) return;
 			e.stopPropagation();
-			if (!confirm(t('archive.confirm.restore'))) return;
-			// 恢复时需要先切换到对应视图
-			const currentView = this.store.getCurrentView();
-			if (currentView !== viewKind) {
-				this.store.dispatch({ type: 'SWITCH_VIEW', payload: { view: viewKind } });
-				// SWITCH_VIEW 会把 showArchive 设为 false，需要重新打开
-				this.store.dispatch({ type: 'TOGGLE_ARCHIVE_VIEW' });
-			}
-			this.store.dispatch({
-				type: 'RESTORE_TASK',
-				payload: { taskId: task.id },
-			});
+			new ConfirmModal(this.app, {
+				message: t('archive.confirm.restore'),
+				// RESTORE_TASK 会在全部任务类型的归档中定位任务并还原到原视图，无需先切换视图
+				onConfirm: () => this.store.dispatch({
+					type: 'RESTORE_TASK',
+					payload: { taskId: task.id },
+				}),
+			}).open();
 		});
 
 		const bottomEl = cardEl.createDiv({ cls: 'aulyckanban-archive-task-bottom' });
@@ -364,13 +316,7 @@ export class ArchiveView {
 			cls: 'aulyckanban-archive-tag',
 			text: this.resolveTaskCategory(task, viewKind, boardData),
 		});
-		const archiveTime = task.archivedAt ?? task.completedAt ?? task.createdAt;
 		const timeEl = bottomEl.createDiv({ cls: 'aulyckanban-task-time aulyckanban-archive-task-time' });
-		timeEl.setText(`${t('archive.archivedAt')} ${this.formatTime(archiveTime)}`);
+		timeEl.setText(`${t('archive.archivedAt')} ${formatDateTimeMinute(getArchivedAtIso(task))}`);
 	}
-
-	private formatTime(isoStr: string): string {
-		return formatDateTimeMinute(isoStr);
-	}
-
 }
