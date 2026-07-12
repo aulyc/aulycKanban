@@ -73,6 +73,27 @@ test('a rejected commit keeps the controller alive for a later commit', () => {
 	assert.equal(cancels, 0);
 });
 
+test('a synchronous blur cancel cannot interrupt an accepted commit', () => {
+	let commits = 0;
+	let cancels = 0;
+	let controller;
+	controller = createInlineCommitController(
+		() => {
+			commits += 1;
+			// 提交回调可能同步重渲染并移除输入框，进而触发 blur/cancel。
+			controller.cancel();
+			return true;
+		},
+		() => cancels++,
+	);
+
+	controller.commit();
+	controller.commit();
+
+	assert.equal(commits, 1);
+	assert.equal(cancels, 0);
+});
+
 test('cancelling prevents a later commit', () => {
 	let commits = 0;
 	let cancels = 0;

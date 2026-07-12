@@ -101,7 +101,7 @@ export class CategoryNav {
 				onInput: (value) => { this.draftTitle = value; },
 				onCommit: (value) => {
 					this.draftTitle = value;
-					this.commitAdd();
+					return this.commitAdd();
 				},
 				onCancel: () => this.cancelEditing(),
 			});
@@ -201,15 +201,21 @@ export class CategoryNav {
 		}
 	}
 
-	private commitAdd(): void {
+	private commitAdd(): boolean {
 		const title = this.draftTitle.trim();
-		this.cancelEditing();
-		if (title) {
-			this.store.dispatch({
-				type: 'ADD_COLUMN',
-				payload: { title },
-			});
-		}
+		if (!title) return false;
+
+		// 不在派发前主动 render：移除输入框会同步触发 blur/cancel，造成提交竞争。
+		// Store 更新会统一重渲染看板。
+		this.editingColumnId = null;
+		this.isAdding = false;
+		this.draftTitle = '';
+		this.shouldFocusInput = false;
+		this.store.dispatch({
+			type: 'ADD_COLUMN',
+			payload: { title },
+		});
+		return true;
 	}
 
 	private cancelEditing(): void {

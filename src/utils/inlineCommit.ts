@@ -7,17 +7,24 @@ export function createInlineCommitController(
 	onCommit: () => boolean | void,
 	onCancel: () => void,
 ): { commit: () => void; cancel: () => void } {
-	let finished = false;
+	let state: 'active' | 'committing' | 'finished' = 'active';
 
 	return {
 		commit: () => {
-			if (finished) return;
-			if (onCommit() === false) return;
-			finished = true;
+			if (state !== 'active') return;
+			// onCommit 可能同步重渲染并移除输入框，blur/cancel 会在回调返回前重入。
+			// 先锁定 committing，确保已开始的提交不会被失焦取消截断。
+			state = 'committing';
+			try {
+				state = onCommit() === false ? 'active' : 'finished';
+			} catch (error) {
+				state = 'active';
+				throw error;
+			}
 		},
 		cancel: () => {
-			if (finished) return;
-			finished = true;
+			if (state !== 'active') return;
+			state = 'finished';
 			onCancel();
 		},
 	};
