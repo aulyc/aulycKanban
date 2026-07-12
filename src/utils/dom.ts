@@ -22,10 +22,25 @@ export function setTextWithLineBreaks(el: HTMLElement, text: string): void {
  * 自动调整 textarea 高度以适配内容
  * 返回清理函数（取消 input 监听）
  */
+export function getTextareaBorderBoxHeight(
+	scrollHeight: number,
+	borderTopWidth: string,
+	borderBottomWidth: string,
+): number {
+	const borderTop = Number.parseFloat(borderTopWidth) || 0;
+	const borderBottom = Number.parseFloat(borderBottomWidth) || 0;
+	return scrollHeight + borderTop + borderBottom;
+}
+
 export function autoResizeTextarea(textarea: HTMLTextAreaElement): () => void {
 	const resize = (): void => {
 		textarea.style.height = 'auto';
-		textarea.style.height = textarea.scrollHeight + 'px';
+		const style = getComputedStyle(textarea);
+		textarea.style.height = getTextareaBorderBoxHeight(
+			textarea.scrollHeight,
+			style.borderTopWidth,
+			style.borderBottomWidth,
+		) + 'px';
 	};
 	requestAnimationFrame(resize);
 	textarea.addEventListener('input', resize);
