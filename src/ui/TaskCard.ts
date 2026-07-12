@@ -35,7 +35,6 @@ export class TaskCard {
 		this.el.className = `aulyckanban-task${task.completed ? ' aulyckanban-task-completed' : ''}`;
 		this.el.tabIndex = -1;
 		this.el.setAttribute('role', 'button');
-		this.el.setAttribute('aria-label', task.content);
 		this.el.dataset['taskId'] = task.id;
 		this.el.dataset['columnId'] = columnId;
 
@@ -52,6 +51,8 @@ export class TaskCard {
 		const contentEl = middleEl.createDiv({
 			cls: `aulyckanban-task-content ${task.completed ? 'aulyckanban-task-content-completed' : ''}`,
 		});
+		contentEl.id = `aulyckanban-task-content-${task.id}`;
+		this.el.setAttribute('aria-labelledby', contentEl.id);
 		setTextWithLineBreaks(contentEl, task.content);
 
 		contentEl.addEventListener('click', (e: MouseEvent) => {
