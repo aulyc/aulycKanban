@@ -53,3 +53,11 @@ test('task type editing explicitly clears the previously selected task type', ()
 		/\.aulyckanban-toolbar-editing\s+\.aulyckanban-view-tab\.aulyckanban-tab-active/,
 	);
 });
+
+test('moving from the active task type to add keeps its ordinary button shadow', () => {
+	const suppressedActiveRule = css.match(
+		/\.aulyckanban-toolbar-editing[\s\S]*?\.aulyckanban-view-tab\.aulyckanban-tab-active\s*\{([^}]*)\}/,
+	)?.[1] ?? '';
+	assert.notEqual(suppressedActiveRule, '');
+	assert.doesNotMatch(suppressedActiveRule, /box-shadow\s*:/);
+});

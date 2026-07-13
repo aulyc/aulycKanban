@@ -163,7 +163,6 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	background: var(--background-secondary);
 	color: var(--text-normal);
 	border-color: var(--background-modifier-border);
-	box-shadow: none;
 }
 
 .aulyckanban-archive-btn {
