@@ -105,7 +105,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 
 .aulyckanban-tab:focus-visible {
 	outline: none;
-	box-shadow: inset 0 0 0 2px var(--aulyckanban-keyboard-focus);
+	box-shadow: inset 0 0 0 1px var(--aulyckanban-keyboard-focus);
 }
 
 .aulyckanban-tab.aulyckanban-tab-active {
@@ -115,7 +115,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 }
 
 .aulyckanban-tab.aulyckanban-tab-active:focus-visible {
-	box-shadow: inset 0 0 0 2px var(--text-on-accent);
+	box-shadow: inset 0 0 0 1px var(--text-on-accent);
 }
 
 .aulyckanban-tab.aulyckanban-tab-active:hover {

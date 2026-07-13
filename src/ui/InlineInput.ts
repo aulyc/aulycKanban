@@ -29,7 +29,7 @@ export interface InlineInputOptions {
 	/** 输入停顿 debounceMs 毫秒后回调（IME 组合中不触发，提交时取消） */
 	debounceMs?: number;
 	onDebounced?: (value: string) => void;
-	/** 挂载后（下一帧）自动聚焦 */
+	/** 挂载时立即自动聚焦，避免重渲染与下一帧之间短暂暴露旧焦点态 */
 	focusOnMount?: boolean;
 	/** 聚焦时恢复的选区，缺省把光标移到末尾 */
 	selection?: { start: number; end: number };
@@ -123,12 +123,10 @@ export function createInlineInput(parentEl: HTMLElement, options: InlineInputOpt
 	}
 
 	if (options.focusOnMount) {
-		requestAnimationFrame(() => {
-			el.focus({ preventScroll: true });
-			const selection = options.selection;
-			if (selection) el.setSelectionRange(selection.start, selection.end);
-			else el.setSelectionRange(el.value.length, el.value.length);
-		});
+		el.focus({ preventScroll: true });
+		const selection = options.selection;
+		if (selection) el.setSelectionRange(selection.start, selection.end);
+		else el.setSelectionRange(el.value.length, el.value.length);
 	}
 	return el;
 }

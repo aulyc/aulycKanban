@@ -19,14 +19,27 @@ export class Toolbar {
 	}
 
 	render(): void {
+		const focusedEl = document.activeElement instanceof HTMLElement
+			? document.activeElement
+			: null;
+		const restoreSelectedFocus = !!focusedEl
+			&& this.el.contains(focusedEl)
+			&& (
+				focusedEl.classList.contains('aulyckanban-view-tab')
+				|| focusedEl.classList.contains('aulyckanban-archive-btn')
+			);
+
 		this.el.empty();
 		const currentView = this.store.getCurrentView();
 		const isArchive = this.store.isShowingArchive();
 		const leftEl = this.el.createDiv({ cls: 'aulyckanban-toolbar-left' });
 		const viewStripEl = leftEl.createDiv({ cls: 'aulyckanban-view-strip' });
+		let selectedViewButton: HTMLButtonElement | null = null;
 
 		for (const view of this.store.getTaskViews()) {
-			this.createTab(viewStripEl, view.id, view.title, currentView === view.id && !isArchive);
+			const isActive = currentView === view.id && !isArchive;
+			const button = this.createTab(viewStripEl, view.id, view.title, isActive);
+			if (isActive) selectedViewButton = button;
 		}
 
 		if (this.isAdding) this.renderAddInput(viewStripEl);
@@ -34,7 +47,7 @@ export class Toolbar {
 			const addBtn = viewStripEl.createEl('button', {
 				text: '+',
 				cls: 'aulyckanban-tab aulyckanban-view-add-btn',
-				attr: { type: 'button', 'aria-label': t('view.add') },
+				attr: { type: 'button', tabindex: '-1', 'aria-label': t('view.add') },
 			});
 			addBtn.addEventListener('click', (event: MouseEvent) => {
 				event.preventDefault();
@@ -52,6 +65,7 @@ export class Toolbar {
 				: 'aulyckanban-tab aulyckanban-archive-btn',
 			attr: {
 				type: 'button',
+				tabindex: '-1',
 				'aria-label': t('archive.tooltip'),
 				'aria-selected': String(isArchive),
 			},
@@ -64,6 +78,12 @@ export class Toolbar {
 				this.store.dispatch({ type: 'TOGGLE_ARCHIVE_VIEW' });
 			}
 		});
+
+		if (restoreSelectedFocus) {
+			const target = isArchive ? archiveBtn : selectedViewButton;
+			target?.focus({ preventScroll: true });
+			if (target) revealTaskTypeItem(target);
+		}
 	}
 
 	private renderAddInput(parentEl: HTMLElement): void {
@@ -94,12 +114,18 @@ export class Toolbar {
 		this.render();
 	}
 
-	private createTab(parentEl: HTMLElement, view: ViewKind, label: string, isActive: boolean): void {
+	private createTab(
+		parentEl: HTMLElement,
+		view: ViewKind,
+		label: string,
+		isActive: boolean,
+	): HTMLButtonElement {
 		const button = parentEl.createEl('button', {
 			text: label,
 			cls: isActive
 				? 'aulyckanban-tab aulyckanban-view-tab aulyckanban-tab-active'
 				: 'aulyckanban-tab aulyckanban-view-tab',
+			attr: { type: 'button', tabindex: '-1' },
 		});
 		button.dataset['viewId'] = view;
 		button.setAttribute('aria-selected', String(isActive));
@@ -110,6 +136,7 @@ export class Toolbar {
 				this.store.dispatch({ type: 'SWITCH_VIEW', payload: { view } });
 			}
 		});
+		return button;
 	}
 
 	getEl(): HTMLElement { return this.el; }
