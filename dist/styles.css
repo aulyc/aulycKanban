@@ -361,6 +361,8 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	box-shadow: inset 0 0 0 2px var(--text-on-accent);
 }
 
+.aulyckanban-category-nav-editing
+	.aulyckanban-nav-item-active,
 .aulyckanban-category-nav:has(.aulyckanban-nav-add-btn:focus-visible)
 	.aulyckanban-nav-item-active,
 .aulyckanban-category-nav:has(.aulyckanban-nav-add-btn .aulyckanban-nav-inline-input:focus)
@@ -369,6 +371,8 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	color: var(--text-normal);
 }
 
+.aulyckanban-category-nav-editing
+	.aulyckanban-nav-item-active .aulyckanban-nav-item-count,
 .aulyckanban-category-nav:has(.aulyckanban-nav-add-btn:focus-visible)
 	.aulyckanban-nav-item-active .aulyckanban-nav-item-count,
 .aulyckanban-category-nav:has(.aulyckanban-nav-add-btn .aulyckanban-nav-inline-input:focus)

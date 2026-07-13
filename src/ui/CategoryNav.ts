@@ -26,6 +26,10 @@ export class CategoryNav {
 	}
 
 	render(): void {
+		this.el.toggleClass(
+			'aulyckanban-category-nav-editing',
+			this.isAdding || this.editingColumnId !== null,
+		);
 		this.el.empty();
 
 		const columns = this.store.getCurrentColumns();
@@ -88,7 +92,9 @@ export class CategoryNav {
 		// 添加分类按钮（紧跟在分类列表下方）
 		const addBtn = listEl.createDiv({
 			cls: 'aulyckanban-nav-add-btn',
-			attr: { tabindex: '-1', role: 'button', 'aria-label': t('column.addPrompt') },
+			attr: this.isAdding
+				? {}
+				: { tabindex: '-1', role: 'button', 'aria-label': t('column.addPrompt') },
 		});
 		if (this.isAdding) {
 			addBtn.addClass('aulyckanban-nav-item-editing');
@@ -174,6 +180,8 @@ export class CategoryNav {
 
 	private renderInlineEditor(itemEl: HTMLElement, columnId: string, currentTitle: string): void {
 		itemEl.addClass('aulyckanban-nav-item-editing');
+		itemEl.removeAttribute('tabindex');
+		itemEl.removeAttribute('role');
 		itemEl.empty();
 		createInlineInput(itemEl, {
 			cls: 'aulyckanban-nav-inline-input',
