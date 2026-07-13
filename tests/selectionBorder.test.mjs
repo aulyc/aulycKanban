@@ -54,10 +54,28 @@ test('task type editing explicitly clears the previously selected task type', ()
 	);
 });
 
-test('moving from the active task type to add keeps its ordinary button shadow', () => {
+test('task type buttons use one normalized border without theme button shadows', () => {
+	const tabRule = rule('.aulyckanban-tab');
+	assert.match(tabRule, /border:\s*1px solid/);
+	assert.match(tabRule, /box-shadow:\s*none\s*!important/);
+	assert.match(tabRule, /appearance:\s*none/);
+
 	const suppressedActiveRule = css.match(
 		/\.aulyckanban-toolbar-editing[\s\S]*?\.aulyckanban-view-tab\.aulyckanban-tab-active\s*\{([^}]*)\}/,
 	)?.[1] ?? '';
 	assert.notEqual(suppressedActiveRule, '');
-	assert.doesNotMatch(suppressedActiveRule, /box-shadow\s*:/);
+	assert.match(suppressedActiveRule, /box-shadow:\s*none\s*!important/);
+});
+
+test('task type add focus is exactly one white border', () => {
+	const focusRule = css.match(
+		/\.aulyckanban-view-add-btn:focus,\s*\.aulyckanban-view-add-btn:focus-visible\s*\{([^}]*)\}/,
+	)?.[1] ?? '';
+	assert.notEqual(focusRule, '');
+	assert.match(
+		focusRule,
+		/border:\s*1px solid var\(--aulyckanban-selection-border\)\s*!important/,
+	);
+	assert.match(focusRule, /outline:\s*none\s*!important/);
+	assert.match(focusRule, /box-shadow:\s*none\s*!important/);
 });

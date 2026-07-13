@@ -84,11 +84,14 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 
 
 .aulyckanban-tab {
+	appearance: none;
 	padding: 6px 14px;
 	border: 1px solid var(--background-modifier-border);
 	border-radius: 6px;
 	background: var(--background-secondary);
+	background-image: none;
 	color: var(--text-normal);
+	box-shadow: none !important;
 	cursor: pointer;
 	font-size: 13px;
 	font-weight: 500;
@@ -147,14 +150,18 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	border-color: var(--text-muted);
 }
 
+.aulyckanban-view-add-btn:focus,
 .aulyckanban-view-add-btn:focus-visible {
 	background: var(--interactive-accent);
 	color: var(--text-on-accent);
-	border: 1px solid var(--aulyckanban-selection-border);
-	box-shadow: none;
+	border: 1px solid var(--aulyckanban-selection-border) !important;
+	outline: none !important;
+	box-shadow: none !important;
 }
 
 .aulyckanban-toolbar-editing
+	.aulyckanban-view-tab.aulyckanban-tab-active,
+.aulyckanban-view-strip:has(.aulyckanban-view-add-btn:focus)
 	.aulyckanban-view-tab.aulyckanban-tab-active,
 .aulyckanban-view-strip:has(.aulyckanban-view-add-btn:focus-visible)
 	.aulyckanban-view-tab.aulyckanban-tab-active,
@@ -163,6 +170,8 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	background: var(--background-secondary);
 	color: var(--text-normal);
 	border-color: var(--background-modifier-border);
+	box-shadow: none !important;
+	transition: none;
 }
 
 .aulyckanban-archive-btn {

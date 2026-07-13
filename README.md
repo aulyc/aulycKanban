@@ -38,6 +38,16 @@ npm run dev
 npm run build
 ```
 
+发布前完整验证：
+
+```bash
+npm run release:verify
+```
+
+## 版本与发版
+
+项目使用标准 SemVer，支持 `alpha.N`、`beta.N`、`rc.N` 测试版本。版本准备、发布提交、裸版本标签和测试版/正式版流程见 [VERSIONING.md](VERSIONING.md)。
+
 ## 可用命令（Command Palette）
 
 - `Open board`：打开看板视图
