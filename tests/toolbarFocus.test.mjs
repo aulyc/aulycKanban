@@ -80,8 +80,9 @@ function createToolbarHarness() {
 		require: (id) => {
 			if (id === '../i18n') return { t: (key) => key };
 			if (id === './InlineInput') return { createInlineInput: () => ({}) };
+			if (id === './ConfirmModal') return { ConfirmModal: class {} };
 			if (id === '../utils/focusCycle') return { revealTaskTypeItem: () => {} };
-			if (id === 'obsidian') return { setIcon: () => {} };
+			if (id === 'obsidian') return { Menu: class {}, setIcon: () => {} };
 			throw new Error(`Unexpected import: ${id}`);
 		},
 	};
@@ -98,7 +99,7 @@ function createToolbarHarness() {
 		dispatch: () => {},
 	};
 	const parent = new MockElement('div', {}, documentRef);
-	const toolbar = new context.module.exports.Toolbar(parent, store);
+	const toolbar = new context.module.exports.Toolbar(parent, {}, store);
 	return { documentRef, parent, store, toolbar };
 }
 
@@ -119,4 +120,12 @@ test('toolbar rerender moves an existing task type focus to the selected task ty
 
 	assert.equal(documentRef.activeElement.dataset.viewId, 'test');
 	assert.equal(documentRef.activeElement.classList.contains('aulyckanban-tab-active'), true);
+});
+
+test('task type tabs expose rename and delete management actions', () => {
+	assert.match(source, /addEventListener\('contextmenu'/);
+	assert.match(source, /t\('view\.rename'\)/);
+	assert.match(source, /t\('view\.delete'\)/);
+	assert.match(source, /type: 'RENAME_VIEW'/);
+	assert.match(source, /type: 'DELETE_VIEW'/);
 });

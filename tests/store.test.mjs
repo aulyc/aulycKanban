@@ -113,6 +113,41 @@ test('adding a third task type copies every quadrant with independent task array
 	store.destroy();
 });
 
+test('task types can be renamed and deleted without leaving archive or sync settings behind', () => {
+	const customSettings = settings('project', 'base');
+	customSettings.viewSyncTargets.project = { filePath: '看板/项目.md' };
+	const store = new KanbanStore(customSettings, {
+		views: [
+			view('work', '工作', [column('base', '基础')], 0),
+			view('personal', '个人', [column('base', '基础')], 1),
+			view('project', '项目', [column('base', '基础', [task('project-task')])], 2),
+		],
+		archives: {
+			work: { tasks: [] },
+			personal: { tasks: [] },
+			project: { tasks: [task('project-archive')] },
+		},
+	}, { persistData: async () => {} });
+
+	store.dispatch({ type: 'RENAME_VIEW', payload: { viewId: 'project', title: '  客户项目  ' } });
+	assert.equal(store.getView('project').title, '客户项目');
+	assert.equal(store.getView('project').columns[0].tasks[0].id, 'project-task');
+	assert.equal(store.getSettings().viewSyncTargets.project.filePath, '看板/项目.md');
+
+	store.dispatch({ type: 'DELETE_VIEW', payload: { viewId: 'project' } });
+	assert.equal(store.getView('project'), undefined);
+	assert.equal(store.getBoardData().archives.project, undefined);
+	assert.equal(store.getSettings().viewSyncTargets.project, undefined);
+	assert.equal(store.getCurrentView(), 'work');
+	assert.equal(JSON.stringify(store.getTaskViews().map((item) => item.order)), '[0,1]');
+
+	store.dispatch({ type: 'DELETE_VIEW', payload: { viewId: 'personal' } });
+	store.dispatch({ type: 'DELETE_VIEW', payload: { viewId: 'work' } });
+	assert.equal(store.getTaskViews().length, 1);
+	assert.equal(store.getView('work')?.title, '工作');
+	store.destroy();
+});
+
 test('a new quadrant appears in every existing task type while task contents stay independent', () => {
 	const store = createStore({
 		views: [

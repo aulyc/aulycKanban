@@ -39,12 +39,15 @@ Every view contains columns with identical `id/title/order` definitions, but eac
 
 - Toolbar renders all task views and an add button before archive.
 - Clicking add replaces the button with a text input. Only a non-composing Enter creates the view. Escape or blur cancels.
+- Right-clicking a task view opens rename/delete actions. Rename uses an inline input; deletion requires confirmation and is disabled for the last remaining view.
+- Deleting a task view removes its active tasks, archive data, and sync target. Existing synchronized Markdown files are left untouched.
 - Quadrant add follows the same Enter-only behavior and no confirmation icon is rendered.
 - New task views immediately contain every shared quadrant with zero tasks.
 
 ## Safety and verification
 
 - Titles are trimmed and empty titles are rejected.
+- At least one task view is always retained.
 - IDs are generated internally and never derived from user text.
 - Text is rendered with DOM text APIs, not HTML injection.
 - Tests cover legacy migration, 3+ views, shared quadrants, independent tasks, and Enter-only behavior.

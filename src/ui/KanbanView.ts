@@ -69,7 +69,7 @@ export class KanbanView extends ItemView {
 				e.preventDefault();
 				e.stopPropagation();
 				this.focusNextZone(e.shiftKey, active?.matches(
-					'.aulyckanban-view-add-input, .aulyckanban-nav-inline-input, '
+					'.aulyckanban-view-inline-input, .aulyckanban-nav-inline-input, '
 					+ '.aulyckanban-inline-input, .aulyckanban-edit-textarea',
 				) ?? false);
 				return;
@@ -80,7 +80,7 @@ export class KanbanView extends ItemView {
 				&& active.value.trim().length === 0
 				&& (e.key === 'ArrowUp' || e.key === 'ArrowDown');
 			if (!isEmptyTaskInputArrow && active?.matches(
-				'.aulyckanban-view-add-input, .aulyckanban-nav-inline-input, '
+				'.aulyckanban-view-inline-input, .aulyckanban-nav-inline-input, '
 				+ '.aulyckanban-inline-input, .aulyckanban-edit-textarea',
 			)) return;
 			const zone = this.getFocusZone(active);

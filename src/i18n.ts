@@ -18,6 +18,10 @@ const zh = {
 	'view.personal': '👤 个人任务',
 	'view.add': '新增任务类型',
 	'view.addPrompt': '输入任务类型，Enter 添加',
+	'view.rename': '重命名',
+	'view.delete': '删除任务类型',
+	'view.deleteConfirm': '确定删除任务类型“{title}”吗？',
+	'view.deleteData': '其中 {taskCount} 条任务和 {archiveCount} 条归档任务将永久删除；已同步的 Markdown 文件不会删除。',
 
 	// 列标题
 	'column.periodic': '🔄 周期任务',
@@ -129,6 +133,10 @@ const en: Record<I18nKey, string> = {
 	'view.personal': '👤 Personal',
 	'view.add': 'Add task type',
 	'view.addPrompt': 'Task type, Enter to add',
+	'view.rename': 'Rename',
+	'view.delete': 'Delete task type',
+	'view.deleteConfirm': 'Delete the “{title}” task type?',
+	'view.deleteData': '{taskCount} tasks and {archiveCount} archived tasks will be permanently deleted. Synced Markdown files will not be deleted.',
 
 	'column.periodic': '🔄 Periodic',
 	'column.urgentImportant': '🔥 Urgent & Important',

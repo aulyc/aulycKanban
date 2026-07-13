@@ -11,6 +11,8 @@ import type { ActionType } from './types';
 /** 会同时影响全部任务类型的操作 */
 const MULTI_VIEW_MUTATION_ACTIONS: ReadonlySet<ActionType> = new Set([
 	'ADD_VIEW',
+	'RENAME_VIEW',
+	'DELETE_VIEW',
 	'ADD_COLUMN',
 	'RENAME_COLUMN',
 	'DELETE_COLUMN',

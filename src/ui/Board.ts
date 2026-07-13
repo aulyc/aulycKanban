@@ -25,7 +25,7 @@ export class Board {
 		this.store = store;
 
 		// 工具栏（始终显示）
-		this.toolbar = new Toolbar(this.containerEl, this.store);
+		this.toolbar = new Toolbar(this.containerEl, app, this.store);
 		this.toolbar.getEl();
 
 		// 看板视图容器（左侧任务列表 + 右侧分类导航）

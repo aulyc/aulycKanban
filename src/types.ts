@@ -88,6 +88,8 @@ export type Action =
 	| { type: 'TOGGLE_TASK'; payload: { columnId: string; taskId: string } }
 	| { type: 'SWITCH_VIEW'; payload: { view: ViewKind } }
 	| { type: 'ADD_VIEW'; payload: { title: string } }
+	| { type: 'RENAME_VIEW'; payload: { viewId: ViewKind; title: string } }
+	| { type: 'DELETE_VIEW'; payload: { viewId: ViewKind } }
 	| { type: 'SELECT_COLUMN'; payload: { columnId: string } }
 	| { type: 'ADD_COLUMN'; payload: { title: string } }
 	| { type: 'RENAME_COLUMN'; payload: { columnId: string; title: string } }

@@ -174,7 +174,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	height: 16px;
 }
 
-.aulyckanban-kanban-container .aulyckanban-view-add-input {
+.aulyckanban-kanban-container .aulyckanban-view-inline-input {
 	height: 30px;
 	flex: 0 0 180px;
 	width: 180px;
@@ -193,13 +193,13 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	appearance: none;
 }
 
-.aulyckanban-kanban-container .aulyckanban-view-add-input:focus {
+.aulyckanban-kanban-container .aulyckanban-view-inline-input:focus {
 	border-color: var(--interactive-accent);
 	outline: none;
 	box-shadow: inset 0 0 0 1px var(--interactive-accent);
 }
 
-.aulyckanban-kanban-container .aulyckanban-view-add-input::placeholder,
+.aulyckanban-kanban-container .aulyckanban-view-inline-input::placeholder,
 .aulyckanban-kanban-container .aulyckanban-nav-inline-input::placeholder {
 	color: var(--text-muted);
 	font-family: inherit;

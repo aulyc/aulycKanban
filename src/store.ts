@@ -103,6 +103,8 @@ export class KanbanStore {
 				this.ensureActiveColumn();
 				break;
 			case 'ADD_VIEW': didMutateData = this.addView(action.payload.title); break;
+			case 'RENAME_VIEW': didMutateData = this.renameView(action.payload.viewId, action.payload.title); break;
+			case 'DELETE_VIEW': didMutateData = this.deleteView(action.payload.viewId); break;
 			case 'SELECT_COLUMN': this.settings.activeColumnId = action.payload.columnId; break;
 			case 'ADD_COLUMN': didMutateData = this.addColumn(action.payload.title); break;
 			case 'RENAME_COLUMN': didMutateData = this.renameColumn(action.payload.columnId, action.payload.title); break;
@@ -228,6 +230,28 @@ export class KanbanStore {
 		this.settings.viewSyncTargets[id] = { filePath: '' };
 		this.settings.currentView = id;
 		this.settings.showArchive = false;
+		this.ensureActiveColumn();
+		return true;
+	}
+
+	private renameView(viewId: ViewKind, rawTitle: string): boolean {
+		const view = this.getView(viewId);
+		const title = rawTitle.trim();
+		if (!view || !title || view.title === title) return false;
+		view.title = title;
+		return true;
+	}
+
+	private deleteView(viewId: ViewKind): boolean {
+		if (this.board.views.length <= 1) return false;
+		const index = this.board.views.findIndex((view) => view.id === viewId);
+		if (index < 0) return false;
+
+		this.board.views.splice(index, 1);
+		delete this.board.archives[viewId];
+		delete this.settings.viewSyncTargets[viewId];
+		this.getTaskViews().forEach((view, order) => { view.order = order; });
+		this.ensureCurrentView();
 		this.ensureActiveColumn();
 		return true;
 	}
