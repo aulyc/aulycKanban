@@ -13,6 +13,7 @@ class MockElement {
 		this.dataset = {};
 		this.attributes = { ...(options?.attr ?? {}) };
 		this.classes = new Set(String(options?.cls ?? '').split(/\s+/).filter(Boolean));
+		this.listeners = new Map();
 		this.classList = {
 			contains: (value) => this.classes.has(value),
 		};
@@ -50,7 +51,16 @@ class MockElement {
 		this.attributes[name] = value;
 	}
 
-	addEventListener() {}
+	toggleClass(value, enabled) {
+		if (enabled) this.classes.add(value);
+		else this.classes.delete(value);
+	}
+
+	addEventListener(name, listener) {
+		const listeners = this.listeners.get(name) ?? [];
+		listeners.push(listener);
+		this.listeners.set(name, listeners);
+	}
 
 	focus() {
 		this.documentRef.activeElement = this;
@@ -77,6 +87,7 @@ function createToolbarHarness() {
 		exports: module.exports,
 		document: documentRef,
 		HTMLElement: MockElement,
+		requestAnimationFrame: (callback) => callback(),
 		require: (id) => {
 			if (id === '../i18n') return { t: (key) => key };
 			if (id === './InlineInput') return { createInlineInput: () => ({}) };
@@ -120,6 +131,19 @@ test('toolbar rerender moves an existing task type focus to the selected task ty
 
 	assert.equal(documentRef.activeElement.dataset.viewId, 'test');
 	assert.equal(documentRef.activeElement.classList.contains('aulyckanban-tab-active'), true);
+});
+
+test('entering task type add mode explicitly marks the toolbar as editing', () => {
+	const { parent } = createToolbarHarness();
+	const toolbarEl = parent.children[0];
+	const addButton = descendants(toolbarEl).find((element) => (
+		element.classList.contains('aulyckanban-view-add-btn')
+	));
+	const click = addButton.listeners.get('click')[0];
+
+	click({ preventDefault() {}, stopPropagation() {} });
+
+	assert.equal(toolbarEl.classList.contains('aulyckanban-toolbar-editing'), true);
 });
 
 test('task type tabs expose rename and delete management actions', () => {

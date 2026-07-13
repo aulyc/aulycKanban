@@ -25,6 +25,10 @@ export class Toolbar {
 	}
 
 	render(): void {
+		this.el.toggleClass(
+			'aulyckanban-toolbar-editing',
+			this.isAdding || this.editingViewId !== null,
+		);
 		const focusedEl = document.activeElement instanceof HTMLElement
 			? document.activeElement
 			: null;

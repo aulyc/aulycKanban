@@ -5,6 +5,7 @@ import ts from 'typescript';
 import { readFileSync } from 'node:fs';
 
 const source = readFileSync(new URL('../src/utils/resizeHost.ts', import.meta.url), 'utf8');
+const styles = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
 const output = ts.transpileModule(source, {
 	compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
 }).outputText;
@@ -49,4 +50,12 @@ test('main workspace uses workspace tabs and moves the marker between hosts', ()
 
 	clearResizeHost(nextHost);
 	assert.equal(tabs.classList.contains('aulyckanban-resize-host'), false);
+});
+
+test('desktop resize host is fixed to exactly 500px', () => {
+	const rule = styles.match(/body:not\(\.is-mobile\) \.aulyckanban-resize-host\s*\{([^}]*)\}/)?.[1] ?? '';
+	assert.match(rule, /flex:\s*0 0 500px !important/);
+	assert.match(rule, /width:\s*500px !important/);
+	assert.match(rule, /min-width:\s*500px !important/);
+	assert.match(rule, /max-width:\s*500px !important/);
 });

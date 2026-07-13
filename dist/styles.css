@@ -12,12 +12,12 @@
 	padding: 0 !important;
 }
 
-/*
- * Obsidian 没有公开分栏最小宽度 API；此类由 KanbanView 标记到实际 resize 宿主。
- * 小窗口下以父容器宽度为上限，避免固定 450px 造成整个工作区横向溢出。
- */
+/* Obsidian 没有公开分栏宽度 API；此类由 KanbanView 标记到实际 resize 宿主。 */
 body:not(.is-mobile) .aulyckanban-resize-host {
-	min-width: min(450px, 100%) !important;
+	flex: 0 0 500px !important;
+	width: 500px !important;
+	min-width: 500px !important;
+	max-width: 500px !important;
 }
 
 /* 容器 */
@@ -31,6 +31,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	--aulyckanban-nav-width: 150px;
 	--aulyckanban-nav-inner-padding-x: 6px;
 	--aulyckanban-keyboard-focus: var(--text-normal);
+	--aulyckanban-selection-border: var(--text-on-accent);
 	display: flex;
 	flex-direction: column;
 	height: 100%;
@@ -105,17 +106,17 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 
 .aulyckanban-tab:focus-visible {
 	outline: none;
-	box-shadow: inset 0 0 0 1px var(--aulyckanban-keyboard-focus);
+	box-shadow: none;
 }
 
 .aulyckanban-tab.aulyckanban-tab-active {
 	background: var(--interactive-accent);
 	color: var(--text-on-accent);
-	border-color: var(--interactive-accent);
+	border-color: var(--aulyckanban-selection-border);
 }
 
 .aulyckanban-tab.aulyckanban-tab-active:focus-visible {
-	box-shadow: inset 0 0 0 1px var(--text-on-accent);
+	box-shadow: none;
 }
 
 .aulyckanban-tab.aulyckanban-tab-active:hover {
@@ -149,10 +150,12 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 .aulyckanban-view-add-btn:focus-visible {
 	background: var(--interactive-accent);
 	color: var(--text-on-accent);
-	border-color: var(--interactive-accent);
-	box-shadow: inset 0 0 0 2px var(--text-on-accent);
+	border: 1px solid var(--aulyckanban-selection-border);
+	box-shadow: none;
 }
 
+.aulyckanban-toolbar-editing
+	.aulyckanban-view-tab.aulyckanban-tab-active,
 .aulyckanban-view-strip:has(.aulyckanban-view-add-btn:focus-visible)
 	.aulyckanban-view-tab.aulyckanban-tab-active,
 .aulyckanban-view-strip:has(.aulyckanban-view-add-input:focus)
@@ -160,6 +163,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	background: var(--background-secondary);
 	color: var(--text-normal);
 	border-color: var(--background-modifier-border);
+	box-shadow: none;
 }
 
 .aulyckanban-archive-btn {
@@ -189,14 +193,14 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	font-size: 13px;
 	font-weight: 400;
 	outline: none;
-	box-shadow: inset 0 0 0 1px var(--interactive-accent);
+	box-shadow: none;
 	appearance: none;
 }
 
 .aulyckanban-kanban-container .aulyckanban-view-inline-input:focus {
 	border-color: var(--interactive-accent);
 	outline: none;
-	box-shadow: inset 0 0 0 1px var(--interactive-accent);
+	box-shadow: none;
 }
 
 .aulyckanban-kanban-container .aulyckanban-view-inline-input::placeholder,
@@ -281,8 +285,10 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	padding: 8px 10px;
+	padding: 7px 9px;
+	border: 1px solid transparent;
 	border-radius: 6px;
+	box-sizing: border-box;
 	cursor: pointer;
 	transition: all 0.15s ease;
 	user-select: none;
@@ -294,16 +300,17 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 
 .aulyckanban-nav-item:focus-visible {
 	outline: none;
-	box-shadow: inset 0 0 0 1px var(--aulyckanban-keyboard-focus);
+	box-shadow: none;
 }
 
 .aulyckanban-nav-item-active {
 	background: var(--interactive-accent);
 	color: var(--text-on-accent);
+	border-color: var(--aulyckanban-selection-border);
 }
 
 .aulyckanban-nav-item-active:focus-visible {
-	box-shadow: inset 0 0 0 1px var(--text-on-accent);
+	box-shadow: none;
 }
 
 .aulyckanban-nav-item-active:hover {
@@ -357,8 +364,8 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	outline: none;
 	background: var(--interactive-accent);
 	color: var(--text-on-accent);
-	border-color: var(--interactive-accent);
-	box-shadow: inset 0 0 0 2px var(--text-on-accent);
+	border: 1px solid var(--aulyckanban-selection-border);
+	box-shadow: none;
 }
 
 .aulyckanban-category-nav-editing
@@ -369,6 +376,8 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	.aulyckanban-nav-item-active {
 	background: transparent;
 	color: var(--text-normal);
+	border-color: transparent;
+	box-shadow: none;
 }
 
 .aulyckanban-category-nav-editing
@@ -414,7 +423,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	font-family: inherit;
 	box-sizing: border-box;
 	outline: none;
-	box-shadow: inset 0 0 0 1px var(--interactive-accent);
+	box-shadow: none;
 	appearance: none;
 	-webkit-text-fill-color: var(--text-normal);
 	caret-color: var(--text-normal);
@@ -424,7 +433,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 .aulyckanban-kanban-container .aulyckanban-nav-inline-input:focus {
 	border-color: var(--interactive-accent);
 	outline: none;
-	box-shadow: inset 0 0 0 1px var(--interactive-accent);
+	box-shadow: none;
 }
 
 @keyframes aulyckanban-blink {
@@ -466,14 +475,14 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
-.aulyckanban-task:focus-visible,
-.aulyckanban-task:focus-visible:hover {
+.aulyckanban-task:focus {
 	outline: none;
-	box-shadow: inset 0 0 0 2px var(--aulyckanban-keyboard-focus);
+	border-color: var(--aulyckanban-selection-border);
 }
 
-.aulyckanban-task-editing,
-.aulyckanban-task-editing:hover {
+.aulyckanban-task.aulyckanban-task-editing,
+.aulyckanban-task.aulyckanban-task-editing:hover,
+.aulyckanban-task.aulyckanban-task-editing:focus {
 	border-color: var(--interactive-accent);
 }
 
@@ -611,9 +620,9 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 }
 
 .aulyckanban-kanban-container .aulyckanban-inline-input:focus {
-	border-color: var(--background-modifier-border);
+	border-color: var(--aulyckanban-selection-border);
 	outline: none;
-	box-shadow: inset 0 0 0 1px var(--aulyckanban-keyboard-focus);
+	box-shadow: none;
 }
 
 .aulyckanban-inline-input::placeholder {

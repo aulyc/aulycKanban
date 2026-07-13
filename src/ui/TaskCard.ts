@@ -9,7 +9,7 @@ import { createInlineInput } from './InlineInput';
 
 /**
  * 任务卡片组件
- * - 单击内容进入编辑模式（inline textarea）
+ * - 首次点击选中卡片，再次点击或按 Enter 进入编辑模式（inline textarea）
  * - 删除按钮两次点击确认（第一次变色，第二次删除）
  * - 显示创建/修改时间
  */
@@ -47,7 +47,7 @@ export class TaskCard {
 		// 中间区域：内容 + 时间
 		const middleEl = this.el.createDiv({ cls: 'aulyckanban-task-middle' });
 
-		// 任务内容（单击进入编辑模式）
+		// 任务内容
 		const contentEl = middleEl.createDiv({
 			cls: `aulyckanban-task-content ${task.completed ? 'aulyckanban-task-content-completed' : ''}`,
 		});
@@ -55,8 +55,12 @@ export class TaskCard {
 		this.el.setAttribute('aria-labelledby', contentEl.id);
 		setTextWithLineBreaks(contentEl, task.content);
 
-		contentEl.addEventListener('click', (e: MouseEvent) => {
+		this.el.addEventListener('click', (e: MouseEvent) => {
 			e.stopPropagation();
+			if (document.activeElement !== this.el) {
+				this.el.focus({ preventScroll: true });
+				return;
+			}
 			this.enterEditMode(contentEl);
 		});
 		this.el.addEventListener('keydown', (e: KeyboardEvent) => {
@@ -107,7 +111,7 @@ export class TaskCard {
 	}
 
 	/**
-	 * 单击进入内联编辑模式
+	 * 已选中后再次点击或按 Enter 进入内联编辑模式
 	 */
 	private enterEditMode(contentEl: HTMLElement): void {
 		// 避免重复进入
@@ -124,6 +128,7 @@ export class TaskCard {
 			cls: 'aulyckanban-edit-textarea',
 			initialValue: currentText,
 			focusOnMount: true,
+			stopClickPropagation: true,
 			blurBehavior: 'commit',
 			onCommit: (value, trigger) => {
 				this.saveEdit(value.trim() || currentText, trigger === 'enter', contentEl);

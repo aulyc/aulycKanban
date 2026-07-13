@@ -130,3 +130,19 @@ test('editing state suppresses the selected quadrant independently of transient 
 		/\.aulyckanban-category-nav-editing\s+\.aulyckanban-nav-item-active/,
 	);
 });
+
+test('inline quadrant input uses the same one-pixel accent border as task editing', () => {
+	const css = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
+	const inputRule = css.match(
+		/\.aulyckanban-kanban-container \.aulyckanban-nav-inline-input\s*\{([^}]*)\}/,
+	)?.[1] ?? '';
+	const inputFocusRule = css.match(
+		/\.aulyckanban-kanban-container \.aulyckanban-nav-inline-input:focus\s*\{([^}]*)\}/,
+	)?.[1] ?? '';
+	const taskRule = css.match(/\.aulyckanban-task\s*\{([^}]*)\}/)?.[1] ?? '';
+
+	assert.match(inputRule, /border:\s*1px solid var\(--interactive-accent\)/);
+	assert.match(inputRule, /box-shadow:\s*none/);
+	assert.match(inputFocusRule, /box-shadow:\s*none/);
+	assert.match(taskRule, /border:\s*1px solid/);
+});
