@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const defaultVaultPath = "/Users/crp/Documents/Obsidian/my_vault";
+const defaultVaultPath = "/Users/crp/Documents/Obsidian_Vault";
 const vaultPath = path.resolve(process.env.OBSIDIAN_VAULT_PATH?.trim() || defaultVaultPath);
 const obsidianDir = path.join(vaultPath, ".obsidian");
 
