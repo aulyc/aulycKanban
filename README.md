@@ -52,6 +52,20 @@ npm run install:prod
 
 默认安装到 `/Users/crp/Documents/Obsidian_Vault`，只覆盖 `main.js`、`manifest.json`、`styles.css`，不会覆盖运行数据 `data.json`。如需临时安装到其他 Vault，可设置 `OBSIDIAN_VAULT_PATH`。
 
+使用已注册的官方 Obsidian CLI 进行真实运行冒烟验证：
+
+```bash
+npm run smoke:obsidian
+```
+
+该命令默认连接当前活动 Vault，依次重载插件、核对实际版本和启用状态、打开看板、确认看板 DOM 已渲染，并检查运行时错误。需要指定其他 Vault 时设置 `OBSIDIAN_VAULT_NAME`：
+
+```bash
+OBSIDIAN_VAULT_NAME="My Vault" npm run smoke:obsidian
+```
+
+Obsidian CLI 仅用于本机开发验证，不属于插件运行时依赖，也不能替代单元测试、构建和移动端验证。
+
 ## 版本与发版
 
 项目使用标准 SemVer，支持 `alpha.N`、`beta.N`、`rc.N` 测试版本。版本准备、发布提交、裸版本标签和测试版/正式版流程见 [VERSIONING.md](VERSIONING.md)。

@@ -129,3 +129,11 @@ npm run install:prod
 ```
 
 安装脚本会重新执行完整发布验证，只复制上述三个发布文件，并逐字节核对安装结果。可通过 `OBSIDIAN_VAULT_PATH` 临时覆盖目标 Vault。
+
+安装完成且 Obsidian 已启动后，执行真实运行冒烟验证：
+
+```bash
+npm run smoke:obsidian
+```
+
+该命令默认连接当前活动 Vault，验证已加载插件的版本和启用状态、打开看板、断言看板 DOM 已渲染，并确认没有捕获到运行时错误。需要连接其他 Vault 时通过 `OBSIDIAN_VAULT_NAME` 指定名称。
