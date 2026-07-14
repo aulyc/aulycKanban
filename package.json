@@ -1,6 +1,6 @@
 {
 	"name": "aulyckanban",
-	"version": "2.1.16",
+	"version": "2.1.17",
 	"description": "Manage tasks with kanban board based on the Eisenhower Matrix.",
 	"main": "main.js",
 	"scripts": {
