@@ -88,7 +88,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	padding: 6px 14px;
 	border: 1px solid var(--background-modifier-border);
 	border-radius: 6px;
-	background: var(--background-secondary);
+	background: var(--interactive-normal);
 	background-image: none;
 	color: var(--text-normal);
 	box-shadow: none !important;
@@ -167,7 +167,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	.aulyckanban-view-tab.aulyckanban-tab-active,
 .aulyckanban-view-strip:has(.aulyckanban-view-add-input:focus)
 	.aulyckanban-view-tab.aulyckanban-tab-active {
-	background: var(--background-secondary);
+	background: var(--interactive-normal);
 	color: var(--text-normal);
 	border-color: var(--background-modifier-border);
 	box-shadow: none !important;

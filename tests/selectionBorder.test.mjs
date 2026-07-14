@@ -54,9 +54,10 @@ test('task type editing explicitly clears the previously selected task type', ()
 	);
 });
 
-test('task type buttons use one normalized border without theme button shadows', () => {
+test('task type buttons keep the same filled neutral state when add receives focus', () => {
 	const tabRule = rule('.aulyckanban-tab');
 	assert.match(tabRule, /border:\s*1px solid/);
+	assert.match(tabRule, /background:\s*var\(--interactive-normal\)/);
 	assert.match(tabRule, /box-shadow:\s*none\s*!important/);
 	assert.match(tabRule, /appearance:\s*none/);
 
@@ -64,6 +65,8 @@ test('task type buttons use one normalized border without theme button shadows',
 		/\.aulyckanban-toolbar-editing[\s\S]*?\.aulyckanban-view-tab\.aulyckanban-tab-active\s*\{([^}]*)\}/,
 	)?.[1] ?? '';
 	assert.notEqual(suppressedActiveRule, '');
+	assert.match(suppressedActiveRule, /background:\s*var\(--interactive-normal\)/);
+	assert.doesNotMatch(suppressedActiveRule, /background:\s*var\(--background-secondary\)/);
 	assert.match(suppressedActiveRule, /box-shadow:\s*none\s*!important/);
 });
 
