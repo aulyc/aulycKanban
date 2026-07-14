@@ -121,3 +121,11 @@ git tag 2.1.3
 - `dist/styles.css`
 
 运行数据 `data.json` 不属于发布产物，安装或升级时不得覆盖。安装后必须重新加载插件，并核对运行中的实际版本。
+
+本机正式 Vault 默认为 `/Users/crp/Documents/Obsidian Plugin/my_vault`。完成正式提交与标签后执行：
+
+```bash
+npm run install:prod
+```
+
+安装脚本会重新执行完整发布验证，只复制上述三个发布文件，并逐字节核对安装结果。可通过 `OBSIDIAN_VAULT_PATH` 临时覆盖目标 Vault。

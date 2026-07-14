@@ -44,6 +44,14 @@ npm run build
 npm run release:verify
 ```
 
+安装到本机正式 Vault：
+
+```bash
+npm run install:prod
+```
+
+默认安装到 `/Users/crp/Documents/Obsidian Plugin/my_vault`，只覆盖 `main.js`、`manifest.json`、`styles.css`，不会覆盖运行数据 `data.json`。如需临时安装到其他 Vault，可设置 `OBSIDIAN_VAULT_PATH`。
+
 ## 版本与发版
 
 项目使用标准 SemVer，支持 `alpha.N`、`beta.N`、`rc.N` 测试版本。版本准备、发布提交、裸版本标签和测试版/正式版流程见 [VERSIONING.md](VERSIONING.md)。
