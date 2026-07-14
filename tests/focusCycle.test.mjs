@@ -14,10 +14,55 @@ vm.runInNewContext(output, { module, exports: module.exports });
 const {
 	getHorizontalRevealScrollLeft,
 	getNextFocusZone,
+	getTaskZoneFocusTarget,
+	getTaskZoneNavigationItems,
 	getTaskTypeNavigationTarget,
 	getWrappedItemIndex,
 	shouldUseTabFocusFallback,
 } = module.exports;
+
+test('empty task zones ignore hidden archive cards and focus the persistent input', () => {
+	const visibleInput = { id: 'task-input' };
+	const hiddenArchiveCard = { id: 'archive-card' };
+	const selectors = [];
+	const root = {
+		querySelector(selector) {
+			selectors.push(selector);
+			if (selector === '.aulyckanban-task') return hiddenArchiveCard;
+			if (selector === '.aulyckanban-task-list .aulyckanban-inline-input') return visibleInput;
+			return null;
+		},
+	};
+
+	assert.equal(getTaskZoneFocusTarget(root), visibleInput);
+	assert.deepEqual(selectors, [
+		'.aulyckanban-task-list .aulyckanban-task',
+		'.aulyckanban-task-list .aulyckanban-inline-input',
+	]);
+});
+
+test('task arrow navigation excludes hidden archive cards', () => {
+	const visibleInput = { id: 'task-input' };
+	const hiddenArchiveCard = { id: 'archive-card' };
+	const selectors = [];
+	const root = {
+		querySelectorAll(selector) {
+			selectors.push(selector);
+			if (selector === '.aulyckanban-inline-input, .aulyckanban-task') {
+				return [visibleInput, hiddenArchiveCard];
+			}
+			return [visibleInput];
+		},
+	};
+
+	const items = getTaskZoneNavigationItems(root);
+	assert.equal(items.length, 1);
+	assert.equal(items[0], visibleInput);
+	assert.deepEqual(selectors, [
+		'.aulyckanban-task-list .aulyckanban-inline-input, '
+			+ '.aulyckanban-task-list .aulyckanban-task',
+	]);
+});
 
 test('Tab cycles view, tasks, columns, then view', () => {
 	assert.equal(getNextFocusZone(null), 'view');

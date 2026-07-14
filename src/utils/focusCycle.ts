@@ -5,6 +5,8 @@ export type TaskTypeNavigationTarget =
 	| { kind: 'archive' };
 
 const FOCUS_ORDER: readonly KanbanFocusZone[] = ['view', 'tasks', 'columns'];
+const TASK_ZONE_TASK_SELECTOR = '.aulyckanban-task-list .aulyckanban-task';
+const TASK_ZONE_INPUT_SELECTOR = '.aulyckanban-task-list .aulyckanban-inline-input';
 
 export interface TabFocusFallbackContext {
 	key: string;
@@ -36,6 +38,19 @@ export function shouldUseTabFocusFallback(context: TabFocusFallbackContext): boo
 		&& context.viewIsActive
 		&& !context.eventPathIncludesView
 		&& (context.activeElementIsInsideView || context.documentLevelTarget);
+}
+
+/** 获取普通任务区的首个焦点目标，避免命中隐藏归档区复用的任务样式。 */
+export function getTaskZoneFocusTarget(root: ParentNode): HTMLElement | null {
+	return root.querySelector<HTMLElement>(TASK_ZONE_TASK_SELECTOR)
+		?? root.querySelector<HTMLElement>(TASK_ZONE_INPUT_SELECTOR);
+}
+
+/** 获取普通任务区的方向键目标，排除隐藏归档卡片。 */
+export function getTaskZoneNavigationItems(root: ParentNode): HTMLElement[] {
+	return Array.from(root.querySelectorAll<HTMLElement>(
+		`${TASK_ZONE_INPUT_SELECTOR}, ${TASK_ZONE_TASK_SELECTOR}`,
+	));
 }
 
 /** 计算方向键循环选择时的目标下标。 */

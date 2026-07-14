@@ -6,6 +6,8 @@ import { Board } from './Board';
 import { clearResizeHost, updateResizeHost } from '../utils/resizeHost';
 import {
 	getNextFocusZone,
+	getTaskZoneFocusTarget,
+	getTaskZoneNavigationItems,
 	getTaskTypeNavigationTarget,
 	getWrappedItemIndex,
 	revealTaskTypeItem,
@@ -235,8 +237,7 @@ export class KanbanView extends ItemView {
 						'.aulyckanban-archive-search, .aulyckanban-archive-container',
 					);
 				}
-				return this.contentEl.querySelector<HTMLElement>('.aulyckanban-task')
-					?? this.contentEl.querySelector<HTMLElement>('.aulyckanban-inline-input');
+				return getTaskZoneFocusTarget(this.contentEl);
 			case 'columns':
 				return this.contentEl.querySelector<HTMLElement>(
 					'.aulyckanban-nav-item-active',
@@ -307,9 +308,7 @@ export class KanbanView extends ItemView {
 	}
 
 	private selectAdjacentTaskItem(offset: number): void {
-		const items = Array.from(this.contentEl.querySelectorAll<HTMLElement>(
-			'.aulyckanban-inline-input, .aulyckanban-task',
-		));
+		const items = getTaskZoneNavigationItems(this.contentEl);
 		const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 		const currentIndex = active ? items.indexOf(active) : -1;
 		const target = items[getWrappedItemIndex(currentIndex, items.length, offset)];
