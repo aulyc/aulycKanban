@@ -58,6 +58,21 @@ test('keyboard navigation targets update instantly without visual trails', () =>
 	assert.match(rule('.aulyckanban-task:focus'), /box-shadow:\s*none/);
 });
 
+test('archive control has no separator and uses a semantic archive color', () => {
+	const slot = rule('.aulyckanban-archive-slot');
+	assert.match(slot, /padding-left:\s*0/);
+	assert.match(slot, /border-left:\s*0/);
+
+	const button = rule('.aulyckanban-archive-btn');
+	assert.match(button, /background:\s*color-mix\([^;]*var\(--color-orange\)/);
+	assert.match(button, /border-color:\s*color-mix\([^;]*var\(--color-orange\)/);
+	assert.match(button, /color:\s*var\(--color-orange\)/);
+
+	const active = rule('.aulyckanban-archive-btn.aulyckanban-tab-active');
+	assert.match(active, /background:\s*color-mix\([^;]*var\(--color-orange\)/);
+	assert.match(active, /border-color:\s*var\(--color-orange\)/);
+});
+
 test('add buttons and editors use their own real focus for the white border', () => {
 	for (const selectors of [
 		['.aulyckanban-nav-add-btn:focus', '.aulyckanban-nav-add-btn:focus-visible'],

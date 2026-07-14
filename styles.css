@@ -76,8 +76,8 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	display: flex;
 	align-items: center;
 	flex: none;
-	padding-left: 8px;
-	border-left: 1px solid var(--background-modifier-border);
+	padding-left: 0;
+	border-left: 0;
 }
 
 
@@ -170,6 +170,25 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	min-width: 30px;
 	width: 30px;
 	padding: 6px;
+	background: color-mix(in srgb, var(--color-orange) 16%, var(--interactive-normal));
+	border-color: color-mix(in srgb, var(--color-orange) 38%, var(--background-modifier-border));
+	color: var(--color-orange);
+}
+
+.aulyckanban-archive-btn:hover {
+	background: color-mix(in srgb, var(--color-orange) 24%, var(--interactive-normal));
+	border-color: color-mix(in srgb, var(--color-orange) 58%, var(--background-modifier-border));
+	color: var(--color-orange);
+}
+
+.aulyckanban-archive-btn.aulyckanban-tab-active {
+	background: color-mix(in srgb, var(--color-orange) 44%, var(--background-primary));
+	border-color: var(--color-orange);
+	color: var(--text-normal);
+}
+
+.aulyckanban-archive-btn.aulyckanban-tab-active:hover {
+	background: color-mix(in srgb, var(--color-orange) 54%, var(--background-primary));
 }
 
 .aulyckanban-archive-btn svg {
