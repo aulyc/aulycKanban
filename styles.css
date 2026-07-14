@@ -748,25 +748,15 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 }
 
 .aulyckanban-archive-controls {
-	display: flex;
-	flex-direction: column;
-	align-items: stretch;
-	gap: 6px;
-	flex-wrap: wrap;
 	margin-bottom: 10px;
 	padding: 0 12px;
 }
 
-.aulyckanban-archive-controls-row {
+.aulyckanban-archive-toolbar {
 	display: flex;
 	align-items: center;
 	gap: 8px;
-	flex-wrap: wrap;
-}
-
-.aulyckanban-archive-filter-label {
-	font-size: 12px;
-	color: var(--text-muted);
+	min-width: 0;
 }
 
 .aulyckanban-kanban-container .aulyckanban-archive-filter-select,
@@ -790,37 +780,65 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 }
 
 .aulyckanban-archive-search {
-	flex: 1;
-	min-width: 180px;
+	width: 100%;
+	min-width: 0;
+	padding-right: 28px !important;
 }
 
-.aulyckanban-archive-sort-btn {
-	height: 30px;
-	padding: 0 10px;
-	font-size: 12px;
+.aulyckanban-archive-search-shell {
+	position: relative;
+	flex: 1 1 auto;
+	min-width: 0;
 }
 
-.aulyckanban-archive-delete-mode-btn,
-.aulyckanban-archive-batch-btn {
-	height: 30px;
-	padding: 0 10px;
-	font-size: 12px;
+.aulyckanban-archive-filter-select {
+	flex: 0 0 auto;
+	min-width: 90px;
 }
 
-.aulyckanban-archive-danger-btn {
-	border-color: var(--text-error) !important;
-	color: var(--text-error) !important;
-}
-
-.aulyckanban-archive-clear-btn {
+.aulyckanban-archive-select-mode-btn,
+.aulyckanban-archive-selection-btn,
+.aulyckanban-archive-more-btn {
 	height: 30px;
 	padding: 0 10px;
 	border: 1px solid var(--background-modifier-border);
 	border-radius: 6px;
-	background: var(--background-primary);
-	color: var(--text-muted);
+	background: var(--interactive-normal);
+	color: var(--text-normal);
 	font-size: 12px;
 	cursor: pointer;
+}
+
+.aulyckanban-archive-select-mode-btn:hover,
+.aulyckanban-archive-selection-btn:hover,
+.aulyckanban-archive-more-btn:hover {
+	background: var(--interactive-hover);
+}
+
+.aulyckanban-archive-clear-btn {
+	position: absolute;
+	top: 50%;
+	right: 3px;
+	display: grid;
+	place-items: center;
+	width: 24px;
+	height: 24px;
+	padding: 0;
+	transform: translateY(-50%);
+	border: 0;
+	border-radius: 4px;
+	background: transparent;
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+.aulyckanban-archive-clear-btn[hidden] {
+	display: none;
+}
+
+.aulyckanban-archive-clear-btn svg {
+	width: 13px;
+	height: 13px;
 }
 
 .aulyckanban-archive-clear-btn:hover {
@@ -828,11 +846,65 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	color: var(--text-normal);
 }
 
-.aulyckanban-archive-clear-btn:disabled {
+.aulyckanban-archive-toolbar-selection {
+	min-height: 34px;
+	padding: 4px 6px 4px 8px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	background: color-mix(in srgb, var(--interactive-accent) 8%, var(--background-secondary));
+}
+
+.aulyckanban-archive-select-all {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	flex: 0 0 auto;
+	color: var(--text-normal);
+	font-size: 12px;
+	cursor: pointer;
+}
+
+.aulyckanban-archive-selected-count {
+	color: var(--text-muted);
+	font-size: 12px;
+	white-space: nowrap;
+}
+
+.aulyckanban-archive-selection-actions {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin-left: auto;
+}
+
+.aulyckanban-archive-delete-selected-btn {
+	border-color: color-mix(in srgb, var(--text-error) 70%, var(--background-modifier-border));
+	background: var(--text-error);
+	color: #fff;
+}
+
+.aulyckanban-archive-delete-selected-btn:hover {
+	border-color: var(--text-error);
+	background: color-mix(in srgb, var(--text-error) 88%, #000);
+}
+
+.aulyckanban-archive-delete-selected-btn:disabled,
+.aulyckanban-archive-more-btn:disabled,
+.aulyckanban-archive-select-mode-btn:disabled {
 	opacity: 0.45;
 	cursor: not-allowed;
-	background: var(--background-primary);
-	color: var(--text-faint);
+}
+
+.aulyckanban-archive-more-btn {
+	display: grid;
+	place-items: center;
+	width: 30px;
+	padding: 0;
+}
+
+.aulyckanban-archive-more-btn svg {
+	width: 15px;
+	height: 15px;
 }
 
 /* 归档大类区块（工作/个人） */
@@ -868,60 +940,52 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 
 .aulyckanban-archive-task {
 	cursor: default;
-	opacity: 0.8;
 	display: flex;
 	flex-direction: column;
 	align-items: stretch;
-	gap: 8px;
+	gap: 6px;
 }
 
 .aulyckanban-archive-task-top {
 	display: flex;
-	align-items: flex-start;
+	align-items: center;
 	justify-content: space-between;
 	gap: 8px;
 }
 
 .aulyckanban-archive-task-main {
 	display: flex;
-	align-items: flex-start;
+	align-items: center;
 	gap: 8px;
 	flex: 1;
 	min-width: 0;
-	min-height: 28px;
+	min-height: 24px;
 }
 
-.aulyckanban-archive-task-bottom {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 8px;
-	flex-wrap: wrap;
+.aulyckanban-archive-task-title {
+	color: var(--text-normal);
+	text-decoration: none;
 }
 
-.aulyckanban-archive-task-tags {
+.aulyckanban-archive-task-meta {
 	display: flex;
 	align-items: center;
-	gap: 6px;
+	gap: 5px;
 	flex-wrap: wrap;
+	min-width: 0;
+	color: var(--text-muted);
+	font-size: 12px;
+}
+
+.aulyckanban-archive-meta-item {
 	min-width: 0;
 }
 
-.aulyckanban-archive-task-time {
-	white-space: nowrap;
+.aulyckanban-archive-meta-separator {
+	color: var(--text-faint);
 }
 
-.aulyckanban-archive-tag {
-	display: inline-flex;
-	align-items: center;
-	height: 22px;
-	padding: 0 8px;
-	border-radius: 999px;
-	border: 1px solid var(--background-modifier-border);
-	background: var(--background-secondary);
-	color: var(--text-muted);
-	font-size: 12px;
-	line-height: 1;
+.aulyckanban-archive-task-time {
 	white-space: nowrap;
 }
 
@@ -929,19 +993,33 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	width: 16px;
 	height: 16px;
 	margin: 0;
+	accent-color: var(--text-error);
 }
 
 .aulyckanban-archive-task-actions {
 	display: flex;
 	align-items: center;
-	gap: 8px;
 	flex-shrink: 0;
-	width: 56px;
+	width: auto;
 	justify-content: flex-end;
 }
 
 .aulyckanban-archive-task:hover {
 	box-shadow: none;
+}
+
+.aulyckanban-archive-task-selecting {
+	cursor: pointer;
+}
+
+.aulyckanban-archive-task-selecting:hover {
+	background: var(--background-modifier-hover);
+}
+
+.aulyckanban-archive-task-selected,
+.aulyckanban-archive-task-selected:hover {
+	border-color: color-mix(in srgb, var(--text-error) 55%, var(--background-modifier-border));
+	background: color-mix(in srgb, var(--text-error) 8%, var(--background-primary));
 }
 
 .aulyckanban-archive-restore-btn {
@@ -969,14 +1047,6 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	background: var(--interactive-accent);
 	color: var(--text-on-accent);
 	border-color: var(--interactive-accent);
-}
-
-.aulyckanban-archive-restore-btn:disabled {
-	opacity: 0.45;
-	cursor: not-allowed;
-	background: transparent;
-	color: var(--text-faint);
-	border-color: var(--background-modifier-border);
 }
 
 .aulyckanban-archive-delete-btn {
