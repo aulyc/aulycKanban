@@ -4,6 +4,7 @@ import type { ViewKind } from '../types';
 import { createInlineInput } from './InlineInput';
 import { ConfirmModal } from './ConfirmModal';
 import { revealTaskTypeItem } from '../utils/focusCycle';
+import { appendAccessibleLabel } from '../utils/dom';
 import { Menu, setIcon } from 'obsidian';
 import type { App } from 'obsidian';
 
@@ -55,10 +56,11 @@ export class Toolbar {
 		if (this.isAdding) this.renderAddInput(viewStripEl);
 		else {
 			const addBtn = viewStripEl.createEl('button', {
-				text: '+',
 				cls: 'aulyckanban-tab aulyckanban-view-add-btn',
-				attr: { type: 'button', tabindex: '-1', 'aria-label': t('view.add') },
+				attr: { type: 'button', tabindex: '-1' },
 			});
+			addBtn.createSpan({ text: '+', attr: { 'aria-hidden': 'true' } });
+			appendAccessibleLabel(addBtn, t('view.add'));
 			addBtn.addEventListener('click', (event: MouseEvent) => {
 				event.preventDefault();
 				event.stopPropagation();
@@ -78,11 +80,11 @@ export class Toolbar {
 			attr: {
 				type: 'button',
 				tabindex: '-1',
-				'aria-label': t('archive.tooltip'),
 				'aria-selected': String(isArchive),
 			},
 		});
 		setIcon(archiveBtn, 'archive');
+		appendAccessibleLabel(archiveBtn, t('archive.open'));
 		archiveBtn.addEventListener('click', (event: MouseEvent) => {
 			event.preventDefault();
 			event.stopPropagation();

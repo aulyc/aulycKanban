@@ -10,6 +10,7 @@ class MockElement {
 		this.dataset = {};
 		this.attributes = { ...(options.attr ?? {}) };
 		this.classes = new Set(String(options.cls ?? '').split(/\s+/).filter(Boolean));
+		this.textContent = options.text ?? '';
 		this.listeners = new Map();
 		this.classList = { contains: (value) => this.classes.has(value) };
 	}
@@ -86,6 +87,14 @@ function createCategoryNavHarness() {
 					createInlineInput: (parent, options) => parent.createDiv({ cls: options.cls }),
 				};
 			}
+			if (id === '../utils/dom') {
+				return {
+					appendAccessibleLabel: (element, text) => element.createSpan({
+						cls: 'aulyckanban-accessible-label',
+						text,
+					}),
+				};
+			}
 			throw new Error(`Unexpected import: ${id}`);
 		},
 	};
@@ -103,13 +112,18 @@ function createCategoryNavHarness() {
 	return { parent };
 }
 
-test('entering add mode removes tooltip semantics and renders the inline input', () => {
+test('category add control has an accessible name without tooltip attributes', () => {
 	const { parent } = createCategoryNavHarness();
 	const nav = parent.children[0];
 	const initialAddButton = descendants(nav).find((element) => (
 		element.classList.contains('aulyckanban-nav-add-btn')
 	));
-	assert.equal(initialAddButton.attributes['aria-label'], '输入新象限名称');
+	assert.equal(initialAddButton.attributes['aria-label'], undefined);
+	assert.equal(initialAddButton.attributes.title, undefined);
+	const accessibleLabel = descendants(initialAddButton).find((element) => (
+		element.classList.contains('aulyckanban-accessible-label')
+	));
+	assert.equal(accessibleLabel.textContent, '输入新象限名称');
 
 	const keydown = initialAddButton.listeners.get('keydown')[0];
 	keydown({ key: 'Enter', preventDefault() {}, stopPropagation() {} });

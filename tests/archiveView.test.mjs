@@ -148,7 +148,13 @@ function createHarness() {
 			if (id === './ConfirmModal') return { ConfirmModal: class {} };
 			if (id === '../utils/datetime') return { formatDateTimeMinute: () => '2026/07/12 21:10' };
 			if (id === '../utils/dom') {
-				return { setTextWithLineBreaks: (element, value) => { element.textContent = value; } };
+				return {
+					appendAccessibleLabel: (element, text) => element.createSpan({
+						cls: 'aulyckanban-accessible-label',
+						text,
+					}),
+					setTextWithLineBreaks: (element, value) => { element.textContent = value; },
+				};
 			}
 			if (id === '../utils/task') {
 				return {
@@ -195,12 +201,14 @@ test('archive sort button toggles newest and oldest order without a select menu'
 	const newestFirstButton = byClass(container, 'aulyckanban-archive-sort-btn')[0];
 
 	assert.equal(newestFirstButton.icon, 'arrow-down');
-	assert.equal(newestFirstButton.attributes['aria-label'], 'archive.sort.newest');
+	assert.equal(newestFirstButton.attributes['aria-label'], undefined);
+	assert.equal(newestFirstButton.attributes.title, undefined);
+	assert.equal(byClass(newestFirstButton, 'aulyckanban-accessible-label')[0].textContent, 'archive.sort.newest');
 	newestFirstButton.listeners.get('click')[0]();
 
 	const oldestFirstButton = byClass(container, 'aulyckanban-archive-sort-btn')[0];
 	assert.equal(oldestFirstButton.icon, 'arrow-up');
-	assert.equal(oldestFirstButton.attributes['aria-label'], 'archive.sort.oldest');
+	assert.equal(byClass(oldestFirstButton, 'aulyckanban-accessible-label')[0].textContent, 'archive.sort.oldest');
 });
 
 test('archive selection mode replaces browse controls and hides restore actions', () => {

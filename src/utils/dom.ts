@@ -19,6 +19,17 @@ export function setTextWithLineBreaks(el: HTMLElement, text: string): void {
 }
 
 /**
+ * 用元素内的隐藏文字提供无障碍名称。
+ * 避免使用会被 Obsidian 渲染成 tooltip 的 title / aria-label。
+ */
+export function appendAccessibleLabel(el: HTMLElement, text: string): void {
+	el.createSpan({
+		cls: 'aulyckanban-accessible-label',
+		text,
+	});
+}
+
+/**
  * 自动调整 textarea 高度以适配内容
  * 返回清理函数（取消 input 监听）
  */

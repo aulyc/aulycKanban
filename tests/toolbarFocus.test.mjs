@@ -13,6 +13,7 @@ class MockElement {
 		this.dataset = {};
 		this.attributes = { ...(options?.attr ?? {}) };
 		this.classes = new Set(String(options?.cls ?? '').split(/\s+/).filter(Boolean));
+		this.textContent = options?.text ?? '';
 		this.listeners = new Map();
 		this.classList = {
 			contains: (value) => this.classes.has(value),
@@ -27,6 +28,10 @@ class MockElement {
 
 	createDiv(options = {}) {
 		return this.append(new MockElement('div', options, this.documentRef));
+	}
+
+	createSpan(options = {}) {
+		return this.createEl('span', options);
 	}
 
 	createEl(tagName, options = {}) {
@@ -93,6 +98,14 @@ function createToolbarHarness() {
 			if (id === './InlineInput') return { createInlineInput: () => ({}) };
 			if (id === './ConfirmModal') return { ConfirmModal: class {} };
 			if (id === '../utils/focusCycle') return { revealTaskTypeItem: () => {} };
+			if (id === '../utils/dom') {
+				return {
+					appendAccessibleLabel: (element, text) => element.createSpan({
+						cls: 'aulyckanban-accessible-label',
+						text,
+					}),
+				};
+			}
 			if (id === 'obsidian') return { Menu: class {}, setIcon: () => {} };
 			throw new Error(`Unexpected import: ${id}`);
 		},
@@ -119,6 +132,19 @@ test('task type controls stay out of the native Tab order', () => {
 	const buttons = descendants(parent).filter((element) => element.tagName === 'button');
 	assert.equal(buttons.length, 4);
 	assert.equal(buttons.every((button) => button.attributes.tabindex === '-1'), true);
+});
+
+test('toolbar icon controls use hidden accessible text without tooltip attributes', () => {
+	const { parent } = createToolbarHarness();
+	const buttons = descendants(parent).filter((element) => element.tagName === 'button');
+	assert.equal(buttons.every((button) => button.attributes['aria-label'] === undefined), true);
+	assert.equal(buttons.every((button) => button.attributes.title === undefined), true);
+	assert.equal(
+		descendants(parent).filter((element) => (
+			element.classList.contains('aulyckanban-accessible-label')
+		)).length,
+		2,
+	);
 });
 
 test('toolbar rerender moves an existing task type focus to the selected task type', () => {

@@ -5,7 +5,7 @@ import type { App } from 'obsidian';
 import { t } from '../i18n';
 import { ConfirmModal } from './ConfirmModal';
 import { formatDateTimeMinute } from '../utils/datetime';
-import { setTextWithLineBreaks } from '../utils/dom';
+import { appendAccessibleLabel, setTextWithLineBreaks } from '../utils/dom';
 import { getArchivedAtIso, getArchivedAtTime } from '../utils/task';
 import { createInlineInput } from './InlineInput';
 import { ARCHIVE_UNCATEGORIZED_ID } from '../constants';
@@ -119,9 +119,10 @@ export class ArchiveView {
 
 		clearBtn = searchShellEl.createEl('button', {
 			cls: 'aulyckanban-archive-clear-btn',
-			attr: { type: 'button', 'aria-label': t('archive.searchClear') },
+			attr: { type: 'button' },
 		});
 		setIcon(clearBtn, 'x');
+		appendAccessibleLabel(clearBtn, t('archive.searchClear'));
 		clearBtn.hidden = !this.searchKeyword && !this.searchInputValue;
 		clearBtn.addEventListener('click', () => {
 			this.searchInputValue = '';
@@ -136,9 +137,8 @@ export class ArchiveView {
 		const sortLabel = this.sortOrder === 'desc'
 			? t('archive.sort.newest')
 			: t('archive.sort.oldest');
-		sortBtn.setAttribute('aria-label', sortLabel);
-		sortBtn.setAttribute('title', sortLabel);
 		setIcon(sortBtn, this.sortOrder === 'desc' ? 'arrow-down' : 'arrow-up');
+		appendAccessibleLabel(sortBtn, sortLabel);
 		sortBtn.addEventListener('click', () => {
 			this.sortOrder = this.sortOrder === 'desc' ? 'asc' : 'desc';
 			this.render();
@@ -216,9 +216,10 @@ export class ArchiveView {
 
 		const moreBtn = actionsEl.createEl('button', {
 			cls: 'aulyckanban-archive-more-btn',
-			attr: { type: 'button', 'aria-label': t('archive.delete.more') },
+			attr: { type: 'button' },
 		});
 		setIcon(moreBtn, 'more-horizontal');
+		appendAccessibleLabel(moreBtn, t('archive.delete.more'));
 		moreBtn.disabled = filteredIds.length === 0;
 		moreBtn.addEventListener('click', () => this.showFilteredDeleteMenu(moreBtn, filteredIds));
 	}
@@ -341,11 +342,16 @@ export class ArchiveView {
 
 		const topEl = cardEl.createDiv({ cls: 'aulyckanban-archive-task-top' });
 		if (this.deleteMode) {
-			const checkbox = topEl.createEl('input', {
-				attr: { type: 'checkbox', 'aria-label': t('archive.delete.selectTask') },
+			const checkboxLabel = topEl.createEl('label', {
+				cls: 'aulyckanban-archive-select-label',
+			});
+			const checkbox = checkboxLabel.createEl('input', {
+				attr: { type: 'checkbox' },
 				cls: 'aulyckanban-archive-select-checkbox',
 			});
+			appendAccessibleLabel(checkboxLabel, t('archive.delete.selectTask'));
 			checkbox.checked = isSelected;
+			checkboxLabel.addEventListener('click', (event: MouseEvent) => event.stopPropagation());
 			checkbox.addEventListener('click', (event: MouseEvent) => event.stopPropagation());
 			checkbox.addEventListener('change', () => this.toggleTaskSelection(task.id));
 		}
@@ -360,9 +366,10 @@ export class ArchiveView {
 			const actionsEl = topEl.createDiv({ cls: 'aulyckanban-archive-task-actions' });
 			const restoreBtn = actionsEl.createEl('button', {
 				cls: 'aulyckanban-archive-restore-btn',
-				attr: { type: 'button', 'aria-label': t('archive.restore') },
+				attr: { type: 'button' },
 			});
 			setIcon(restoreBtn, 'rotate-ccw');
+			appendAccessibleLabel(restoreBtn, t('archive.restore'));
 			restoreBtn.addEventListener('click', (event: MouseEvent) => {
 				event.stopPropagation();
 				new ConfirmModal(this.app, {

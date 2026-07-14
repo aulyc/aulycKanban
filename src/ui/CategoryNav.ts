@@ -4,6 +4,7 @@ import type { KanbanStore } from '../store';
 import { t } from '../i18n';
 import { ConfirmModal } from './ConfirmModal';
 import { createInlineInput } from './InlineInput';
+import { appendAccessibleLabel } from '../utils/dom';
 
 /**
  * 右侧分类导航组件
@@ -90,7 +91,7 @@ export class CategoryNav {
 			cls: 'aulyckanban-nav-add-btn',
 			attr: this.isAdding
 				? {}
-				: { tabindex: '-1', role: 'button', 'aria-label': t('column.addPrompt') },
+				: { tabindex: '-1', role: 'button' },
 		});
 		if (this.isAdding) {
 			addBtn.addClass('aulyckanban-nav-item-editing');
@@ -108,7 +109,12 @@ export class CategoryNav {
 				onCancel: () => this.cancelEditing(),
 			});
 		} else {
-			addBtn.createSpan({ text: '+', cls: 'aulyckanban-nav-add-icon' });
+			addBtn.createSpan({
+				text: '+',
+				cls: 'aulyckanban-nav-add-icon',
+				attr: { 'aria-hidden': 'true' },
+			});
+			appendAccessibleLabel(addBtn, t('column.addPrompt'));
 			addBtn.addEventListener('click', (e: MouseEvent) => {
 				e.preventDefault();
 				e.stopPropagation();
