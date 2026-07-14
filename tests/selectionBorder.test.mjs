@@ -78,6 +78,29 @@ test('archive control has no separator and uses a semantic archive color', () =>
 	assert.match(active, /border-color:\s*var\(--color-orange\)/);
 });
 
+test('task type add glyph is optically centered', () => {
+	const addButton = rule('.aulyckanban-view-add-btn');
+	assert.match(addButton, /display:\s*grid/);
+	assert.match(addButton, /place-items:\s*center/);
+	assert.match(addButton, /line-height:\s*1/);
+	assert.match(addButton, /text-align:\s*center/);
+});
+
+test('add focus demotes active archive to its inactive semantic color', () => {
+	const declarations = combinedRule([
+		'.aulyckanban-toolbar:has(.aulyckanban-view-add-btn:focus) '
+			+ '.aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active',
+		'.aulyckanban-toolbar:has(.aulyckanban-view-add-btn:focus-visible) '
+			+ '.aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active',
+		'.aulyckanban-toolbar:has(.aulyckanban-view-inline-input:focus) '
+			+ '.aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active',
+	]);
+
+	assert.match(declarations, /background:\s*color-mix\([^;]*var\(--color-orange\) 16%/);
+	assert.match(declarations, /border-color:\s*color-mix\([^;]*var\(--color-orange\) 38%/);
+	assert.match(declarations, /color:\s*var\(--color-orange\)/);
+});
+
 test('add buttons and editors use their own real focus for the white border', () => {
 	for (const selectors of [
 		['.aulyckanban-nav-add-btn:focus', '.aulyckanban-nav-add-btn:focus-visible'],

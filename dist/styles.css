@@ -128,7 +128,8 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 }
 
 .aulyckanban-view-add-btn {
-	justify-content: center;
+	display: grid;
+	place-items: center;
 	flex: 0 0 30px;
 	min-width: 30px;
 	width: 30px;
@@ -139,6 +140,8 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	color: var(--text-muted);
 	box-shadow: none;
 	font-size: 18px;
+	line-height: 1;
+	text-align: center;
 }
 
 .aulyckanban-view-add-btn:hover {
@@ -189,6 +192,15 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 
 .aulyckanban-kanban-container .aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active:hover {
 	background: color-mix(in srgb, var(--color-orange) 54%, var(--background-primary));
+}
+
+/* 新增任务类型接管焦点时，归档退回非激活语义色，而不是普通按钮灰色。 */
+.aulyckanban-toolbar:has(.aulyckanban-view-add-btn:focus) .aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active,
+.aulyckanban-toolbar:has(.aulyckanban-view-add-btn:focus-visible) .aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active,
+.aulyckanban-toolbar:has(.aulyckanban-view-inline-input:focus) .aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active {
+	background: color-mix(in srgb, var(--color-orange) 16%, var(--interactive-normal));
+	border-color: color-mix(in srgb, var(--color-orange) 38%, var(--background-modifier-border));
+	color: var(--color-orange);
 }
 
 .aulyckanban-archive-btn svg {
