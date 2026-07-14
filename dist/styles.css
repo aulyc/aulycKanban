@@ -153,6 +153,18 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	color: var(--text-on-accent);
 }
 
+/* 新增控件接管工具栏的视觉选中，避免与当前任务类型同时呈紫色。 */
+.aulyckanban-toolbar:has(.aulyckanban-view-add-btn:focus)
+	.aulyckanban-tab.aulyckanban-tab-active,
+.aulyckanban-toolbar:has(.aulyckanban-view-add-btn:focus-visible)
+	.aulyckanban-tab.aulyckanban-tab-active,
+.aulyckanban-toolbar:has(.aulyckanban-view-inline-input:focus)
+	.aulyckanban-tab.aulyckanban-tab-active {
+	background: var(--interactive-normal);
+	color: var(--text-normal);
+	border-color: var(--background-modifier-border);
+}
+
 .aulyckanban-archive-btn {
 	justify-content: center;
 	min-width: 30px;
@@ -352,6 +364,28 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	color: var(--text-on-accent);
 	border: 1px solid var(--aulyckanban-selection-border);
 	box-shadow: none;
+}
+
+/* 新增控件接管象限区的视觉选中，原业务选中只保留在数据状态中。 */
+.aulyckanban-category-nav:has(.aulyckanban-nav-add-btn:focus)
+	.aulyckanban-nav-item-active,
+.aulyckanban-category-nav:has(.aulyckanban-nav-add-btn:focus-visible)
+	.aulyckanban-nav-item-active,
+.aulyckanban-category-nav:has(.aulyckanban-nav-inline-input:focus)
+	.aulyckanban-nav-item-active {
+	background: transparent;
+	color: var(--text-normal);
+	border-color: transparent;
+}
+
+.aulyckanban-category-nav:has(.aulyckanban-nav-add-btn:focus)
+	.aulyckanban-nav-item-active .aulyckanban-nav-item-count,
+.aulyckanban-category-nav:has(.aulyckanban-nav-add-btn:focus-visible)
+	.aulyckanban-nav-item-active .aulyckanban-nav-item-count,
+.aulyckanban-category-nav:has(.aulyckanban-nav-inline-input:focus)
+	.aulyckanban-nav-item-active .aulyckanban-nav-item-count {
+	color: var(--text-muted);
+	opacity: 1;
 }
 
 .aulyckanban-nav-add-btn.aulyckanban-nav-item-editing {

@@ -122,9 +122,12 @@ test('entering add mode removes tooltip semantics and renders the inline input',
 	assert.equal(editingAddContainer.children[0].classList.contains('aulyckanban-nav-inline-input'), true);
 });
 
-test('editing state does not suppress the selected quadrant business state', () => {
+test('transient editor focus suppresses only the visual selection without a JS state class', () => {
 	const css = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
-	assert.doesNotMatch(css, /\.aulyckanban-category-nav[^,{]*:has\([^)]*:focus[^)]*\)[^{]*\.aulyckanban-nav-item-active/);
+	assert.match(
+		css,
+		/\.aulyckanban-category-nav:has\(\.aulyckanban-nav-inline-input:focus\)\s+\.aulyckanban-nav-item-active/,
+	);
 	assert.doesNotMatch(source, /aulyckanban-category-nav-editing/);
 });
 
