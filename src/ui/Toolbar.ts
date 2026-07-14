@@ -25,6 +25,8 @@ export class Toolbar {
 	}
 
 	render(): void {
+		const boardEl = this.el.parentElement;
+		boardEl?.toggleClass('aulyckanban-view-add-focused', false);
 		this.el.toggleClass(
 			'aulyckanban-toolbar-editing',
 			this.isAdding || this.editingViewId !== null,
@@ -62,6 +64,12 @@ export class Toolbar {
 				text: '+',
 				cls: 'aulyckanban-tab aulyckanban-view-add-btn',
 				attr: { type: 'button', tabindex: '-1', 'aria-label': t('view.add') },
+			});
+			addBtn.addEventListener('focus', () => {
+				boardEl?.toggleClass('aulyckanban-view-add-focused', true);
+			});
+			addBtn.addEventListener('blur', () => {
+				boardEl?.toggleClass('aulyckanban-view-add-focused', false);
 			});
 			addBtn.addEventListener('click', (event: MouseEvent) => {
 				event.preventDefault();

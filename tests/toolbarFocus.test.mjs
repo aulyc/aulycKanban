@@ -146,6 +146,19 @@ test('entering task type add mode explicitly marks the toolbar as editing', () =
 	assert.equal(toolbarEl.classList.contains('aulyckanban-toolbar-editing'), true);
 });
 
+test('task type add focus explicitly marks and clears the board focus state', () => {
+	const { parent } = createToolbarHarness();
+	const addButton = descendants(parent).find((element) => (
+		element.classList.contains('aulyckanban-view-add-btn')
+	));
+
+	addButton.listeners.get('focus')[0]();
+	assert.equal(parent.classList.contains('aulyckanban-view-add-focused'), true);
+
+	addButton.listeners.get('blur')[0]();
+	assert.equal(parent.classList.contains('aulyckanban-view-add-focused'), false);
+});
+
 test('task type tabs expose rename and delete management actions', () => {
 	assert.match(source, /addEventListener\('contextmenu'/);
 	assert.match(source, /t\('view\.rename'\)/);

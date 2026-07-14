@@ -161,6 +161,8 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 
 .aulyckanban-toolbar-editing
 	.aulyckanban-tab.aulyckanban-tab-active,
+.aulyckanban-kanban-container.aulyckanban-view-add-focused
+	.aulyckanban-tab.aulyckanban-tab-active,
 .aulyckanban-toolbar:has(.aulyckanban-view-add-btn:focus)
 	.aulyckanban-tab.aulyckanban-tab-active,
 .aulyckanban-toolbar:has(.aulyckanban-view-add-btn:focus-visible)
@@ -325,13 +327,17 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	background: var(--interactive-accent-hover);
 }
 
+.aulyckanban-kanban-container.aulyckanban-view-add-focused
+	.aulyckanban-nav-item-active,
 .aulyckanban-toolbar:has(.aulyckanban-view-add-btn:focus)
 	+ .aulyckanban-content-area .aulyckanban-nav-item-active,
 .aulyckanban-toolbar:has(.aulyckanban-view-add-btn:focus-visible)
 	+ .aulyckanban-content-area .aulyckanban-nav-item-active,
 .aulyckanban-toolbar:has(.aulyckanban-view-add-input:focus)
 	+ .aulyckanban-content-area .aulyckanban-nav-item-active {
-	border-color: transparent !important;
+	border: 1px solid transparent !important;
+	outline: none !important;
+	box-shadow: none !important;
 }
 
 .aulyckanban-nav-item-title {
