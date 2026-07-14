@@ -50,7 +50,7 @@ npm run release:verify
 npm run install:prod
 ```
 
-默认安装到 `/Users/crp/Documents/Obsidian Plugin/my_vault`，只覆盖 `main.js`、`manifest.json`、`styles.css`，不会覆盖运行数据 `data.json`。如需临时安装到其他 Vault，可设置 `OBSIDIAN_VAULT_PATH`。
+默认安装到 `/Users/crp/Documents/Obsidian/my_vault`，只覆盖 `main.js`、`manifest.json`、`styles.css`，不会覆盖运行数据 `data.json`。如需临时安装到其他 Vault，可设置 `OBSIDIAN_VAULT_PATH`。
 
 ## 版本与发版
 

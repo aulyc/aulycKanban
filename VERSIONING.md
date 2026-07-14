@@ -122,7 +122,7 @@ git tag 2.1.3
 
 运行数据 `data.json` 不属于发布产物，安装或升级时不得覆盖。安装后必须重新加载插件，并核对运行中的实际版本。
 
-本机正式 Vault 默认为 `/Users/crp/Documents/Obsidian Plugin/my_vault`。完成正式提交与标签后执行：
+本机正式 Vault 默认为 `/Users/crp/Documents/Obsidian/my_vault`。完成正式提交与标签后执行：
 
 ```bash
 npm run install:prod
