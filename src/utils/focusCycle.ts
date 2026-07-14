@@ -6,6 +6,15 @@ export type TaskTypeNavigationTarget =
 
 const FOCUS_ORDER: readonly KanbanFocusZone[] = ['view', 'tasks', 'columns'];
 
+export interface TabFocusFallbackContext {
+	key: string;
+	defaultPrevented: boolean;
+	viewIsActive: boolean;
+	eventPathIncludesView: boolean;
+	activeElementIsInsideView: boolean;
+	documentLevelTarget: boolean;
+}
+
 /** 获取看板主要区域中的下一个焦点区域。 */
 export function getNextFocusZone(
 	current: KanbanFocusZone | null,
@@ -15,6 +24,18 @@ export function getNextFocusZone(
 	const index = FOCUS_ORDER.indexOf(current);
 	const offset = reverse ? -1 : 1;
 	return FOCUS_ORDER[(index + offset + FOCUS_ORDER.length) % FOCUS_ORDER.length] ?? 'view';
+}
+
+/**
+ * 仅在活动看板的 Tab 事件脱离看板 DOM 路径时启用窗口级兜底。
+ * 看板内部事件仍交给原监听器；弹窗、编辑器和侧栏控件不会被接管。
+ */
+export function shouldUseTabFocusFallback(context: TabFocusFallbackContext): boolean {
+	return context.key === 'Tab'
+		&& !context.defaultPrevented
+		&& context.viewIsActive
+		&& !context.eventPathIncludesView
+		&& (context.activeElementIsInsideView || context.documentLevelTarget);
 }
 
 /** 计算方向键循环选择时的目标下标。 */

@@ -42,6 +42,22 @@ test('each of the three keyboard zones draws white only from actual focus', () =
 	}
 });
 
+test('keyboard navigation targets update instantly without visual trails', () => {
+	for (const selector of [
+		'.aulyckanban-tab',
+		'.aulyckanban-nav-item',
+		'.aulyckanban-nav-add-btn',
+		'.aulyckanban-task',
+		'.aulyckanban-kanban-container .aulyckanban-inline-input',
+	]) {
+		const declarations = rule(selector);
+		assert.match(declarations, /transition:\s*none/);
+		assert.doesNotMatch(declarations, /transition:\s*all/);
+	}
+
+	assert.match(rule('.aulyckanban-task:focus'), /box-shadow:\s*none/);
+});
+
 test('add buttons and editors use their own real focus for the white border', () => {
 	for (const selectors of [
 		['.aulyckanban-nav-add-btn:focus', '.aulyckanban-nav-add-btn:focus-visible'],

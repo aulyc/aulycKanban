@@ -9,6 +9,7 @@ import {
 	getTaskTypeNavigationTarget,
 	getWrappedItemIndex,
 	revealTaskTypeItem,
+	shouldUseTabFocusFallback,
 	type KanbanFocusZone,
 	type TaskTypeNavigationTarget,
 } from '../utils/focusCycle';
@@ -23,6 +24,8 @@ export class KanbanView extends ItemView {
 	private unsubscribe: (() => void) | null = null;
 	private isClosing = false;
 	private tabHandler: ((e: KeyboardEvent) => void) | null = null;
+	private tabFallbackHandler: ((e: KeyboardEvent) => void) | null = null;
+	private tabFallbackWindow: Window | null = null;
 	private renderQueued = false;
 	private resizeHostEl: HTMLElement | null = null;
 
@@ -64,14 +67,9 @@ export class KanbanView extends ItemView {
 
 		// Tab 在任务类型、任务内容、象限间循环；归档作为固定在最右侧的特殊任务类型。
 		this.tabHandler = (e: KeyboardEvent) => {
-			const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+			const active = this.getActiveElement();
 			if (e.key === 'Tab') {
-				e.preventDefault();
-				e.stopPropagation();
-				this.focusNextZone(e.shiftKey, active?.matches(
-					'.aulyckanban-view-inline-input, .aulyckanban-nav-inline-input, '
-					+ '.aulyckanban-inline-input, .aulyckanban-edit-textarea',
-				) ?? false);
+				this.handleTabKey(e, active);
 				return;
 			}
 
@@ -104,6 +102,35 @@ export class KanbanView extends ItemView {
 			}
 		};
 		container.addEventListener('keydown', this.tabHandler, true);
+
+		// Electron 偶发把按键投递到 window/document/body，导致容器监听器收不到事件。
+		// 仅对当前活动看板的孤立 Tab 兜底，避免抢占弹窗、编辑器或侧栏控件。
+		const fallbackWindow = container.ownerDocument.defaultView;
+		if (fallbackWindow) {
+			this.tabFallbackWindow = fallbackWindow;
+			this.tabFallbackHandler = (e: KeyboardEvent) => {
+				const ownerDocument = container.ownerDocument;
+				const active = this.getActiveElement();
+				const eventTarget = e.target;
+				const documentLevelTarget = eventTarget === null
+					|| eventTarget === fallbackWindow
+					|| eventTarget === ownerDocument
+					|| eventTarget === ownerDocument.body
+					|| eventTarget === ownerDocument.documentElement;
+
+				if (!shouldUseTabFocusFallback({
+					key: e.key,
+					defaultPrevented: e.defaultPrevented,
+					viewIsActive: this.app.workspace.getActiveViewOfType(KanbanView) === this,
+					eventPathIncludesView: e.composedPath().includes(container),
+					activeElementIsInsideView: active !== null && container.contains(active),
+					documentLevelTarget,
+				})) return;
+
+				this.handleTabKey(e, active);
+			};
+			fallbackWindow.addEventListener('keydown', this.tabFallbackHandler, true);
+		}
 	}
 
 	async onClose(): Promise<void> {
@@ -115,6 +142,11 @@ export class KanbanView extends ItemView {
 			this.contentEl.removeEventListener('keydown', this.tabHandler, true);
 			this.tabHandler = null;
 		}
+		if (this.tabFallbackWindow && this.tabFallbackHandler) {
+			this.tabFallbackWindow.removeEventListener('keydown', this.tabFallbackHandler, true);
+		}
+		this.tabFallbackHandler = null;
+		this.tabFallbackWindow = null;
 
 		if (this.unsubscribe) {
 			this.unsubscribe();
@@ -140,8 +172,29 @@ export class KanbanView extends ItemView {
 		});
 	}
 
-	private focusNextZone(reverse: boolean, afterBlur = false): void {
-		const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+	private getActiveElement(): HTMLElement | null {
+		const ownerDocument = this.contentEl.ownerDocument;
+		const ownerWindow = ownerDocument.defaultView;
+		const active = ownerDocument.activeElement;
+		return ownerWindow && active instanceof ownerWindow.HTMLElement
+			? active as HTMLElement
+			: null;
+	}
+
+	private handleTabKey(e: KeyboardEvent, active: HTMLElement | null): void {
+		e.preventDefault();
+		e.stopPropagation();
+		this.focusNextZone(e.shiftKey, active?.matches(
+			'.aulyckanban-view-inline-input, .aulyckanban-nav-inline-input, '
+			+ '.aulyckanban-inline-input, .aulyckanban-edit-textarea',
+		) ?? false, active);
+	}
+
+	private focusNextZone(
+		reverse: boolean,
+		afterBlur = false,
+		active: HTMLElement | null = this.getActiveElement(),
+	): void {
 		const currentZone = this.getFocusZone(active);
 		const nextZone = getNextFocusZone(currentZone, reverse);
 		const focusTarget = (): void => {

@@ -16,6 +16,7 @@ const {
 	getNextFocusZone,
 	getTaskTypeNavigationTarget,
 	getWrappedItemIndex,
+	shouldUseTabFocusFallback,
 } = module.exports;
 
 test('Tab cycles view, tasks, columns, then view', () => {
@@ -30,6 +31,45 @@ test('Shift+Tab cycles in reverse order', () => {
 	assert.equal(getNextFocusZone('columns', true), 'tasks');
 	assert.equal(getNextFocusZone('tasks', true), 'view');
 	assert.equal(getNextFocusZone('view', true), 'columns');
+});
+
+test('orphaned Tab uses the fallback only for the active kanban view', () => {
+	const base = {
+		key: 'Tab',
+		defaultPrevented: false,
+		viewIsActive: true,
+		eventPathIncludesView: false,
+		activeElementIsInsideView: true,
+		documentLevelTarget: false,
+	};
+
+	assert.equal(shouldUseTabFocusFallback(base), true);
+	assert.equal(shouldUseTabFocusFallback({
+		...base,
+		activeElementIsInsideView: false,
+		documentLevelTarget: true,
+	}), true);
+	assert.equal(shouldUseTabFocusFallback({ ...base, viewIsActive: false }), false);
+});
+
+test('Tab fallback leaves normal view events and external controls alone', () => {
+	const base = {
+		key: 'Tab',
+		defaultPrevented: false,
+		viewIsActive: true,
+		eventPathIncludesView: false,
+		activeElementIsInsideView: true,
+		documentLevelTarget: true,
+	};
+
+	assert.equal(shouldUseTabFocusFallback({ ...base, eventPathIncludesView: true }), false);
+	assert.equal(shouldUseTabFocusFallback({
+		...base,
+		activeElementIsInsideView: false,
+		documentLevelTarget: false,
+	}), false);
+	assert.equal(shouldUseTabFocusFallback({ ...base, defaultPrevented: true }), false);
+	assert.equal(shouldUseTabFocusFallback({ ...base, key: 'Enter' }), false);
 });
 
 test('arrow navigation wraps at both ends', () => {

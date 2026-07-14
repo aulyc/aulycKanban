@@ -94,7 +94,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	cursor: pointer;
 	font-size: 13px;
 	font-weight: 500;
-	transition: all 0.2s ease;
+	transition: none;
 	white-space: nowrap;
 	box-sizing: border-box;
 	height: 30px;
@@ -289,7 +289,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	border-radius: 6px;
 	box-sizing: border-box;
 	cursor: pointer;
-	transition: all 0.15s ease;
+	transition: none;
 	user-select: none;
 }
 
@@ -347,7 +347,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	cursor: pointer;
 	color: var(--text-muted);
 	font-size: 18px;
-	transition: all 0.15s ease;
+	transition: none;
 	user-select: none;
 }
 
@@ -461,7 +461,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	padding: 10px 12px;
 	margin-bottom: 8px;
 	cursor: default;
-	transition: all 0.2s ease;
+	transition: none;
 	display: flex;
 	align-items: flex-start;
 	gap: 8px;
@@ -476,6 +476,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 .aulyckanban-task:focus {
 	outline: none;
 	border-color: var(--aulyckanban-selection-border);
+	box-shadow: none;
 }
 
 .aulyckanban-task.aulyckanban-task-editing,
@@ -609,7 +610,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	resize: none;
 	overflow: hidden;
 	box-sizing: border-box;
-	transition: border-color 0.15s ease;
+	transition: none;
 	box-shadow: none;
 	appearance: none;
 	-webkit-text-fill-color: var(--text-normal);
