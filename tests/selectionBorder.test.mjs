@@ -50,7 +50,7 @@ test('task type and quadrant editors use only a one-pixel accent border', () => 
 test('task type editing explicitly clears the previously selected task type', () => {
 	assert.match(
 		css,
-		/\.aulyckanban-toolbar-editing\s+\.aulyckanban-view-tab\.aulyckanban-tab-active/,
+		/\.aulyckanban-toolbar-editing\s+\.aulyckanban-tab\.aulyckanban-tab-active/,
 	);
 });
 
@@ -62,7 +62,7 @@ test('task type buttons keep the same filled neutral state when add receives foc
 	assert.match(tabRule, /appearance:\s*none/);
 
 	const suppressedActiveRule = css.match(
-		/\.aulyckanban-toolbar-editing[\s\S]*?\.aulyckanban-view-tab\.aulyckanban-tab-active\s*\{([^}]*)\}/,
+		/\.aulyckanban-toolbar-editing[\s\S]*?\.aulyckanban-tab\.aulyckanban-tab-active\s*\{([^}]*)\}/,
 	)?.[1] ?? '';
 	assert.notEqual(suppressedActiveRule, '');
 	assert.match(suppressedActiveRule, /background:\s*var\(--interactive-normal\)/);
@@ -81,4 +81,17 @@ test('task type add focus is exactly one white border', () => {
 	);
 	assert.match(focusRule, /outline:\s*none\s*!important/);
 	assert.match(focusRule, /box-shadow:\s*none\s*!important/);
+});
+
+test('task type add focus clears archive and quadrant selection borders', () => {
+	assert.match(
+		css,
+		/\.aulyckanban-toolbar:has\(\.aulyckanban-view-add-btn:focus\)\s+\.aulyckanban-tab\.aulyckanban-tab-active/,
+	);
+
+	const suppressedQuadrantRule = css.match(
+		/\.aulyckanban-kanban-container:has\(\.aulyckanban-view-add-btn:focus\)[\s\S]*?\.aulyckanban-nav-item-active\s*\{([^}]*)\}/,
+	)?.[1] ?? '';
+	assert.notEqual(suppressedQuadrantRule, '');
+	assert.match(suppressedQuadrantRule, /border-color:\s*transparent/);
 });

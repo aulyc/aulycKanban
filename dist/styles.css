@@ -160,13 +160,13 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 }
 
 .aulyckanban-toolbar-editing
-	.aulyckanban-view-tab.aulyckanban-tab-active,
-.aulyckanban-view-strip:has(.aulyckanban-view-add-btn:focus)
-	.aulyckanban-view-tab.aulyckanban-tab-active,
-.aulyckanban-view-strip:has(.aulyckanban-view-add-btn:focus-visible)
-	.aulyckanban-view-tab.aulyckanban-tab-active,
-.aulyckanban-view-strip:has(.aulyckanban-view-add-input:focus)
-	.aulyckanban-view-tab.aulyckanban-tab-active {
+	.aulyckanban-tab.aulyckanban-tab-active,
+.aulyckanban-toolbar:has(.aulyckanban-view-add-btn:focus)
+	.aulyckanban-tab.aulyckanban-tab-active,
+.aulyckanban-toolbar:has(.aulyckanban-view-add-btn:focus-visible)
+	.aulyckanban-tab.aulyckanban-tab-active,
+.aulyckanban-toolbar:has(.aulyckanban-view-add-input:focus)
+	.aulyckanban-tab.aulyckanban-tab-active {
 	background: var(--interactive-normal);
 	color: var(--text-normal);
 	border-color: var(--background-modifier-border);
@@ -323,6 +323,15 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 
 .aulyckanban-nav-item-active:hover {
 	background: var(--interactive-accent-hover);
+}
+
+.aulyckanban-kanban-container:has(.aulyckanban-view-add-btn:focus)
+	.aulyckanban-nav-item-active,
+.aulyckanban-kanban-container:has(.aulyckanban-view-add-btn:focus-visible)
+	.aulyckanban-nav-item-active,
+.aulyckanban-kanban-container:has(.aulyckanban-view-add-input:focus)
+	.aulyckanban-nav-item-active {
+	border-color: transparent;
 }
 
 .aulyckanban-nav-item-title {
