@@ -63,12 +63,17 @@ test('archive control has no separator and uses a semantic archive color', () =>
 	assert.match(slot, /padding-left:\s*0/);
 	assert.match(slot, /border-left:\s*0/);
 
-	const button = rule('.aulyckanban-archive-btn');
+	const button = rule(
+		'.aulyckanban-kanban-container .aulyckanban-tab.aulyckanban-archive-btn',
+	);
 	assert.match(button, /background:\s*color-mix\([^;]*var\(--color-orange\)/);
 	assert.match(button, /border-color:\s*color-mix\([^;]*var\(--color-orange\)/);
 	assert.match(button, /color:\s*var\(--color-orange\)/);
 
-	const active = rule('.aulyckanban-archive-btn.aulyckanban-tab-active');
+	const active = rule(
+		'.aulyckanban-kanban-container '
+			+ '.aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active',
+	);
 	assert.match(active, /background:\s*color-mix\([^;]*var\(--color-orange\)/);
 	assert.match(active, /border-color:\s*var\(--color-orange\)/);
 });

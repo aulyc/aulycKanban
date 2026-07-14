@@ -165,7 +165,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	border-color: var(--background-modifier-border);
 }
 
-.aulyckanban-archive-btn {
+.aulyckanban-kanban-container .aulyckanban-tab.aulyckanban-archive-btn {
 	justify-content: center;
 	min-width: 30px;
 	width: 30px;
@@ -175,19 +175,19 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	color: var(--color-orange);
 }
 
-.aulyckanban-archive-btn:hover {
+.aulyckanban-kanban-container .aulyckanban-tab.aulyckanban-archive-btn:hover {
 	background: color-mix(in srgb, var(--color-orange) 24%, var(--interactive-normal));
 	border-color: color-mix(in srgb, var(--color-orange) 58%, var(--background-modifier-border));
 	color: var(--color-orange);
 }
 
-.aulyckanban-archive-btn.aulyckanban-tab-active {
+.aulyckanban-kanban-container .aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active {
 	background: color-mix(in srgb, var(--color-orange) 44%, var(--background-primary));
 	border-color: var(--color-orange);
 	color: var(--text-normal);
 }
 
-.aulyckanban-archive-btn.aulyckanban-tab-active:hover {
+.aulyckanban-kanban-container .aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active:hover {
 	background: color-mix(in srgb, var(--color-orange) 54%, var(--background-primary));
 }
 
