@@ -129,15 +129,18 @@ export class ArchiveView {
 			this.render();
 		});
 
-		const sortSelect = toolbarEl.createEl('select', { cls: 'aulyckanban-archive-filter-select' });
-		sortSelect.setAttribute('aria-label', t('archive.sort.label'));
-		this.addOption(sortSelect, 'desc', t('archive.sort.newest'));
-		this.addOption(sortSelect, 'asc', t('archive.sort.oldest'));
-		sortSelect.value = this.sortOrder;
-		sortSelect.addEventListener('change', () => {
-			const nextOrder = sortSelect.value;
-			if (nextOrder !== 'desc' && nextOrder !== 'asc') return;
-			this.sortOrder = nextOrder;
+		const sortBtn = toolbarEl.createEl('button', {
+			cls: 'aulyckanban-archive-sort-btn',
+			attr: { type: 'button' },
+		});
+		const sortLabel = this.sortOrder === 'desc'
+			? t('archive.sort.newest')
+			: t('archive.sort.oldest');
+		sortBtn.setAttribute('aria-label', sortLabel);
+		sortBtn.setAttribute('title', sortLabel);
+		setIcon(sortBtn, this.sortOrder === 'desc' ? 'arrow-down' : 'arrow-up');
+		sortBtn.addEventListener('click', () => {
+			this.sortOrder = this.sortOrder === 'desc' ? 'asc' : 'desc';
 			this.render();
 		});
 
@@ -259,13 +262,6 @@ export class ArchiveView {
 	private applySearch(value: string): void {
 		this.searchKeyword = value.trim();
 		this.render();
-	}
-
-	private addOption(selectEl: HTMLSelectElement, value: string, label: string): void {
-		const option = document.createElement('option');
-		option.value = value;
-		option.text = label;
-		selectEl.add(option);
 	}
 
 	private buildArchiveItems(): Array<{

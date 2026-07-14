@@ -34,6 +34,7 @@ export class ConfirmModal extends Modal {
 		const { contentEl, modalEl } = this;
 		contentEl.empty();
 		modalEl.addClass('aulyckanban-modal-clean');
+		modalEl.addClass('aulyckanban-confirm-modal');
 
 		contentEl.createDiv({
 			text: this.message,

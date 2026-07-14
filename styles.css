@@ -759,7 +759,6 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	min-width: 0;
 }
 
-.aulyckanban-kanban-container .aulyckanban-archive-filter-select,
 .aulyckanban-kanban-container .aulyckanban-archive-search {
 	height: 30px;
 	border: 1px solid var(--background-modifier-border);
@@ -772,7 +771,6 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	box-shadow: none;
 }
 
-.aulyckanban-kanban-container .aulyckanban-archive-filter-select:focus,
 .aulyckanban-kanban-container .aulyckanban-archive-search:focus {
 	border-color: var(--aulyckanban-selection-border);
 	outline: none;
@@ -791,11 +789,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	min-width: 0;
 }
 
-.aulyckanban-archive-filter-select {
-	flex: 0 0 auto;
-	min-width: 90px;
-}
-
+.aulyckanban-archive-sort-btn,
 .aulyckanban-archive-select-mode-btn,
 .aulyckanban-archive-selection-btn,
 .aulyckanban-archive-more-btn {
@@ -809,6 +803,28 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	cursor: pointer;
 }
 
+.aulyckanban-archive-sort-btn {
+	display: grid;
+	place-items: center;
+	flex: 0 0 auto;
+	width: 30px;
+	padding: 0;
+	box-shadow: none;
+}
+
+.aulyckanban-archive-sort-btn svg {
+	width: 15px;
+	height: 15px;
+}
+
+.aulyckanban-archive-sort-btn:focus,
+.aulyckanban-archive-sort-btn:focus-visible {
+	border-color: var(--aulyckanban-selection-border);
+	outline: none;
+	box-shadow: none;
+}
+
+.aulyckanban-archive-sort-btn:hover,
 .aulyckanban-archive-select-mode-btn:hover,
 .aulyckanban-archive-selection-btn:hover,
 .aulyckanban-archive-more-btn:hover {
@@ -1072,6 +1088,25 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 
 .aulyckanban-modal-clean .modal-close-button {
 	display: none;
+}
+
+.modal.aulyckanban-confirm-modal {
+	width: min(360px, calc(100vw - 32px));
+	min-width: 0;
+	max-width: calc(100vw - 32px);
+	min-height: 0;
+}
+
+.aulyckanban-confirm-modal .modal-content {
+	padding: 0;
+}
+
+.aulyckanban-confirm-modal .aulyckanban-modal-message {
+	padding: 20px 24px 8px;
+}
+
+.aulyckanban-confirm-modal .aulyckanban-modal-buttons {
+	padding: 8px 20px 18px;
 }
 
 .aulyckanban-modal-message {

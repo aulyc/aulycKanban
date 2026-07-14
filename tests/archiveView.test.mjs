@@ -180,13 +180,27 @@ test('archive browse mode uses one compact toolbar and one-line card metadata', 
 
 	assert.equal(byClass(container, 'aulyckanban-archive-toolbar-browse').length, 1);
 	assert.equal(byClass(container, 'aulyckanban-archive-search').length, 1);
-	assert.equal(byClass(container, 'aulyckanban-archive-filter-select').length, 1);
+	assert.equal(byClass(container, 'aulyckanban-archive-sort-btn').length, 1);
+	assert.equal(byClass(container, 'aulyckanban-archive-filter-select').length, 0);
 	assert.equal(byClass(container, 'aulyckanban-archive-select-mode-btn').length, 1);
 	assert.equal(byClass(container, 'aulyckanban-archive-toolbar-selection').length, 0);
 	assert.equal(byClass(container, 'aulyckanban-archive-task-meta').length, 1);
 	assert.equal(byClass(container, 'aulyckanban-archive-tag').length, 0);
 	assert.equal(byClass(container, 'aulyckanban-archive-restore-btn').length, 1);
 	assert.equal(byClass(container, 'aulyckanban-task-content-completed').length, 0);
+});
+
+test('archive sort button toggles newest and oldest order without a select menu', () => {
+	const { container } = createHarness();
+	const newestFirstButton = byClass(container, 'aulyckanban-archive-sort-btn')[0];
+
+	assert.equal(newestFirstButton.icon, 'arrow-down');
+	assert.equal(newestFirstButton.attributes['aria-label'], 'archive.sort.newest');
+	newestFirstButton.listeners.get('click')[0]();
+
+	const oldestFirstButton = byClass(container, 'aulyckanban-archive-sort-btn')[0];
+	assert.equal(oldestFirstButton.icon, 'arrow-up');
+	assert.equal(oldestFirstButton.attributes['aria-label'], 'archive.sort.oldest');
 });
 
 test('archive selection mode replaces browse controls and hides restore actions', () => {
