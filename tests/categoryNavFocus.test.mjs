@@ -103,7 +103,7 @@ function createCategoryNavHarness() {
 	return { parent };
 }
 
-test('entering add mode keeps an explicit editing state and removes tooltip semantics', () => {
+test('entering add mode removes tooltip semantics and renders the inline input', () => {
 	const { parent } = createCategoryNavHarness();
 	const nav = parent.children[0];
 	const initialAddButton = descendants(nav).find((element) => (
@@ -117,18 +117,15 @@ test('entering add mode keeps an explicit editing state and removes tooltip sema
 	const editingAddContainer = descendants(nav).find((element) => (
 		element.classList.contains('aulyckanban-nav-add-btn')
 	));
-	assert.equal(nav.classList.contains('aulyckanban-category-nav-editing'), true);
 	assert.equal(editingAddContainer.attributes['aria-label'], undefined);
 	assert.equal(editingAddContainer.attributes.role, undefined);
 	assert.equal(editingAddContainer.children[0].classList.contains('aulyckanban-nav-inline-input'), true);
 });
 
-test('editing state suppresses the selected quadrant independently of transient focus', () => {
+test('editing state does not suppress the selected quadrant business state', () => {
 	const css = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
-	assert.match(
-		css,
-		/\.aulyckanban-category-nav-editing\s+\.aulyckanban-nav-item-active/,
-	);
+	assert.doesNotMatch(css, /\.aulyckanban-category-nav[^,{]*:has\([^)]*:focus[^)]*\)[^{]*\.aulyckanban-nav-item-active/);
+	assert.doesNotMatch(source, /aulyckanban-category-nav-editing/);
 });
 
 test('inline quadrant input uses the same one-pixel accent border as task editing', () => {

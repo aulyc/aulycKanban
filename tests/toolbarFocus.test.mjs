@@ -133,30 +133,8 @@ test('toolbar rerender moves an existing task type focus to the selected task ty
 	assert.equal(documentRef.activeElement.classList.contains('aulyckanban-tab-active'), true);
 });
 
-test('entering task type add mode explicitly marks the toolbar as editing', () => {
-	const { parent } = createToolbarHarness();
-	const toolbarEl = parent.children[0];
-	const addButton = descendants(toolbarEl).find((element) => (
-		element.classList.contains('aulyckanban-view-add-btn')
-	));
-	const click = addButton.listeners.get('click')[0];
-
-	click({ preventDefault() {}, stopPropagation() {} });
-
-	assert.equal(toolbarEl.classList.contains('aulyckanban-toolbar-editing'), true);
-});
-
-test('task type add focus explicitly marks and clears the board focus state', () => {
-	const { parent } = createToolbarHarness();
-	const addButton = descendants(parent).find((element) => (
-		element.classList.contains('aulyckanban-view-add-btn')
-	));
-
-	addButton.listeners.get('focus')[0]();
-	assert.equal(parent.classList.contains('aulyckanban-view-add-focused'), true);
-
-	addButton.listeners.get('blur')[0]();
-	assert.equal(parent.classList.contains('aulyckanban-view-add-focused'), false);
+test('task type focus does not create a second board-level focus state', () => {
+	assert.doesNotMatch(source, /aulyckanban-(?:view-add-focused|toolbar-editing)/);
 });
 
 test('task type tabs expose rename and delete management actions', () => {

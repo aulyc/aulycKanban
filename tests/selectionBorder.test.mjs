@@ -4,96 +4,80 @@ import test from 'node:test';
 
 const css = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
 
-function rule(selector) {
-	const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-	return css.match(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`))?.[1] ?? '';
+function escapeRegExp(value) {
+	return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-test('task types and quadrants use a one-pixel selection border', () => {
-	assert.match(
-		rule('.aulyckanban-tab.aulyckanban-tab-active'),
-		/border-color:\s*var\(--aulyckanban-selection-border\)/,
-	);
-	assert.match(
-		rule('.aulyckanban-nav-item'),
-		/border:\s*1px solid transparent/,
-	);
-	assert.match(
-		rule('.aulyckanban-nav-item-active'),
-		/border-color:\s*var\(--aulyckanban-selection-border\)/,
-	);
+function rule(selector) {
+	return css.match(new RegExp(`${escapeRegExp(selector)}\\s*\\{([^}]*)\\}`))?.[1] ?? '';
+}
+
+function combinedRule(selectors) {
+	const selectorPattern = selectors.map(escapeRegExp).join('\\s*,\\s*');
+	return css.match(new RegExp(`${selectorPattern}\\s*\\{([^}]*)\\}`))?.[1] ?? '';
+}
+
+test('business selection keeps its fill but never owns the white focus border', () => {
+	for (const selector of [
+		'.aulyckanban-tab.aulyckanban-tab-active',
+		'.aulyckanban-nav-item-active',
+	]) {
+		const declarations = rule(selector);
+		assert.match(declarations, /background:\s*var\(--interactive-accent\)/);
+		assert.match(declarations, /border-color:\s*transparent/);
+		assert.doesNotMatch(declarations, /aulyckanban-selection-border/);
+	}
 });
 
-test('task selection is white and task editing is one-pixel accent', () => {
-	assert.match(
+test('each of the three keyboard zones draws white only from actual focus', () => {
+	const focusRules = [
+		combinedRule(['.aulyckanban-tab:focus', '.aulyckanban-tab:focus-visible']),
+		combinedRule(['.aulyckanban-nav-item:focus', '.aulyckanban-nav-item:focus-visible']),
 		rule('.aulyckanban-task:focus'),
-		/border-color:\s*var\(--aulyckanban-selection-border\)/,
-	);
+		rule('.aulyckanban-kanban-container .aulyckanban-inline-input:focus'),
+	];
+	for (const declarations of focusRules) {
+		assert.notEqual(declarations, '');
+		assert.match(declarations, /var\(--aulyckanban-selection-border\)/);
+	}
+});
+
+test('add buttons and editors use their own real focus for the white border', () => {
+	for (const selectors of [
+		['.aulyckanban-nav-add-btn:focus', '.aulyckanban-nav-add-btn:focus-visible'],
+		['.aulyckanban-view-add-btn:focus', '.aulyckanban-view-add-btn:focus-visible'],
+	]) {
+		assert.notEqual(combinedRule(selectors), '');
+	}
+
+	for (const selector of [
+		'.aulyckanban-kanban-container .aulyckanban-view-inline-input:focus',
+		'.aulyckanban-kanban-container .aulyckanban-nav-inline-input:focus',
+		'.aulyckanban-kanban-container .aulyckanban-archive-search:focus',
+	]) {
+		assert.match(rule(selector), /var\(--aulyckanban-selection-border\)/);
+	}
+});
+
+test('every white selection border reference belongs to a focus selector', () => {
+	const rules = [...css.matchAll(/([^{}]+)\{([^{}]*var\(--aulyckanban-selection-border\)[^{}]*)\}/g)];
+	assert.ok(rules.length > 0);
+	for (const [, selectorList] of rules) {
+		for (const selector of selectorList.split(',')) {
+			assert.match(selector, /:focus(?:-visible)?\s*$/);
+		}
+	}
+});
+
+test('focus styling has no path-specific board marker or cross-zone exception', () => {
+	assert.doesNotMatch(css, /aulyckanban-view-add-focused/);
+	assert.doesNotMatch(css, /:has\([^)]*:focus[^)]*\)[^{]*aulyckanban-(?:tab|nav-item)-active/);
+});
+
+test('task editing remains a one-pixel accent state distinct from keyboard focus', () => {
 	assert.match(rule('.aulyckanban-task'), /border:\s*1px solid/);
 	assert.match(
 		css,
 		/\.aulyckanban-task\.aulyckanban-task-editing[\s\S]*?border-color:\s*var\(--interactive-accent\)/,
 	);
-});
-
-test('task type and quadrant editors use only a one-pixel accent border', () => {
-	for (const selector of [
-		'.aulyckanban-kanban-container .aulyckanban-view-inline-input',
-		'.aulyckanban-kanban-container .aulyckanban-nav-inline-input',
-	]) {
-		const declarations = rule(selector);
-		assert.match(declarations, /border:\s*1px solid var\(--interactive-accent\)/);
-		assert.match(declarations, /box-shadow:\s*none/);
-	}
-});
-
-test('task type editing explicitly clears the previously selected task type', () => {
-	assert.match(
-		css,
-		/\.aulyckanban-toolbar-editing\s+\.aulyckanban-tab\.aulyckanban-tab-active/,
-	);
-});
-
-test('task type buttons keep the same filled neutral state when add receives focus', () => {
-	const tabRule = rule('.aulyckanban-tab');
-	assert.match(tabRule, /border:\s*1px solid/);
-	assert.match(tabRule, /background:\s*var\(--interactive-normal\)/);
-	assert.match(tabRule, /box-shadow:\s*none\s*!important/);
-	assert.match(tabRule, /appearance:\s*none/);
-
-	const suppressedActiveRule = css.match(
-		/\.aulyckanban-toolbar-editing[\s\S]*?\.aulyckanban-tab\.aulyckanban-tab-active\s*\{([^}]*)\}/,
-	)?.[1] ?? '';
-	assert.notEqual(suppressedActiveRule, '');
-	assert.match(suppressedActiveRule, /background:\s*var\(--interactive-normal\)/);
-	assert.doesNotMatch(suppressedActiveRule, /background:\s*var\(--background-secondary\)/);
-	assert.match(suppressedActiveRule, /box-shadow:\s*none\s*!important/);
-});
-
-test('task type add focus is exactly one white border', () => {
-	const focusRule = css.match(
-		/\.aulyckanban-view-add-btn:focus,\s*\.aulyckanban-view-add-btn:focus-visible\s*\{([^}]*)\}/,
-	)?.[1] ?? '';
-	assert.notEqual(focusRule, '');
-	assert.match(
-		focusRule,
-		/border:\s*1px solid var\(--aulyckanban-selection-border\)\s*!important/,
-	);
-	assert.match(focusRule, /outline:\s*none\s*!important/);
-	assert.match(focusRule, /box-shadow:\s*none\s*!important/);
-});
-
-test('task type add focus clears archive and quadrant selection borders', () => {
-	assert.match(
-		css,
-		/\.aulyckanban-toolbar:has\(\.aulyckanban-view-add-btn:focus\)\s+\.aulyckanban-tab\.aulyckanban-tab-active/,
-	);
-
-	const suppressedQuadrantRule = css.match(
-		/\.aulyckanban-kanban-container\.aulyckanban-view-add-focused\s+\.aulyckanban-nav-item-active,[^{]*\{([^}]*)\}/,
-	)?.[1] ?? '';
-	assert.notEqual(suppressedQuadrantRule, '');
-	assert.match(suppressedQuadrantRule, /border:\s*1px solid transparent\s*!important/);
-	assert.match(suppressedQuadrantRule, /outline:\s*none\s*!important/);
-	assert.match(suppressedQuadrantRule, /box-shadow:\s*none\s*!important/);
 });

@@ -26,10 +26,6 @@ export class CategoryNav {
 	}
 
 	render(): void {
-		this.el.toggleClass(
-			'aulyckanban-category-nav-editing',
-			this.isAdding || this.editingColumnId !== null,
-		);
 		this.el.empty();
 
 		const columns = this.store.getCurrentColumns();
