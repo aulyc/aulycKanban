@@ -10,7 +10,7 @@
 		"version": "node version-bump.mjs",
 		"version:set": "npm version --no-git-tag-version",
 		"release:check": "node scripts/release-check.mjs",
-		"release:verify": "npm test && npm run build && npm run release:check",
+		"release:verify": "npm run build && npm test && npm run release:check",
 		"install:prod": "npm run release:verify && node scripts/install-plugin.mjs",
 		"smoke:obsidian": "node scripts/obsidian-smoke.mjs"
 	},

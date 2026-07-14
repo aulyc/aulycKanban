@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -83,4 +83,15 @@ test('release check rejects stale dist artifacts', async () => {
 	} finally {
 		await rm(rootDir, { recursive: true, force: true });
 	}
+});
+
+test('release verification builds ignored artifacts before installer tests run', async () => {
+	const packageJson = JSON.parse(await readFile(
+		new URL('../package.json', import.meta.url),
+		'utf8',
+	));
+	assert.equal(
+		packageJson.scripts['release:verify'],
+		'npm run build && npm test && npm run release:check',
+	);
 });
