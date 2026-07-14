@@ -325,13 +325,13 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	background: var(--interactive-accent-hover);
 }
 
-.aulyckanban-kanban-container:has(.aulyckanban-view-add-btn:focus)
-	.aulyckanban-nav-item-active,
-.aulyckanban-kanban-container:has(.aulyckanban-view-add-btn:focus-visible)
-	.aulyckanban-nav-item-active,
-.aulyckanban-kanban-container:has(.aulyckanban-view-add-input:focus)
-	.aulyckanban-nav-item-active {
-	border-color: transparent;
+.aulyckanban-toolbar:has(.aulyckanban-view-add-btn:focus)
+	+ .aulyckanban-content-area .aulyckanban-nav-item-active,
+.aulyckanban-toolbar:has(.aulyckanban-view-add-btn:focus-visible)
+	+ .aulyckanban-content-area .aulyckanban-nav-item-active,
+.aulyckanban-toolbar:has(.aulyckanban-view-add-input:focus)
+	+ .aulyckanban-content-area .aulyckanban-nav-item-active {
+	border-color: transparent !important;
 }
 
 .aulyckanban-nav-item-title {

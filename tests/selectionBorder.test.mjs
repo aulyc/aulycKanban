@@ -90,8 +90,8 @@ test('task type add focus clears archive and quadrant selection borders', () => 
 	);
 
 	const suppressedQuadrantRule = css.match(
-		/\.aulyckanban-kanban-container:has\(\.aulyckanban-view-add-btn:focus\)[\s\S]*?\.aulyckanban-nav-item-active\s*\{([^}]*)\}/,
+		/\.aulyckanban-toolbar:has\(\.aulyckanban-view-add-btn:focus\)\s*\+\s*\.aulyckanban-content-area[\s\S]*?\.aulyckanban-nav-item-active\s*\{([^}]*)\}/,
 	)?.[1] ?? '';
 	assert.notEqual(suppressedQuadrantRule, '');
-	assert.match(suppressedQuadrantRule, /border-color:\s*transparent/);
+	assert.match(suppressedQuadrantRule, /border-color:\s*transparent\s*!important/);
 });
