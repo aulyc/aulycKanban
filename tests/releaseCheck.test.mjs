@@ -1,27 +1,22 @@
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { checkRelease } from '../scripts/release-check.mjs';
+import { writeJson } from './helpers/release-fixture.mjs';
 
-async function writeJson(filePath, value) {
-	await writeFile(filePath, `${JSON.stringify(value, null, '\t')}\n`, 'utf8');
-}
-
-async function createReleaseFixture(version = '2.2.0-beta.1') {
-	const rootDir = await mkdtemp(path.join(os.tmpdir(), 'aulyckanban-release-'));
+async function createCandidate(version = '2.1.19') {
+	const rootDir = await mkdtemp(path.join(os.tmpdir(), 'aulyckanban-candidate-'));
 	await mkdir(path.join(rootDir, 'dist'));
 	const manifest = {
-		id: 'aulyckanban',
-		version,
-		minAppVersion: '1.5.0',
+		id: 'aulyckanban', version, minAppVersion: '1.5.0', isDesktopOnly: false,
 	};
 	await Promise.all([
-		writeJson(path.join(rootDir, 'package.json'), { version }),
+		writeJson(path.join(rootDir, 'release-version.json'), { version, buildNumber: 0 }),
+		writeJson(path.join(rootDir, 'package.json'), { name: 'aulyckanban', version }),
 		writeJson(path.join(rootDir, 'package-lock.json'), {
-			version,
-			packages: { '': { version } },
+			name: 'aulyckanban', version, packages: { '': { name: 'aulyckanban', version } },
 		}),
 		writeJson(path.join(rootDir, 'manifest.json'), manifest),
 		writeJson(path.join(rootDir, 'dist', 'manifest.json'), manifest),
@@ -34,64 +29,50 @@ async function createReleaseFixture(version = '2.2.0-beta.1') {
 	return rootDir;
 }
 
-test('release check accepts an aligned beta release', async () => {
-	const rootDir = await createReleaseFixture();
+test('pre-tag candidate accepts the unpublished 2.1.19 migration identity', async () => {
+	const rootDir = await createCandidate();
 	try {
 		assert.deepEqual(await checkRelease(rootDir), {
-			version: '2.2.0-beta.1',
-			channel: 'beta',
+			version: '2.1.19', buildNumber: 0, channel: 'formal',
 		});
 	} finally {
 		await rm(rootDir, { recursive: true, force: true });
 	}
 });
 
-test('release check rejects version drift', async () => {
-	const rootDir = await createReleaseFixture();
+test('pre-tag candidate fails on version drift', async () => {
+	const rootDir = await createCandidate();
 	try {
+		const manifest = JSON.parse(await (await import('node:fs/promises')).readFile(
+			path.join(rootDir, 'dist', 'manifest.json'), 'utf8',
+		));
 		await writeJson(path.join(rootDir, 'dist', 'manifest.json'), {
-			id: 'aulyckanban',
-			version: '2.1.2',
-			minAppVersion: '1.5.0',
+			...manifest, version: '2.1.18',
 		});
-		await assert.rejects(
-			checkRelease(rootDir),
-			/Version mismatch: dist\/manifest\.json=2\.1\.2, expected=2\.2\.0-beta\.1/,
-		);
+		await assert.rejects(checkRelease(rootDir), /Version drift detected/);
 	} finally {
 		await rm(rootDir, { recursive: true, force: true });
 	}
 });
 
-test('release check rejects unsupported public prerelease channels', async () => {
-	const rootDir = await createReleaseFixture('2.2.0-preview.1');
+test('pre-tag candidate rejects missing or extra release files', async () => {
+	const rootDir = await createCandidate();
 	try {
-		await assert.rejects(
-			checkRelease(rootDir),
-			/Public releases must be stable or use alpha\.N, beta\.N, or rc\.N/,
-		);
+		await writeFile(path.join(rootDir, 'dist', 'data.json'), 'user-data');
+		await assert.rejects(checkRelease(rootDir), /must contain only/);
 	} finally {
 		await rm(rootDir, { recursive: true, force: true });
 	}
 });
 
-test('release check rejects stale dist artifacts', async () => {
-	const rootDir = await createReleaseFixture('2.2.0');
-	try {
-		await writeFile(path.join(rootDir, 'dist', 'styles.css'), 'stale styles');
-		await assert.rejects(checkRelease(rootDir), /Stale dist artifact: dist\/styles\.css/);
-	} finally {
-		await rm(rootDir, { recursive: true, force: true });
-	}
-});
-
-test('release verification builds ignored artifacts before installer tests run', async () => {
-	const packageJson = JSON.parse(await readFile(
-		new URL('../package.json', import.meta.url),
-		'utf8',
+test('package command topology separates daily, CI, candidate, and tag gates', async () => {
+	const packageJson = JSON.parse(await (await import('node:fs/promises')).readFile(
+		new URL('../package.json', import.meta.url), 'utf8',
 	));
-	assert.equal(
-		packageJson.scripts['release:verify'],
-		'npm run build && npm test && npm run release:check',
-	);
+	assert.equal(packageJson.scripts.check, 'npm run typecheck && npm test');
+	assert.match(packageJson.scripts.ci, /version:check/);
+	assert.match(packageJson.scripts.ci, /build:production/);
+	assert.equal(packageJson.scripts['release:check'], 'node scripts/release-check.mjs');
+	assert.equal(packageJson.scripts['release:tag'], 'node scripts/release-tag.mjs');
+	assert.doesNotMatch(packageJson.scripts['release:check'], /release:tag/);
 });

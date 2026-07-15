@@ -3,6 +3,7 @@ node_modules/
 
 # 构建产物
 main.js
+release-artifacts/
 
 # 插件运行时数据
 data.json
