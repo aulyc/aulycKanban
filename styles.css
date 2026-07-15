@@ -86,7 +86,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	flex: none;
 }
 
-.aulyckanban-all-tasks-btn {
+.aulyckanban-kanban-container .aulyckanban-tab.aulyckanban-all-tasks-btn {
 	justify-content: center;
 	min-width: 30px;
 	width: 30px;
@@ -94,6 +94,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 }
 
 .aulyckanban-all-tasks-btn svg {
+	flex: none;
 	width: 16px;
 	height: 16px;
 }

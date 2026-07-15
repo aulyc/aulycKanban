@@ -81,6 +81,16 @@ test('archive control has no separator and keeps selection separate from focus',
 	assert.doesNotMatch(active, /border-color:\s*var\(--color-orange\)/);
 });
 
+test('all tasks icon keeps a visible content box inside the compact button', () => {
+	const button = rule('.aulyckanban-kanban-container .aulyckanban-tab.aulyckanban-all-tasks-btn');
+	assert.match(button, /width:\s*30px/);
+	assert.match(button, /padding:\s*6px/);
+
+	const icon = rule('.aulyckanban-all-tasks-btn svg');
+	assert.match(icon, /flex:\s*none/);
+	assert.match(icon, /width:\s*16px/);
+});
+
 test('task type add glyph is optically centered', () => {
 	const addButton = rule('.aulyckanban-view-add-btn');
 	assert.match(addButton, /display:\s*grid/);
