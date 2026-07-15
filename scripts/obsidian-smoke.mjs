@@ -2,9 +2,10 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { pathToFileURL } from 'node:url';
+import { discoverVaultPath } from './install-plugin.mjs';
+import { PLUGIN_ID } from './release-constants.mjs';
 
-const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DEFAULT_SELECTOR = '.aulyckanban-kanban-container';
 
 function normalizeOutput(value) {
@@ -100,9 +101,56 @@ export function runObsidianSmoke({
 	return { pluginId, version: expectedVersion, renderedCount };
 }
 
+export function runInstalledObsidianSmoke({
+	manifestPath,
+	vaultPath,
+	pluginId = PLUGIN_ID,
+	runner = spawnSync,
+	cli = process.env.OBSIDIAN_CLI?.trim() || 'obsidian',
+	vaultName = process.env.OBSIDIAN_VAULT_NAME?.trim() || '',
+	log = console.log,
+} = {}) {
+	const resolvedManifestPath = manifestPath
+		? path.resolve(manifestPath)
+		: path.join(
+			discoverVaultPath({
+				vaultPath,
+				runner,
+				cli,
+				vaultName,
+				env: {
+					...process.env,
+					OBSIDIAN_VAULT_NAME: vaultName,
+				},
+			}),
+			'.obsidian', 'plugins', pluginId, 'manifest.json',
+		);
+	const manifest = JSON.parse(readFileSync(resolvedManifestPath, 'utf8'));
+	if (manifest.id !== pluginId) {
+		throw new Error(`[smoke] Installed manifest plugin id mismatch: ${String(manifest.id)}`);
+	}
+	return runObsidianSmoke({ manifest, runner, cli, vaultName, log });
+}
+
+function parseArguments(argv) {
+	const values = {};
+	const allowed = new Set(['manifest', 'vault']);
+	for (let index = 0; index < argv.length; index += 1) {
+		const argument = argv[index];
+		if (!argument.startsWith('--')) throw new Error(`[smoke] Unknown argument: ${argument}`);
+		const key = argument.slice(2);
+		if (!allowed.has(key)) throw new Error(`[smoke] Unknown option: --${key}`);
+		const value = argv[index + 1];
+		if (!value || value.startsWith('--')) throw new Error(`[smoke] Missing value for --${key}`);
+		values[key] = value;
+		index += 1;
+	}
+	return values;
+}
+
 function main() {
-	const manifest = JSON.parse(readFileSync(path.join(rootDir, 'manifest.json'), 'utf8'));
-	runObsidianSmoke({ manifest });
+	const args = parseArguments(process.argv.slice(2));
+	runInstalledObsidianSmoke({ manifestPath: args.manifest, vaultPath: args.vault });
 }
 
 const entryPath = process.argv[1] ? pathToFileURL(path.resolve(process.argv[1])).href : '';

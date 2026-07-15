@@ -148,3 +148,21 @@ test('dirty tagged source cannot be packaged', async () => {
 		await rm(outputDir, { recursive: true, force: true });
 	}
 });
+
+test('an existing versioned artifact cannot be overwritten', async () => {
+	const fixture = await buildFixtureArtifact();
+	try {
+		await assert.rejects(
+			buildReleaseArtifact({
+				repoDir: fixture.rootDir,
+				sourceDir: fixture.rootDir,
+				outputDir: fixture.outputDir,
+				expectedChannel: 'test',
+			}),
+			/error|exist|EEXIST/i,
+		);
+	} finally {
+		await cleanupFixture(fixture.rootDir);
+		await rm(fixture.outputDir, { recursive: true, force: true });
+	}
+});

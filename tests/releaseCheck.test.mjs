@@ -74,5 +74,8 @@ test('package command topology separates daily, CI, candidate, and tag gates', a
 	assert.match(packageJson.scripts.ci, /build:production/);
 	assert.equal(packageJson.scripts['release:check'], 'node scripts/release-check.mjs');
 	assert.equal(packageJson.scripts['release:tag'], 'node scripts/release-tag.mjs');
+	assert.equal(packageJson.scripts['release:test'], 'node scripts/release.mjs test');
+	assert.equal(packageJson.scripts['release:formal'], 'node scripts/release.mjs formal');
+	assert.match(packageJson.scripts['install:formal'], /install-plugin\.mjs --channel formal/);
 	assert.doesNotMatch(packageJson.scripts['release:check'], /release:tag/);
 });

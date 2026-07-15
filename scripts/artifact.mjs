@@ -152,7 +152,7 @@ export async function buildReleaseArtifact({ repoDir, sourceDir, outputDir, expe
 	const zipPath = path.join(outputDir, zipName);
 	const provenancePath = path.join(outputDir, provenanceName);
 	const zip = createZipBuffer(files.map(({ file, data }) => ({ name: file, data })));
-	await writeFile(zipPath, zip);
+	await writeFile(zipPath, zip, { flag: 'wx' });
 	const provenance = {
 		releaseProfile: RELEASE_PROFILE,
 		releaseChannel: channel,
@@ -168,7 +168,10 @@ export async function buildReleaseArtifact({ repoDir, sourceDir, outputDir, expe
 		artifact: { file: zipName, sha256: sha256Buffer(zip) },
 		files: files.map(({ file, sha256 }) => ({ file, sha256 })),
 	};
-	await writeFile(provenancePath, `${JSON.stringify(provenance, null, 2)}\n`, 'utf8');
+	await writeFile(provenancePath, `${JSON.stringify(provenance, null, 2)}\n`, {
+		encoding: 'utf8',
+		flag: 'wx',
+	});
 	assertCleanGit(sourceDir, 'isolated tagged source after packaging');
 	await verifyReleaseArtifact({
 		repoDir,

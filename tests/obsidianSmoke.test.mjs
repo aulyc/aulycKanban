@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import test from 'node:test';
-import { runObsidianSmoke } from '../scripts/obsidian-smoke.mjs';
+import { runInstalledObsidianSmoke, runObsidianSmoke } from '../scripts/obsidian-smoke.mjs';
 
 const manifest = { id: 'aulyckanban', version: '2.1.10' };
 
@@ -87,4 +90,27 @@ test('fails when Obsidian captures a runtime error', () => {
 		() => runObsidianSmoke({ manifest, runner, log: () => {} }),
 		/Obsidian captured runtime errors:[\s\S]*failed to render board/,
 	);
+});
+
+test('post-install smoke derives expected identity from the actual installed manifest', () => {
+	const vaultPath = mkdtempSync(path.join(os.tmpdir(), 'aulyckanban-smoke-vault-'));
+	const manifestPath = path.join(
+		vaultPath, '.obsidian', 'plugins', 'aulyckanban', 'manifest.json',
+	);
+	try {
+		mkdirSync(path.dirname(manifestPath), { recursive: true });
+		writeFileSync(manifestPath, `${JSON.stringify(manifest)}\n`);
+		const { calls, runner } = createRunner();
+		const result = runInstalledObsidianSmoke({
+			manifestPath,
+			runner,
+			vaultName: 'Fixture Vault',
+			log: () => {},
+		});
+		assert.equal(result.version, '2.1.10');
+		assert.equal(calls.length, 7);
+		assert.ok(calls.every((call) => call.includes('vault=Fixture Vault')));
+	} finally {
+		rmSync(vaultPath, { recursive: true, force: true });
+	}
 });

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -9,6 +9,7 @@ import {
 	verifyAnnotatedTag,
 } from '../scripts/git-release.mjs';
 import { createOrVerifyReleaseTag } from '../scripts/release-tag.mjs';
+import { runRelease } from '../scripts/release.mjs';
 import {
 	cleanupFixture,
 	createReleaseFixture,
@@ -152,5 +153,50 @@ test('detached build fails if its production command dirties tagged source and s
 	} finally {
 		await cleanupFixture(fixture.rootDir);
 		await rm(outputDir, { recursive: true, force: true });
+	}
+});
+
+test('test release orchestrates tagged build, verified install, and mocked post-install smoke', async () => {
+	const fixture = await createReleaseFixture();
+	const outputDir = await mkdtemp(path.join(os.tmpdir(), 'aulyckanban-release-output-'));
+	const vaultPath = await mkdtemp(path.join(os.tmpdir(), 'aulyckanban-release-vault-'));
+	const pluginDir = path.join(vaultPath, '.obsidian', 'plugins', 'aulyckanban');
+	const calls = [];
+	const outputs = {
+		'dev:errors clear': 'Cleared 0 errors.\n',
+		'plugin:reload id=aulyckanban': 'Reloaded: aulyckanban\n',
+		'plugin id=aulyckanban': `version\t${fixture.version}\nenabled\ttrue\n`,
+		'commands filter=aulyckanban': 'aulyckanban:open-board\n',
+		'command id=aulyckanban:open-board': 'Executed\n',
+		'dev:dom selector=.aulyckanban-kanban-container total': '1\n',
+		'dev:errors': 'No errors captured.\n',
+	};
+	const runner = (command, args) => {
+		calls.push([command, ...args]);
+		const key = args.filter((arg) => !arg.startsWith('vault=')).join(' ');
+		return { status: 0, stdout: outputs[key] ?? '', stderr: '' };
+	};
+	try {
+		await mkdir(pluginDir, { recursive: true });
+		await writeFile(path.join(pluginDir, 'data.json'), 'preserve-me');
+		const result = await runRelease({
+			repoDir: fixture.rootDir,
+			channel: 'test',
+			outputDir,
+			vaultPath,
+			env: {
+				OBSIDIAN_CLI: 'obsidian',
+				OBSIDIAN_VAULT_NAME: 'Fixture Vault',
+			},
+			runner,
+		});
+		assert.equal(result.installed.manifest.version, fixture.version);
+		assert.equal(await readFile(path.join(pluginDir, 'data.json'), 'utf8'), 'preserve-me');
+		assert.equal(calls.length, 7);
+		assert.ok(calls.every((call) => call.includes('vault=Fixture Vault')));
+	} finally {
+		await cleanupFixture(fixture.rootDir);
+		await rm(outputDir, { recursive: true, force: true });
+		await rm(vaultPath, { recursive: true, force: true });
 	}
 });

@@ -14,10 +14,13 @@
 		"version:sync": "node version-bump.mjs sync",
 		"version:check": "node version-bump.mjs check",
 		"version:set": "node version-bump.mjs set",
-		"version:test": "node --test tests/versionBump.test.mjs",
+		"version:test": "node --test tests/versionBump.test.mjs tests/releaseCheck.test.mjs tests/releaseFlow.test.mjs tests/artifact.test.mjs",
 		"artifact:verify": "node scripts/artifact.mjs verify-dist",
 		"release:check": "node scripts/release-check.mjs",
 		"release:tag": "node scripts/release-tag.mjs",
+		"release:test": "node scripts/release.mjs test",
+		"release:formal": "node scripts/release.mjs formal",
+		"install:formal": "node scripts/install-plugin.mjs --channel formal",
 		"smoke:obsidian": "node scripts/obsidian-smoke.mjs"
 	},
 	"keywords": [
