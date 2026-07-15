@@ -159,6 +159,17 @@ test('quadrant add focus owns the only purple selection in category navigation',
 	assert.match(suppressionRule, /border-color:\s*transparent/);
 });
 
+test('archive container draws its panel frame only for keyboard-visible focus', () => {
+	assert.equal(rule('.aulyckanban-archive-container:focus'), '');
+
+	const keyboardFocus = rule('.aulyckanban-archive-container:focus-visible');
+	assert.match(keyboardFocus, /outline:\s*none/);
+	assert.match(
+		keyboardFocus,
+		/box-shadow:\s*inset 0 0 0 1px var\(--aulyckanban-selection-border\)/,
+	);
+});
+
 test('every white selection border reference belongs to a focus selector', () => {
 	const rules = [
 		...css.matchAll(/([^{}]+)\{([^{}]*var\(--aulyckanban-selection-border\)[^{}]*)\}/g),
