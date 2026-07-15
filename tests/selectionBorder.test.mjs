@@ -62,7 +62,7 @@ test('keyboard navigation targets update instantly without visual trails', () =>
 	assert.match(rule('.aulyckanban-task:focus'), /box-shadow:\s*none/);
 });
 
-test('archive control has no separator and uses a semantic archive color', () => {
+test('archive control has no separator and keeps selection separate from focus', () => {
 	const slot = rule('.aulyckanban-archive-slot');
 	assert.match(slot, /padding-left:\s*0/);
 	assert.match(slot, /border-left:\s*0/);
@@ -77,7 +77,8 @@ test('archive control has no separator and uses a semantic archive color', () =>
 			'.aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active',
 	);
 	assert.match(active, /background:\s*color-mix\([^;]*var\(--color-orange\)/);
-	assert.match(active, /border-color:\s*var\(--color-orange\)/);
+	assert.match(active, /border-color:\s*transparent/);
+	assert.doesNotMatch(active, /border-color:\s*var\(--color-orange\)/);
 });
 
 test('task type add glyph is optically centered', () => {

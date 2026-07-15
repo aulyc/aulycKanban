@@ -183,7 +183,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 
 .aulyckanban-kanban-container .aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active {
 	background: color-mix(in srgb, var(--color-orange) 44%, var(--background-primary));
-	border-color: var(--color-orange);
+	border-color: transparent;
 	color: var(--text-normal);
 }
 
