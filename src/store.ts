@@ -12,6 +12,7 @@ import type {
 import { getDefaultBoardData, ID_PREFIX, PERFORMANCE } from './constants';
 import type KanbanPlugin from './main';
 import { synchronizeSharedColumnDefinitions } from './services/sharedColumns';
+import { queryTaskRefs, type ColumnScope, type TaskRef, type TaskScope } from './utils/taskQuery';
 
 type Listener = () => void;
 
@@ -28,6 +29,10 @@ export class KanbanStore {
 	private destroyed = false;
 	private _lastActionMutatedData = false;
 	private _lastActionType: ActionType | null = null;
+	private _lastMutatedViewId: ViewKind | null = null;
+	private taskScope: TaskScope;
+	private columnScope: ColumnScope = 'current';
+	private searchKeyword = '';
 
 	constructor(settings: PluginSettings, board: BoardData, plugin: KanbanPlugin) {
 		this.settings = {
@@ -37,6 +42,7 @@ export class KanbanStore {
 		};
 		this.board = this.prepareBoard(board);
 		this.plugin = plugin;
+		this.taskScope = settings.showArchive ? 'archive' : 'current';
 		this.ensureCurrentView();
 		this.ensureActiveColumn();
 	}
@@ -60,7 +66,49 @@ export class KanbanStore {
 		return this.getView(this.settings.currentView);
 	}
 	isShowingArchive(): boolean {
-		return this.settings.showArchive;
+		return this.taskScope === 'archive';
+	}
+	isShowingAllTasks(): boolean {
+		return this.taskScope === 'all';
+	}
+	isShowingAllColumns(): boolean {
+		return this.columnScope === 'all';
+	}
+	getTaskScope(): TaskScope {
+		return this.taskScope;
+	}
+	getColumnScope(): ColumnScope {
+		return this.columnScope;
+	}
+	getSearchKeyword(): string {
+		return this.searchKeyword;
+	}
+	getVisibleTaskRefs(): TaskRef[] {
+		return queryTaskRefs(this.board, {
+			taskScope: this.taskScope,
+			currentViewId: this.settings.currentView,
+			columnScope: this.columnScope,
+			activeColumnId: this.getActiveColumnId(),
+			keyword: this.searchKeyword,
+		});
+	}
+	getTaskCountForColumn(columnId: string): number {
+		return queryTaskRefs(this.board, {
+			taskScope: this.taskScope,
+			currentViewId: this.settings.currentView,
+			columnScope: 'current',
+			activeColumnId: columnId,
+			keyword: this.searchKeyword,
+		}).length;
+	}
+	getVisibleTaskCount(): number {
+		return queryTaskRefs(this.board, {
+			taskScope: this.taskScope,
+			currentViewId: this.settings.currentView,
+			columnScope: 'all',
+			activeColumnId: this.getActiveColumnId(),
+			keyword: this.searchKeyword,
+		}).length;
 	}
 
 	getActiveColumnId(): string {
@@ -107,8 +155,12 @@ export class KanbanStore {
 		);
 	}
 
-	findTask(columnId: string, taskId: string): Task | undefined {
-		return this.getCurrentColumns()
+	findTask(
+		columnId: string,
+		taskId: string,
+		viewId: ViewKind = this.settings.currentView,
+	): Task | undefined {
+		return this.getRawColumns(viewId)
 			.find((column) => column.id === columnId)
 			?.tasks.find((task) => task.id === taskId);
 	}
@@ -118,6 +170,9 @@ export class KanbanStore {
 	}
 	get lastActionType(): ActionType | null {
 		return this._lastActionType;
+	}
+	get lastMutatedViewId(): ViewKind | null {
+		return this._lastMutatedViewId;
 	}
 
 	subscribe(listener: Listener): () => void {
@@ -132,30 +187,59 @@ export class KanbanStore {
 	dispatch(action: Action): void {
 		let didMutateData = false;
 		let shouldPersist = false;
+		this._lastMutatedViewId = null;
 		switch (action.type) {
-			case 'ADD_TASK':
-				didMutateData = this.addTask(action.payload.columnId, action.payload.content);
+			case 'ADD_TASK': {
+				const viewId = action.payload.viewId ?? this.settings.currentView;
+				didMutateData = this.addTask(viewId, action.payload.columnId, action.payload.content);
+				if (didMutateData) this._lastMutatedViewId = viewId;
 				break;
-			case 'EDIT_TASK':
+			}
+			case 'EDIT_TASK': {
+				const viewId = action.payload.viewId ?? this.settings.currentView;
 				didMutateData = this.editTask(
+					viewId,
 					action.payload.columnId,
 					action.payload.taskId,
 					action.payload.content,
 				);
+				if (didMutateData) this._lastMutatedViewId = viewId;
 				break;
-			case 'DELETE_TASK':
-				didMutateData = this.deleteTask(action.payload.columnId, action.payload.taskId);
+			}
+			case 'DELETE_TASK': {
+				const viewId = action.payload.viewId ?? this.settings.currentView;
+				didMutateData = this.deleteTask(viewId, action.payload.columnId, action.payload.taskId);
+				if (didMutateData) this._lastMutatedViewId = viewId;
 				break;
-			case 'TOGGLE_TASK':
-				didMutateData = this.toggleTask(action.payload.columnId, action.payload.taskId);
+			}
+			case 'TOGGLE_TASK': {
+				const viewId = action.payload.viewId ?? this.settings.currentView;
+				didMutateData = this.toggleTask(viewId, action.payload.columnId, action.payload.taskId);
+				if (didMutateData) this._lastMutatedViewId = viewId;
 				break;
+			}
 			case 'SWITCH_VIEW':
 				if (this.getView(action.payload.view)) this.settings.currentView = action.payload.view;
+				this.taskScope = 'current';
 				this.settings.showArchive = false;
 				this.ensureActiveColumn();
 				break;
+			case 'SHOW_ALL_TASKS':
+				this.taskScope = 'all';
+				this.settings.showArchive = false;
+				break;
+			case 'SHOW_ALL_COLUMNS':
+				this.columnScope = 'all';
+				break;
+			case 'SET_SEARCH_QUERY':
+				this.searchKeyword = action.payload.keyword.trim();
+				break;
 			case 'ADD_VIEW':
 				didMutateData = this.addView(action.payload.title);
+				if (didMutateData) {
+					this.taskScope = 'current';
+					this.columnScope = 'current';
+				}
 				break;
 			case 'RENAME_VIEW':
 				didMutateData = this.renameView(action.payload.viewId, action.payload.title);
@@ -165,9 +249,11 @@ export class KanbanStore {
 				break;
 			case 'SELECT_COLUMN':
 				this.settings.activeColumnId = action.payload.columnId;
+				this.columnScope = 'current';
 				break;
 			case 'ADD_COLUMN':
 				didMutateData = this.addColumn(action.payload.title);
+				if (didMutateData) this.columnScope = 'current';
 				break;
 			case 'RENAME_COLUMN':
 				didMutateData = this.renameColumn(action.payload.columnId, action.payload.title);
@@ -182,24 +268,33 @@ export class KanbanStore {
 				didMutateData = this.reorderColumns(action.payload.columnIds);
 				break;
 			case 'TOGGLE_ARCHIVE_VIEW':
-				this.settings.showArchive = !this.settings.showArchive;
+				this.taskScope = this.taskScope === 'archive' ? 'current' : 'archive';
+				this.settings.showArchive = this.taskScope === 'archive';
 				break;
-			case 'RESTORE_TASK':
-				didMutateData = this.restoreTask(action.payload.taskId);
+			case 'RESTORE_TASK': {
+				const restoredViewId = this.restoreTask(action.payload.viewId, action.payload.taskId);
+				didMutateData = restoredViewId !== null;
+				this._lastMutatedViewId = restoredViewId;
 				break;
+			}
 			case 'DELETE_ARCHIVE_TASKS':
-				didMutateData = this.deleteArchiveTasks(action.payload.taskIds);
+				didMutateData =
+					'tasks' in action.payload
+						? this.deleteArchiveTaskRefs(action.payload.tasks)
+						: this.deleteArchiveTasks(action.payload.taskIds);
 				break;
 			case 'SET_BOARD_DATA':
 				this.board = this.prepareBoard(action.payload.board);
 				this.ensureCurrentView();
 				this.ensureActiveColumn();
+				this.resetTaskQuery();
 				didMutateData = true;
 				break;
 			case 'CLEAR_ALL_DATA':
 				this.board = getDefaultBoardData();
 				this.ensureCurrentView();
 				this.ensureActiveColumn();
+				this.resetTaskQuery();
 				didMutateData = true;
 				break;
 			case 'UPDATE_SETTINGS':
@@ -214,8 +309,8 @@ export class KanbanStore {
 		if (didMutateData || shouldPersist) this.scheduleSave();
 	}
 
-	private addTask(columnId: string, rawContent: string): boolean {
-		const column = this.getRawColumn(columnId);
+	private addTask(viewId: ViewKind, columnId: string, rawContent: string): boolean {
+		const column = this.getRawColumn(viewId, columnId);
 		const content = rawContent.trim();
 		if (!column || !content) return false;
 		const now = new Date().toISOString();
@@ -229,8 +324,13 @@ export class KanbanStore {
 		return true;
 	}
 
-	private editTask(columnId: string, taskId: string, rawContent: string): boolean {
-		const task = this.findTask(columnId, taskId);
+	private editTask(
+		viewId: ViewKind,
+		columnId: string,
+		taskId: string,
+		rawContent: string,
+	): boolean {
+		const task = this.findTask(columnId, taskId, viewId);
 		const content = rawContent.trim();
 		if (!task || !content || task.content === content) return false;
 		task.content = content;
@@ -238,8 +338,8 @@ export class KanbanStore {
 		return true;
 	}
 
-	private deleteTask(columnId: string, taskId: string): boolean {
-		const column = this.getRawColumn(columnId);
+	private deleteTask(viewId: ViewKind, columnId: string, taskId: string): boolean {
+		const column = this.getRawColumn(viewId, columnId);
 		if (!column) return false;
 		const index = column.tasks.findIndex((task) => task.id === taskId);
 		if (index < 0) return false;
@@ -247,8 +347,8 @@ export class KanbanStore {
 		return true;
 	}
 
-	private toggleTask(columnId: string, taskId: string): boolean {
-		const column = this.getRawColumn(columnId);
+	private toggleTask(viewId: ViewKind, columnId: string, taskId: string): boolean {
+		const column = this.getRawColumn(viewId, columnId);
 		const task = column?.tasks.find((candidate) => candidate.id === taskId);
 		if (!column || !task) return false;
 		task.completed = !task.completed;
@@ -258,31 +358,46 @@ export class KanbanStore {
 		task.archivedAt = now;
 		task.sourceColumnId = columnId;
 		column.tasks.splice(column.tasks.indexOf(task), 1);
-		this.getOrCreateArchive(this.settings.currentView).tasks.unshift(task);
+		this.getOrCreateArchive(viewId).tasks.unshift(task);
 		return true;
 	}
 
-	private restoreTask(taskId: string): boolean {
-		for (const view of this.getTaskViews()) {
+	private restoreTask(viewId: ViewKind | undefined, taskId: string): ViewKind | null {
+		const views = viewId
+			? this.getTaskViews().filter((view) => view.id === viewId)
+			: this.getTaskViews();
+		for (const view of views) {
 			const archive = this.board.archives[view.id];
 			const index = archive?.tasks.findIndex((task) => task.id === taskId) ?? -1;
 			if (!archive || index < 0) continue;
 			const archivedTask = archive.tasks[index];
-			if (!archivedTask) return false;
+			if (!archivedTask) return null;
 			const column =
 				view.columns.find((candidate) => candidate.id === archivedTask.sourceColumnId) ??
 				view.columns[0];
-			if (!column) return false;
+			if (!column) return null;
 			const [task] = archive.tasks.splice(index, 1);
-			if (!task) return false;
+			if (!task) return null;
 			task.completed = false;
 			delete task.completedAt;
 			delete task.archivedAt;
 			delete task.sourceColumnId;
 			column.tasks.unshift(task);
-			return true;
+			return view.id;
 		}
-		return false;
+		return null;
+	}
+
+	private deleteArchiveTaskRefs(tasks: Array<{ viewId: ViewKind; taskId: string }>): boolean {
+		let changed = false;
+		for (const { viewId, taskId } of tasks) {
+			const archive = this.board.archives[viewId];
+			if (!archive) continue;
+			const previousLength = archive.tasks.length;
+			archive.tasks = archive.tasks.filter((task) => task.id !== taskId);
+			if (archive.tasks.length !== previousLength) changed = true;
+		}
+		return changed;
 	}
 
 	private deleteArchiveTasks(taskIds: string[]): boolean {
@@ -404,11 +519,11 @@ export class KanbanStore {
 		return changed;
 	}
 
-	private getRawColumns(): Column[] {
-		return this.getCurrentTaskView()?.columns ?? [];
+	private getRawColumns(viewId: ViewKind = this.settings.currentView): Column[] {
+		return this.getView(viewId)?.columns ?? [];
 	}
-	private getRawColumn(columnId: string): Column | undefined {
-		return this.getRawColumns().find((column) => column.id === columnId);
+	private getRawColumn(viewId: ViewKind, columnId: string): Column | undefined {
+		return this.getRawColumns(viewId).find((column) => column.id === columnId);
 	}
 	private getOrCreateArchive(viewId: ViewKind): ArchiveData {
 		return (this.board.archives[viewId] ??= { tasks: [] });
@@ -434,6 +549,13 @@ export class KanbanStore {
 		if (!columns.some((column) => column.id === this.settings.activeColumnId)) {
 			this.settings.activeColumnId = columns[0]?.id ?? '';
 		}
+	}
+
+	private resetTaskQuery(): void {
+		this.taskScope = 'current';
+		this.columnScope = 'current';
+		this.searchKeyword = '';
+		this.settings.showArchive = false;
 	}
 
 	private updateSettings(partial: Partial<PluginSettings>): void {

@@ -38,7 +38,7 @@ test('each of the three keyboard zones draws white only from actual focus', () =
 		combinedRule(['.aulyckanban-tab:focus', '.aulyckanban-tab:focus-visible']),
 		combinedRule(['.aulyckanban-nav-item:focus', '.aulyckanban-nav-item:focus-visible']),
 		rule('.aulyckanban-task:focus'),
-		rule('.aulyckanban-kanban-container .aulyckanban-inline-input:focus'),
+		rule('.aulyckanban-kanban-container .aulyckanban-task-search-input:focus'),
 	];
 	for (const declarations of focusRules) {
 		assert.notEqual(declarations, '');
@@ -52,7 +52,7 @@ test('keyboard navigation targets update instantly without visual trails', () =>
 		'.aulyckanban-nav-item',
 		'.aulyckanban-nav-add-btn',
 		'.aulyckanban-task',
-		'.aulyckanban-kanban-container .aulyckanban-inline-input',
+		'.aulyckanban-task-add-btn',
 	]) {
 		const declarations = rule(selector);
 		assert.match(declarations, /transition:\s*none/);
@@ -108,6 +108,7 @@ test('add buttons and editors use their own real focus for the white border', ()
 	for (const selectors of [
 		['.aulyckanban-nav-add-btn:focus', '.aulyckanban-nav-add-btn:focus-visible'],
 		['.aulyckanban-view-add-btn:focus', '.aulyckanban-view-add-btn:focus-visible'],
+		['.aulyckanban-task-add-btn:focus', '.aulyckanban-task-add-btn:focus-visible'],
 	]) {
 		assert.notEqual(combinedRule(selectors), '');
 	}
@@ -115,7 +116,10 @@ test('add buttons and editors use their own real focus for the white border', ()
 	for (const selector of [
 		'.aulyckanban-kanban-container .aulyckanban-view-inline-input:focus',
 		'.aulyckanban-kanban-container .aulyckanban-nav-inline-input:focus',
-		'.aulyckanban-kanban-container .aulyckanban-archive-search:focus',
+		'.aulyckanban-kanban-container .aulyckanban-task-search-input:focus',
+		'.aulyckanban-task-search-tag:focus',
+		'.aulyckanban-kanban-container .aulyckanban-task-create-target:focus',
+		'.aulyckanban-kanban-container .aulyckanban-task-create-input:focus',
 	]) {
 		assert.match(rule(selector), /var\(--aulyckanban-selection-border\)/);
 	}

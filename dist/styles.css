@@ -50,7 +50,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 
 .aulyckanban-toolbar-left {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) auto;
+	grid-template-columns: auto minmax(0, 1fr) auto;
 	align-items: center;
 	gap: 8px;
 	width: 100%;
@@ -78,6 +78,24 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	flex: none;
 	padding-left: 0;
 	border-left: 0;
+}
+
+.aulyckanban-all-tasks-slot {
+	display: flex;
+	align-items: center;
+	flex: none;
+}
+
+.aulyckanban-all-tasks-btn {
+	justify-content: center;
+	min-width: 30px;
+	width: 30px;
+	padding: 6px;
+}
+
+.aulyckanban-all-tasks-btn svg {
+	width: 16px;
+	height: 16px;
 }
 
 .aulyckanban-tab {
@@ -255,12 +273,20 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	overflow: hidden;
 }
 
-/* 归档模式：左侧网格区域在任务列表和归档视图间切换 */
-.aulyckanban-content-area.aulyckanban-mode-archive .aulyckanban-task-list {
+/* 左侧任务区：共享搜索/新增控件，列表与归档视图互斥。 */
+.aulyckanban-task-pane {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	min-height: 0;
+	overflow: hidden;
+}
+
+.aulyckanban-task-pane.aulyckanban-mode-archive .aulyckanban-task-list {
 	display: none;
 }
 
-.aulyckanban-content-area:not(.aulyckanban-mode-archive) .aulyckanban-archive-container {
+.aulyckanban-task-pane:not(.aulyckanban-mode-archive) .aulyckanban-archive-container {
 	display: none;
 }
 
@@ -270,9 +296,211 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	padding-left: 16px;
 }
 
+/* ==================== 搜索与新增任务 ==================== */
+.aulyckanban-task-controls {
+	display: flex;
+	flex: none;
+	flex-direction: column;
+	gap: 8px;
+	min-width: 0;
+	padding: 0 4px 10px;
+}
+
+.aulyckanban-task-search-shell {
+	min-width: 0;
+}
+
+.aulyckanban-kanban-container .aulyckanban-task-search-input,
+.aulyckanban-task-search-tag {
+	width: 100%;
+	height: 38px;
+	box-sizing: border-box;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 7px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	box-shadow: none;
+	transition: none;
+}
+
+.aulyckanban-kanban-container .aulyckanban-task-search-input {
+	padding: 0 11px;
+	font-family: inherit;
+	font-size: 13px;
+	appearance: none;
+	-webkit-text-fill-color: var(--text-normal);
+	caret-color: var(--text-normal);
+}
+
+.aulyckanban-kanban-container .aulyckanban-task-search-input::placeholder {
+	color: var(--text-muted);
+	-webkit-text-fill-color: var(--text-muted);
+	opacity: 1;
+}
+
+.aulyckanban-task-search-tag {
+	display: flex;
+	align-items: center;
+	padding: 5px 7px;
+	overflow: hidden;
+}
+
+.aulyckanban-task-search-tag-text,
+.aulyckanban-task-search-clear {
+	height: 26px;
+	background: var(--background-secondary-alt);
+}
+
+.aulyckanban-task-search-tag-text {
+	display: flex;
+	align-items: center;
+	min-width: 0;
+	max-width: calc(100% - 26px);
+	padding: 0 3px 0 8px;
+	border-radius: 5px 0 0 5px;
+	overflow: hidden;
+	font-size: 12px;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.aulyckanban-kanban-container .aulyckanban-task-search-clear {
+	display: grid;
+	place-items: center;
+	flex: 0 0 26px;
+	width: 26px;
+	min-width: 26px;
+	padding: 0;
+	border: 0;
+	border-radius: 0 5px 5px 0;
+	color: var(--text-muted);
+	box-shadow: none;
+	cursor: pointer;
+}
+
+.aulyckanban-task-search-clear:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.aulyckanban-task-search-clear svg {
+	width: 13px;
+	height: 13px;
+}
+
+.aulyckanban-kanban-container .aulyckanban-task-search-input:focus {
+	border-color: var(--aulyckanban-selection-border);
+	outline: none;
+	box-shadow: none;
+}
+
+.aulyckanban-task-search-tag:focus {
+	border-color: var(--aulyckanban-selection-border);
+	outline: none;
+	box-shadow: none;
+}
+
+.aulyckanban-task-add-btn {
+	display: grid;
+	place-items: center;
+	width: 100%;
+	height: 32px;
+	padding: 0;
+	border: 1px dashed var(--background-modifier-border);
+	border-radius: 6px;
+	background: transparent;
+	color: var(--text-muted);
+	box-shadow: none;
+	cursor: pointer;
+	transition: none;
+}
+
+.aulyckanban-task-add-btn:hover {
+	border-color: var(--text-muted);
+	background: var(--background-modifier-hover);
+	color: var(--interactive-accent);
+}
+
+.aulyckanban-task-add-btn:focus,
+.aulyckanban-task-add-btn:focus-visible {
+	border: 1px solid var(--aulyckanban-selection-border);
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	outline: none;
+	box-shadow: none;
+}
+
+.aulyckanban-task-add-icon {
+	font-size: 18px;
+	font-weight: 300;
+	line-height: 1;
+}
+
+.aulyckanban-task-create-editor {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	min-width: 0;
+}
+
+.aulyckanban-task-create-target-label {
+	position: relative;
+	flex: 1 1 120px;
+	min-width: 0;
+}
+
+.aulyckanban-kanban-container .aulyckanban-task-create-target {
+	width: 100%;
+	height: 30px;
+	box-sizing: border-box;
+	padding: 0 24px 0 8px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	background-color: var(--background-primary);
+	color: var(--text-normal);
+	font-family: inherit;
+	font-size: 12px;
+	box-shadow: none;
+}
+
+.aulyckanban-kanban-container .aulyckanban-task-create-input {
+	flex: 1 0 100%;
+	width: 100%;
+	min-height: 58px;
+	box-sizing: border-box;
+	padding: 8px 10px;
+	border: 1px solid var(--interactive-accent);
+	border-radius: 6px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-family: inherit;
+	font-size: 13px;
+	line-height: 1.45;
+	resize: none;
+	overflow: hidden;
+	box-shadow: none;
+	appearance: none;
+	-webkit-text-fill-color: var(--text-normal);
+	caret-color: var(--text-normal);
+}
+
+.aulyckanban-kanban-container .aulyckanban-task-create-target:focus {
+	border-color: var(--aulyckanban-selection-border);
+	outline: none;
+	box-shadow: none;
+}
+
+.aulyckanban-kanban-container .aulyckanban-task-create-input:focus {
+	border-color: var(--aulyckanban-selection-border);
+	outline: none;
+	box-shadow: none;
+}
+
 /* ==================== 左侧任务列表 ==================== */
 .aulyckanban-task-list {
+	flex: 1;
 	min-width: 0;
+	min-height: 0;
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
@@ -303,7 +531,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	padding-right: var(--aulyckanban-nav-inner-padding-x);
 	background: var(--background-secondary);
 	border-radius: 8px;
-	overflow-y: auto;
+	overflow: hidden;
 }
 
 .aulyckanban-nav-list {
@@ -311,6 +539,14 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	flex-direction: column;
 	gap: 4px;
 	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	padding-bottom: 1px;
+}
+
+.aulyckanban-nav-all-btn {
+	flex: none;
+	margin-bottom: 4px;
 }
 
 .aulyckanban-nav-item {
@@ -597,6 +833,16 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	line-height: 1.3;
 }
 
+.aulyckanban-task-source {
+	min-width: 0;
+	overflow: hidden;
+	color: var(--text-muted);
+	font-size: 11px;
+	line-height: 1.3;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
 /* ==================== 删除按钮 ==================== */
 .aulyckanban-task-delete {
 	color: var(--text-muted);
@@ -623,44 +869,6 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 .aulyckanban-task-delete:hover {
 	color: var(--text-error);
 	transform: scale(1.15);
-}
-
-/* ==================== 内嵌输入框 ==================== */
-.aulyckanban-inline-input-wrapper {
-	margin: 4px 0 10px;
-	padding: 0;
-}
-
-.aulyckanban-kanban-container .aulyckanban-inline-input {
-	width: 100%;
-	padding: 8px 10px;
-	background: var(--background-primary);
-	color: var(--text-normal);
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 6px;
-	font-size: 14px;
-	font-family: inherit;
-	line-height: 1.5;
-	resize: none;
-	overflow: hidden;
-	box-sizing: border-box;
-	transition: none;
-	box-shadow: none;
-	appearance: none;
-	-webkit-text-fill-color: var(--text-normal);
-	caret-color: var(--text-normal);
-	opacity: 1;
-}
-
-.aulyckanban-kanban-container .aulyckanban-inline-input:focus {
-	border-color: var(--aulyckanban-selection-border);
-	outline: none;
-	box-shadow: none;
-}
-
-.aulyckanban-inline-input::placeholder {
-	color: var(--text-muted);
-	-webkit-text-fill-color: var(--text-muted);
 }
 
 /* ==================== 内联编辑 textarea ==================== */
@@ -697,25 +905,25 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 
 /* ==================== 滚动条 ==================== */
 .aulyckanban-tasks::-webkit-scrollbar,
-.aulyckanban-category-nav::-webkit-scrollbar {
+.aulyckanban-nav-list::-webkit-scrollbar {
 	width: 6px;
 	height: 6px;
 }
 
 .aulyckanban-tasks::-webkit-scrollbar-track,
-.aulyckanban-category-nav::-webkit-scrollbar-track {
+.aulyckanban-nav-list::-webkit-scrollbar-track {
 	background: var(--background-secondary);
 	border-radius: 3px;
 }
 
 .aulyckanban-tasks::-webkit-scrollbar-thumb,
-.aulyckanban-category-nav::-webkit-scrollbar-thumb {
+.aulyckanban-nav-list::-webkit-scrollbar-thumb {
 	background: var(--background-modifier-border);
 	border-radius: 3px;
 }
 
 .aulyckanban-tasks::-webkit-scrollbar-thumb:hover,
-.aulyckanban-category-nav::-webkit-scrollbar-thumb:hover {
+.aulyckanban-nav-list::-webkit-scrollbar-thumb:hover {
 	background: var(--text-faint);
 }
 
@@ -724,7 +932,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	flex: 1;
 	min-height: 0;
 	overflow: auto;
-	padding-top: 12px;
+	padding-top: 0;
 	border-radius: 8px;
 	transition: box-shadow 0.15s ease;
 }
@@ -759,36 +967,6 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	display: flex;
 	align-items: center;
 	gap: 8px;
-	min-width: 0;
-}
-
-.aulyckanban-kanban-container .aulyckanban-archive-search {
-	height: 30px;
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 6px;
-	background: var(--background-primary);
-	color: var(--text-normal);
-	padding: 0 8px;
-	font-size: 12px;
-	box-sizing: border-box;
-	box-shadow: none;
-}
-
-.aulyckanban-kanban-container .aulyckanban-archive-search:focus {
-	border-color: var(--aulyckanban-selection-border);
-	outline: none;
-	box-shadow: none;
-}
-
-.aulyckanban-archive-search {
-	width: 100%;
-	min-width: 0;
-	padding-right: 28px !important;
-}
-
-.aulyckanban-archive-search-shell {
-	position: relative;
-	flex: 1 1 auto;
 	min-width: 0;
 }
 
@@ -830,37 +1008,6 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 .aulyckanban-archive-select-mode-btn:hover,
 .aulyckanban-archive-selection-btn:hover {
 	background: var(--interactive-hover);
-}
-
-.aulyckanban-archive-clear-btn {
-	position: absolute;
-	top: 50%;
-	right: 3px;
-	display: grid;
-	place-items: center;
-	width: 24px;
-	height: 24px;
-	padding: 0;
-	transform: translateY(-50%);
-	border: 0;
-	border-radius: 4px;
-	background: transparent;
-	color: var(--text-muted);
-	cursor: pointer;
-}
-
-.aulyckanban-archive-clear-btn[hidden] {
-	display: none;
-}
-
-.aulyckanban-archive-clear-btn svg {
-	width: 13px;
-	height: 13px;
-}
-
-.aulyckanban-archive-clear-btn:hover {
-	background: var(--background-modifier-hover);
-	color: var(--text-normal);
 }
 
 .aulyckanban-archive-toolbar-selection {

@@ -77,7 +77,7 @@ const output = ts.transpileModule(source, {
 	},
 }).outputText;
 
-function createCategoryNavHarness() {
+function createCategoryNavHarness(overrides = {}) {
 	const module = { exports: {} };
 	const context = {
 		module,
@@ -107,16 +107,47 @@ function createCategoryNavHarness() {
 	vm.runInNewContext(output, context);
 
 	const store = {
+		actions: [],
 		getCurrentColumns: () => [{ id: 'last', title: '多少啊', tasks: [] }],
 		getActiveColumnId: () => 'last',
 		isShowingArchive: () => false,
+		isShowingAllColumns: () => false,
+		getTaskCountForColumn: () => 2,
+		getVisibleTaskCount: () => 2,
 		getArchiveTaskCount: () => 0,
-		dispatch: () => {},
+		dispatch(action) {
+			this.actions.push(action);
+		},
+		...overrides,
 	};
 	const parent = new MockElement();
 	new context.module.exports.CategoryNav(parent, {}, store);
-	return { parent };
+	return { parent, store };
 }
+
+test('all quadrants is a fixed first navigation control with the aggregate count', () => {
+	const { parent, store } = createCategoryNavHarness();
+	const nav = parent.children[0];
+	const allButton = descendants(nav).find((element) =>
+		element.classList.contains('aulyckanban-nav-all-btn'),
+	);
+	assert.ok(allButton);
+	assert.equal(nav.children[0], allButton);
+	assert.equal(allButton.children[1].textContent, '2');
+
+	allButton.listeners.get('click')[0]({ preventDefault() {}, stopPropagation() {} });
+	assert.equal(store.actions.at(-1).type, 'SHOW_ALL_COLUMNS');
+});
+
+test('all quadrants is the only business-active navigation item in aggregate scope', () => {
+	const { parent } = createCategoryNavHarness({ isShowingAllColumns: () => true });
+	const nav = parent.children[0];
+	const activeItems = descendants(nav).filter((element) =>
+		element.classList.contains('aulyckanban-nav-item-active'),
+	);
+	assert.equal(activeItems.length, 1);
+	assert.equal(activeItems[0].classList.contains('aulyckanban-nav-all-btn'), true);
+});
 
 test('category add control has an accessible name without tooltip attributes', () => {
 	const { parent } = createCategoryNavHarness();

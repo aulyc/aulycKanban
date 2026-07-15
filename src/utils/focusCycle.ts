@@ -1,12 +1,23 @@
+import type { ColumnScope, TaskScope } from './taskQuery';
+
 export type KanbanFocusZone = 'view' | 'tasks' | 'columns';
 export type TaskTypeNavigationTarget =
+	| { kind: 'all' }
 	| { kind: 'view'; id: string }
 	| { kind: 'add' }
 	| { kind: 'archive' };
+export type ColumnNavigationTarget =
+	| { kind: 'all' }
+	| { kind: 'column'; id: string }
+	| { kind: 'add' };
 
 const FOCUS_ORDER: readonly KanbanFocusZone[] = ['view', 'tasks', 'columns'];
-const TASK_ZONE_TASK_SELECTOR = '.aulyckanban-task-list .aulyckanban-task';
-const TASK_ZONE_INPUT_SELECTOR = '.aulyckanban-task-list .aulyckanban-inline-input';
+const TASK_ZONE_RESULT_SELECTOR =
+	'.aulyckanban-task-pane:not(.aulyckanban-mode-archive) .aulyckanban-task-list .aulyckanban-task, ' +
+	'.aulyckanban-task-pane.aulyckanban-mode-archive .aulyckanban-archive-container .aulyckanban-archive-task';
+const TASK_ZONE_CONTROL_SELECTOR =
+	'.aulyckanban-task-search-input, .aulyckanban-task-search-tag, ' +
+	'.aulyckanban-task-add-btn, .aulyckanban-task-create-target, .aulyckanban-task-create-input';
 
 export interface TabFocusFallbackContext {
 	key: string;
@@ -45,15 +56,18 @@ export function shouldUseTabFocusFallback(context: TabFocusFallbackContext): boo
 /** 获取普通任务区的首个焦点目标，避免命中隐藏归档区复用的任务样式。 */
 export function getTaskZoneFocusTarget(root: ParentNode): HTMLElement | null {
 	return (
-		root.querySelector<HTMLElement>(TASK_ZONE_TASK_SELECTOR) ??
-		root.querySelector<HTMLElement>(TASK_ZONE_INPUT_SELECTOR)
+		root.querySelector<HTMLElement>(TASK_ZONE_RESULT_SELECTOR) ??
+		root.querySelector<HTMLElement>(TASK_ZONE_CONTROL_SELECTOR) ??
+		root.querySelector<HTMLElement>('.aulyckanban-task-pane')
 	);
 }
 
 /** 获取普通任务区的方向键目标，排除隐藏归档卡片。 */
 export function getTaskZoneNavigationItems(root: ParentNode): HTMLElement[] {
 	return Array.from(
-		root.querySelectorAll<HTMLElement>(`${TASK_ZONE_INPUT_SELECTOR}, ${TASK_ZONE_TASK_SELECTOR}`),
+		root.querySelectorAll<HTMLElement>(
+			`${TASK_ZONE_CONTROL_SELECTOR}, ${TASK_ZONE_RESULT_SELECTOR}`,
+		),
 	);
 }
 
@@ -100,11 +114,12 @@ export function revealTaskTypeItem(item: HTMLElement): void {
 export function getTaskTypeNavigationTarget(
 	viewIds: readonly string[],
 	currentViewId: string,
-	showingArchive: boolean,
+	taskScope: TaskScope,
 	offset: number,
 	focusedTarget: TaskTypeNavigationTarget | null = null,
 ): TaskTypeNavigationTarget | null {
 	const navigationItems: TaskTypeNavigationTarget[] = [
+		{ kind: 'all' },
 		...viewIds.map((id) => ({ kind: 'view' as const, id })),
 		{ kind: 'add' },
 		{ kind: 'archive' },
@@ -115,9 +130,38 @@ export function getTaskTypeNavigationTarget(
 					item.kind === focusedTarget.kind &&
 					(item.kind !== 'view' || focusedTarget.kind !== 'view' || item.id === focusedTarget.id),
 			)
-		: showingArchive
+		: taskScope === 'archive'
 			? navigationItems.length - 1
-			: navigationItems.findIndex((item) => item.kind === 'view' && item.id === currentViewId);
+			: taskScope === 'all'
+				? 0
+				: navigationItems.findIndex((item) => item.kind === 'view' && item.id === currentViewId);
+	const targetIndex = getWrappedItemIndex(currentIndex, navigationItems.length, offset);
+	return targetIndex >= 0 ? (navigationItems[targetIndex] ?? null) : null;
+}
+
+export function getColumnNavigationTarget(
+	columnIds: readonly string[],
+	activeColumnId: string,
+	columnScope: ColumnScope,
+	offset: number,
+	focusedTarget: ColumnNavigationTarget | null = null,
+): ColumnNavigationTarget | null {
+	const navigationItems: ColumnNavigationTarget[] = [
+		{ kind: 'all' },
+		...columnIds.map((id) => ({ kind: 'column' as const, id })),
+		{ kind: 'add' },
+	];
+	const currentIndex = focusedTarget
+		? navigationItems.findIndex(
+				(item) =>
+					item.kind === focusedTarget.kind &&
+					(item.kind !== 'column' ||
+						focusedTarget.kind !== 'column' ||
+						item.id === focusedTarget.id),
+			)
+		: columnScope === 'all'
+			? 0
+			: navigationItems.findIndex((item) => item.kind === 'column' && item.id === activeColumnId);
 	const targetIndex = getWrappedItemIndex(currentIndex, navigationItems.length, offset);
 	return targetIndex >= 0 ? (navigationItems[targetIndex] ?? null) : null;
 }

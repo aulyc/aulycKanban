@@ -224,6 +224,170 @@ test('archive quadrant counts span every task type and legacy tasks fall back to
 	store.destroy();
 });
 
+test('aggregate scopes and search filter visible tasks without replacing concrete selections', () => {
+	const store = createStore(
+		{
+			views: [
+				view(
+					'work',
+					'工作',
+					[
+						column('base', '基础', [task('work-base', '共同关键词')]),
+						column('second', '第二', [task('work-second', '其他内容')], 1),
+					],
+					0,
+				),
+				view(
+					'personal',
+					'个人',
+					[
+						column('base', '基础', [task('personal-base', '共同关键词')]),
+						column('second', '第二', [task('personal-second', '共同关键词')], 1),
+					],
+					1,
+				),
+			],
+			archives: { work: { tasks: [] }, personal: { tasks: [] } },
+		},
+		'personal',
+		'base',
+	);
+
+	store.dispatch({ type: 'SHOW_ALL_TASKS' });
+	store.dispatch({ type: 'SHOW_ALL_COLUMNS' });
+	store.dispatch({ type: 'SET_SEARCH_QUERY', payload: { keyword: '关键词' } });
+
+	assert.equal(store.getCurrentView(), 'personal');
+	assert.equal(store.getActiveColumnId(), 'base');
+	assert.equal(store.isShowingAllTasks(), true);
+	assert.equal(store.isShowingAllColumns(), true);
+	assert.equal(store.getSearchKeyword(), '关键词');
+	assert.equal(
+		JSON.stringify(store.getVisibleTaskRefs().map((ref) => ref.task.id)),
+		'["work-base","personal-base","personal-second"]',
+	);
+	assert.equal(store.getTaskCountForColumn('base'), 2);
+	assert.equal(store.getVisibleTaskCount(), 3);
+	assert.equal(store.lastActionMutatedData, false);
+	store.destroy();
+});
+
+test('creating a task type or quadrant leaves aggregate scope on the new concrete destination', () => {
+	const store = createStore({
+		views: [
+			view('work', '工作', [column('base', '基础')], 0),
+			view('personal', '个人', [column('base', '基础')], 1),
+		],
+		archives: { work: { tasks: [] }, personal: { tasks: [] } },
+	});
+
+	store.dispatch({ type: 'SHOW_ALL_TASKS' });
+	store.dispatch({ type: 'SHOW_ALL_COLUMNS' });
+	store.dispatch({ type: 'ADD_VIEW', payload: { title: '项目' } });
+	assert.equal(store.getTaskScope(), 'current');
+	assert.equal(store.getColumnScope(), 'current');
+	assert.equal(store.getCurrentTaskView().title, '项目');
+
+	store.dispatch({ type: 'SHOW_ALL_COLUMNS' });
+	store.dispatch({ type: 'ADD_COLUMN', payload: { title: '新象限' } });
+	assert.equal(store.getColumnScope(), 'current');
+	assert.equal(store.getActiveColumn().title, '新象限');
+	store.destroy();
+});
+
+test('replacing or clearing board data resets transient aggregate and search scopes', () => {
+	const original = {
+		views: [view('personal', '个人', [column('base', '基础')], 0)],
+		archives: { personal: { tasks: [] } },
+	};
+	const store = createStore(original);
+	store.dispatch({ type: 'SHOW_ALL_TASKS' });
+	store.dispatch({ type: 'SHOW_ALL_COLUMNS' });
+	store.dispatch({ type: 'SET_SEARCH_QUERY', payload: { keyword: '关键词' } });
+
+	store.dispatch({ type: 'SET_BOARD_DATA', payload: { board: structuredClone(original) } });
+	assert.equal(store.getTaskScope(), 'current');
+	assert.equal(store.getColumnScope(), 'current');
+	assert.equal(store.getSearchKeyword(), '');
+
+	store.dispatch({ type: 'SHOW_ALL_TASKS' });
+	store.dispatch({ type: 'SHOW_ALL_COLUMNS' });
+	store.dispatch({ type: 'SET_SEARCH_QUERY', payload: { keyword: '关键词' } });
+	store.dispatch({ type: 'CLEAR_ALL_DATA' });
+	assert.equal(store.getTaskScope(), 'current');
+	assert.equal(store.getColumnScope(), 'current');
+	assert.equal(store.getSearchKeyword(), '');
+	store.destroy();
+});
+
+test('task mutations use an explicit source view without switching the selected task type', () => {
+	const store = createStore(
+		{
+			views: [
+				view('work', '工作', [column('base', '基础', [task('shared', '工作内容')])], 0),
+				view('personal', '个人', [column('base', '基础', [task('shared', '个人内容')])], 1),
+			],
+			archives: { work: { tasks: [] }, personal: { tasks: [] } },
+		},
+		'personal',
+		'base',
+	);
+
+	store.dispatch({
+		type: 'EDIT_TASK',
+		payload: { viewId: 'work', columnId: 'base', taskId: 'shared', content: '工作已修改' },
+	});
+	assert.equal(store.getView('work').columns[0].tasks[0].content, '工作已修改');
+	assert.equal(store.getView('personal').columns[0].tasks[0].content, '个人内容');
+	assert.equal(store.getCurrentView(), 'personal');
+	assert.equal(store.lastMutatedViewId, 'work');
+
+	store.dispatch({
+		type: 'TOGGLE_TASK',
+		payload: { viewId: 'work', columnId: 'base', taskId: 'shared' },
+	});
+	assert.equal(store.getView('work').columns[0].tasks.length, 0);
+	assert.equal(store.getArchive('work')[0].content, '工作已修改');
+	assert.equal(store.getArchive('personal').length, 0);
+	assert.equal(store.lastMutatedViewId, 'work');
+	store.destroy();
+});
+
+test('archive restore and deletion use explicit task type references when ids collide', () => {
+	const archived = (content) => ({
+		...task('same', content),
+		completed: true,
+		sourceColumnId: 'base',
+		archivedAt: '2026-01-02T00:00:00.000Z',
+	});
+	const store = createStore(
+		{
+			views: [
+				view('work', '工作', [column('base', '基础')], 0),
+				view('personal', '个人', [column('base', '基础')], 1),
+			],
+			archives: {
+				work: { tasks: [archived('工作归档')] },
+				personal: { tasks: [archived('个人归档')] },
+			},
+		},
+		'personal',
+		'base',
+	);
+
+	store.dispatch({ type: 'RESTORE_TASK', payload: { viewId: 'work', taskId: 'same' } });
+	assert.equal(store.getView('work').columns[0].tasks[0].content, '工作归档');
+	assert.equal(store.getArchive('personal')[0].content, '个人归档');
+	assert.equal(store.lastMutatedViewId, 'work');
+
+	store.dispatch({
+		type: 'DELETE_ARCHIVE_TASKS',
+		payload: { tasks: [{ viewId: 'personal', taskId: 'same' }] },
+	});
+	assert.equal(store.getArchive('personal').length, 0);
+	store.destroy();
+});
+
 test('editing a task with unchanged content does not bump updatedAt, mark data mutated, or persist', async () => {
 	let saveAttempts = 0;
 	const store = new KanbanStore(

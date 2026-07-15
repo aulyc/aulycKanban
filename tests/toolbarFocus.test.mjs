@@ -119,15 +119,28 @@ function createToolbarHarness() {
 
 	const store = {
 		currentView: 'work',
+		taskScope: 'current',
+		actions: [],
 		getCurrentView() {
 			return this.currentView;
 		},
-		isShowingArchive: () => false,
+		getTaskScope() {
+			return this.taskScope;
+		},
+		isShowingArchive() {
+			return this.taskScope === 'archive';
+		},
+		isShowingAllTasks() {
+			return this.taskScope === 'all';
+		},
 		getTaskViews: () => [
 			{ id: 'work', title: 'Work' },
 			{ id: 'test', title: 'Test' },
 		],
-		dispatch: () => {},
+		dispatch(action) {
+			this.actions.push(action);
+			if (action.type === 'SHOW_ALL_TASKS') this.taskScope = 'all';
+		},
 	};
 	const parent = new MockElement('div', {}, documentRef);
 	const toolbar = new context.module.exports.Toolbar(parent, {}, store);
@@ -137,7 +150,7 @@ function createToolbarHarness() {
 test('task type controls stay out of the native Tab order', () => {
 	const { parent } = createToolbarHarness();
 	const buttons = descendants(parent).filter((element) => element.tagName === 'button');
-	assert.equal(buttons.length, 4);
+	assert.equal(buttons.length, 5);
 	assert.equal(
 		buttons.every((button) => button.attributes.tabindex === '-1'),
 		true,
@@ -159,8 +172,33 @@ test('toolbar icon controls use hidden accessible text without tooltip attribute
 		descendants(parent).filter((element) =>
 			element.classList.contains('aulyckanban-accessible-label'),
 		).length,
-		2,
+		3,
 	);
+});
+
+test('all tasks is a fixed accessible control before the scrollable task type strip', () => {
+	const { parent, store } = createToolbarHarness();
+	const allButton = descendants(parent).find((element) =>
+		element.classList.contains('aulyckanban-all-tasks-btn'),
+	);
+	assert.ok(allButton);
+	assert.equal(allButton.parentElement.classList.contains('aulyckanban-all-tasks-slot'), true);
+
+	allButton.listeners.get('click')[0]({ preventDefault() {}, stopPropagation() {} });
+	assert.equal(store.actions.at(-1).type, 'SHOW_ALL_TASKS');
+});
+
+test('clicking the retained task type exits all-task scope even when its id did not change', () => {
+	const { parent, store, toolbar } = createToolbarHarness();
+	store.taskScope = 'all';
+	toolbar.render();
+	const retainedButton = descendants(parent).find(
+		(element) => element.dataset.viewId === store.currentView,
+	);
+
+	retainedButton.listeners.get('click')[0]({ preventDefault() {}, stopPropagation() {} });
+	assert.equal(store.actions.at(-1).type, 'SWITCH_VIEW');
+	assert.equal(store.actions.at(-1).payload.view, store.currentView);
 });
 
 test('toolbar rerender moves an existing task type focus to the selected task type', () => {

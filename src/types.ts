@@ -82,11 +82,17 @@ export interface PluginData {
 
 /** Store Action（可辨识联合类型，每种操作有独立的 payload 类型） */
 export type Action =
-	| { type: 'ADD_TASK'; payload: { columnId: string; content: string } }
-	| { type: 'EDIT_TASK'; payload: { columnId: string; taskId: string; content: string } }
-	| { type: 'DELETE_TASK'; payload: { columnId: string; taskId: string } }
-	| { type: 'TOGGLE_TASK'; payload: { columnId: string; taskId: string } }
+	| { type: 'ADD_TASK'; payload: { viewId?: ViewKind; columnId: string; content: string } }
+	| {
+			type: 'EDIT_TASK';
+			payload: { viewId?: ViewKind; columnId: string; taskId: string; content: string };
+	  }
+	| { type: 'DELETE_TASK'; payload: { viewId?: ViewKind; columnId: string; taskId: string } }
+	| { type: 'TOGGLE_TASK'; payload: { viewId?: ViewKind; columnId: string; taskId: string } }
 	| { type: 'SWITCH_VIEW'; payload: { view: ViewKind } }
+	| { type: 'SHOW_ALL_TASKS' }
+	| { type: 'SHOW_ALL_COLUMNS' }
+	| { type: 'SET_SEARCH_QUERY'; payload: { keyword: string } }
 	| { type: 'ADD_VIEW'; payload: { title: string } }
 	| { type: 'RENAME_VIEW'; payload: { viewId: ViewKind; title: string } }
 	| { type: 'DELETE_VIEW'; payload: { viewId: ViewKind } }
@@ -96,8 +102,11 @@ export type Action =
 	| { type: 'DELETE_COLUMN'; payload: { columnId: string; moveTasks?: boolean } }
 	| { type: 'REORDER_COLUMNS'; payload: { columnIds: string[] } }
 	| { type: 'TOGGLE_ARCHIVE_VIEW' }
-	| { type: 'RESTORE_TASK'; payload: { taskId: string } }
-	| { type: 'DELETE_ARCHIVE_TASKS'; payload: { taskIds: string[] } }
+	| { type: 'RESTORE_TASK'; payload: { viewId?: ViewKind; taskId: string } }
+	| {
+			type: 'DELETE_ARCHIVE_TASKS';
+			payload: { tasks: Array<{ viewId: ViewKind; taskId: string }> } | { taskIds: string[] };
+	  }
 	| { type: 'SET_BOARD_DATA'; payload: { board: BoardData } }
 	| { type: 'CLEAR_ALL_DATA' }
 	| { type: 'UPDATE_SETTINGS'; payload: Partial<PluginSettings> };

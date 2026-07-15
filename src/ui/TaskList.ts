@@ -1,21 +1,16 @@
 import type { App } from 'obsidian';
-import type { Task } from '../types';
 import type { KanbanStore } from '../store';
-import { TaskCard } from './TaskCard';
+import type { TaskRef } from '../utils/taskQuery';
+import { getTaskRefKey } from '../utils/taskQuery';
 import { t } from '../i18n';
-import { createInlineInput } from './InlineInput';
+import { TaskCard } from './TaskCard';
 
-/**
- * 左侧任务列表组件
- * 显示当前选中象限的输入框和任务卡片
- */
+/** 当前任务范围与象限范围交叉后的未归档任务列表。 */
 export class TaskList {
 	private readonly el: HTMLElement;
 	private readonly app: App;
 	private readonly store: KanbanStore;
-	private readonly inputDraftByColumn = new Map<string, string>();
-	private readonly scrollTopByColumn = new Map<string, number>();
-	/** 按 taskId 缓存已创建的 DOM 元素和快照，避免每次全量重建 */
+	private readonly scrollTopByScope = new Map<string, number>();
 	private cardCache = new Map<string, { el: HTMLElement; snapshot: string }>();
 
 	constructor(parentEl: HTMLElement, app: App, store: KanbanStore) {
@@ -25,112 +20,70 @@ export class TaskList {
 	}
 
 	render(): void {
-		const prevColumnId = this.el.dataset['columnId'] ?? '';
-		const prevInputEl = this.el.querySelector<HTMLTextAreaElement>('.aulyckanban-inline-input');
-		const prevTasksEl = this.el.querySelector<HTMLElement>('.aulyckanban-tasks');
-		const wasInputFocused = document.activeElement === prevInputEl;
-		const selectionStart = prevInputEl?.selectionStart ?? null;
-		const selectionEnd = prevInputEl?.selectionEnd ?? null;
-
-		if (prevColumnId && prevInputEl) {
-			this.inputDraftByColumn.set(prevColumnId, prevInputEl.value);
-		}
-		if (prevColumnId && prevTasksEl) {
-			this.scrollTopByColumn.set(prevColumnId, prevTasksEl.scrollTop);
+		const previousScopeKey = this.el.dataset['scopeKey'] ?? '';
+		const previousTasksEl = this.el.querySelector<HTMLElement>('.aulyckanban-tasks');
+		if (previousScopeKey && previousTasksEl) {
+			this.scrollTopByScope.set(previousScopeKey, previousTasksEl.scrollTop);
 		}
 
 		this.el.empty();
-
-		const column = this.store.getActiveColumn();
-		if (!column) {
+		const scopeKey = this.getScopeKey();
+		this.el.dataset['scopeKey'] = scopeKey;
+		const refs = this.store.getVisibleTaskRefs();
+		if (refs.length === 0) {
 			this.cardCache.clear();
-			this.el.createDiv({ text: t('md.noTasks'), cls: 'aulyckanban-task-list-empty' });
+			this.el.createDiv({
+				text: this.store.getSearchKeyword() ? t('task.search.noMatch') : t('md.noTasks'),
+				cls: 'aulyckanban-task-list-empty',
+			});
 			return;
 		}
-		this.el.dataset['columnId'] = column.id;
-
-		this.buildInlineInput(
-			column.id,
-			this.inputDraftByColumn.get(column.id) ?? '',
-			wasInputFocused && prevColumnId === column.id,
-			selectionStart,
-			selectionEnd,
-		);
 
 		const tasksEl = this.el.createDiv({ cls: 'aulyckanban-tasks' });
-
-		const sortedTasks = [...column.tasks].sort((a: Task, b: Task) => {
-			if (a.completed !== b.completed) return a.completed ? 1 : -1;
-			if (a.completed && b.completed) {
-				const aTime = new Date(a.completedAt ?? a.createdAt).getTime();
-				const bTime = new Date(b.completedAt ?? b.createdAt).getTime();
-				return bTime - aTime;
-			}
-			return 0;
-		});
-
-		const newCache = new Map<string, { el: HTMLElement; snapshot: string }>();
-
-		for (const task of sortedTasks) {
-			const snap = this.taskSnapshot(task, column.id);
-			const cached = this.cardCache.get(task.id);
-
-			if (cached?.snapshot === snap) {
+		const nextCache = new Map<string, { el: HTMLElement; snapshot: string }>();
+		for (const ref of refs) {
+			const key = getTaskRefKey(ref);
+			const sourceLabel = this.getSourceLabel(ref);
+			const snapshot = `${key}|${ref.task.content}|${ref.task.completed}|${ref.task.updatedAt ?? ''}|${ref.task.createdAt}|${sourceLabel ?? ''}`;
+			const cached = this.cardCache.get(key);
+			if (cached?.snapshot === snapshot) {
 				tasksEl.appendChild(cached.el);
-				newCache.set(task.id, cached);
-			} else {
-				const card = new TaskCard(this.app, this.store, column.id, task);
-				const cardEl = card.getEl();
-				tasksEl.appendChild(cardEl);
-				newCache.set(task.id, { el: cardEl, snapshot: snap });
+				nextCache.set(key, cached);
+				continue;
 			}
+			const card = new TaskCard(
+				this.app,
+				this.store,
+				ref.viewId,
+				ref.columnId,
+				ref.task,
+				sourceLabel,
+			);
+			const cardEl = card.getEl();
+			tasksEl.appendChild(cardEl);
+			nextCache.set(key, { el: cardEl, snapshot });
 		}
+		this.cardCache = nextCache;
 
-		this.cardCache = newCache;
-
-		const savedScrollTop = this.scrollTopByColumn.get(column.id);
-		if (savedScrollTop !== undefined) {
-			tasksEl.scrollTop = savedScrollTop;
-		}
+		const savedScrollTop = this.scrollTopByScope.get(scopeKey);
+		if (savedScrollTop !== undefined) tasksEl.scrollTop = savedScrollTop;
 	}
 
-	private taskSnapshot(task: Task, columnId: string): string {
-		return `${columnId}|${task.content}|${task.completed}|${task.updatedAt ?? ''}|${task.createdAt}`;
+	private getScopeKey(): string {
+		return [
+			this.store.getTaskScope(),
+			this.store.getCurrentView(),
+			this.store.getColumnScope(),
+			this.store.getActiveColumnId(),
+			this.store.getSearchKeyword(),
+		].join('|');
 	}
 
-	private buildInlineInput(
-		columnId: string,
-		draft: string,
-		restoreFocus: boolean,
-		selectionStart: number | null,
-		selectionEnd: number | null,
-	): void {
-		const inputWrapper = this.el.createDiv({ cls: 'aulyckanban-inline-input-wrapper' });
-
-		// Enter 提交，Shift+Enter 换行；Tab 由 KanbanView 在三个主要区域间切换。
-		const inputEl = createInlineInput(inputWrapper, {
-			multiline: true,
-			persistent: true,
-			cls: 'aulyckanban-inline-input',
-			placeholder: t('task.inputPlaceholder'),
-			initialValue: draft,
-			focusOnMount: restoreFocus,
-			...(selectionStart !== null && selectionEnd !== null
-				? { selection: { start: selectionStart, end: selectionEnd } }
-				: {}),
-			onInput: (value) => this.inputDraftByColumn.set(columnId, value),
-			onCommit: (value) => {
-				const content = value.trim();
-				if (!content) return;
-				inputEl.value = '';
-				inputEl.style.height = 'auto';
-				this.inputDraftByColumn.set(columnId, '');
-				this.store.dispatch({
-					type: 'ADD_TASK',
-					payload: { columnId, content },
-				});
-			},
-		});
+	private getSourceLabel(ref: TaskRef): string | undefined {
+		const labels: string[] = [];
+		if (this.store.getTaskScope() === 'all') labels.push(ref.viewTitle);
+		if (this.store.getColumnScope() === 'all') labels.push(ref.columnTitle);
+		return labels.length > 0 ? labels.join(' · ') : undefined;
 	}
 
 	getEl(): HTMLElement {

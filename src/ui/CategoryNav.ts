@@ -31,16 +31,33 @@ export class CategoryNav {
 
 		const columns = this.store.getCurrentColumns();
 		const activeId = this.store.getActiveColumnId();
-		const isArchive = this.store.isShowingArchive();
+		const isAllColumns = this.store.isShowingAllColumns();
+
+		const allItemEl = this.el.createDiv({
+			cls: `aulyckanban-nav-item aulyckanban-nav-all-btn ${isAllColumns ? 'aulyckanban-nav-item-active' : ''}`,
+			attr: { tabindex: '-1', role: 'button', 'aria-pressed': String(isAllColumns) },
+		});
+		allItemEl.createSpan({ cls: 'aulyckanban-nav-item-title', text: t('column.all') });
+		allItemEl.createSpan({
+			cls: 'aulyckanban-nav-item-count',
+			text: String(this.store.getVisibleTaskCount()),
+		});
+		const showAllColumns = (event: MouseEvent | KeyboardEvent): void => {
+			event.preventDefault();
+			event.stopPropagation();
+			if (!this.store.isShowingAllColumns()) this.store.dispatch({ type: 'SHOW_ALL_COLUMNS' });
+		};
+		allItemEl.addEventListener('click', showAllColumns);
+		allItemEl.addEventListener('keydown', (event: KeyboardEvent) => {
+			if (event.key === 'Enter' || event.key === ' ') showAllColumns(event);
+		});
 
 		// 分类列表
 		const listEl = this.el.createDiv({ cls: 'aulyckanban-nav-list' });
 
 		for (const column of columns) {
-			const isActive = column.id === activeId;
-			const taskCount = isArchive
-				? this.store.getArchiveTaskCount(column.id)
-				: (column.tasks?.length ?? 0);
+			const isActive = !isAllColumns && column.id === activeId;
+			const taskCount = this.store.getTaskCountForColumn(column.id);
 
 			const itemEl = listEl.createDiv({
 				cls: `aulyckanban-nav-item ${isActive ? 'aulyckanban-nav-item-active' : ''}`,

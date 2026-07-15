@@ -13,6 +13,7 @@ const SYNC_END = '<!-- XAULYC_KANBAN:END -->';
 export class VaultSyncService {
 	private syncTimeout: ReturnType<typeof setTimeout> | null = null;
 	private pendingAllViews = false;
+	private readonly pendingViewIds = new Set<ViewKind>();
 
 	constructor(
 		private readonly vault: Vault,
@@ -20,20 +21,26 @@ export class VaultSyncService {
 	) {}
 
 	scheduleSyncCurrentView(): void {
-		this.scheduleSync(false);
+		this.scheduleSyncView(this.store.getCurrentView());
+	}
+	scheduleSyncView(viewId: ViewKind): void {
+		this.pendingViewIds.add(viewId);
+		this.scheduleSync();
 	}
 	scheduleSyncAllViews(): void {
-		this.scheduleSync(true);
+		this.pendingAllViews = true;
+		this.scheduleSync();
 	}
 
-	private scheduleSync(allViews: boolean): void {
-		if (allViews) this.pendingAllViews = true;
+	private scheduleSync(): void {
 		if (this.syncTimeout) clearTimeout(this.syncTimeout);
 		this.syncTimeout = setTimeout(() => {
 			const syncAll = this.pendingAllViews;
+			const viewIds = [...this.pendingViewIds];
 			this.pendingAllViews = false;
+			this.pendingViewIds.clear();
 			if (syncAll) void this.syncAllViews(true);
-			else void this.syncCurrentView(true);
+			else void this.syncViews(viewIds, true);
 			void this.syncArchive(true);
 			this.syncTimeout = null;
 		}, this.store.getSettings().syncDebounce ?? PERFORMANCE.SYNC_DEBOUNCE);
@@ -45,6 +52,10 @@ export class VaultSyncService {
 
 	private async syncAllViews(silent: boolean): Promise<void> {
 		await Promise.all(this.store.getTaskViews().map((view) => this.syncView(view.id, silent)));
+	}
+
+	private async syncViews(viewIds: readonly ViewKind[], silent: boolean): Promise<void> {
+		await Promise.all(viewIds.map((viewId) => this.syncView(viewId, silent)));
 	}
 
 	private async syncView(viewId: ViewKind, silent: boolean): Promise<void> {
@@ -144,12 +155,14 @@ export class VaultSyncService {
 	flush(): void {
 		const pending = this.syncTimeout !== null;
 		const allViews = this.pendingAllViews;
+		const viewIds = [...this.pendingViewIds];
 		if (this.syncTimeout) clearTimeout(this.syncTimeout);
 		this.syncTimeout = null;
 		this.pendingAllViews = false;
+		this.pendingViewIds.clear();
 		if (!pending) return;
 		if (allViews) void this.syncAllViews(true);
-		else void this.syncCurrentView(true);
+		else void this.syncViews(viewIds, true);
 		void this.syncArchive(true);
 	}
 }

@@ -4,17 +4,20 @@ import { TaskList } from './TaskList';
 import { CategoryNav } from './CategoryNav';
 import { Toolbar } from './Toolbar';
 import { ArchiveView } from './ArchiveView';
+import { TaskControls } from './TaskControls';
 
 /**
  * 看板面板组件
- * 布局：Toolbar + (左侧 TaskList + 右侧 CategoryNav)
- * 归档模式：Toolbar + (左侧 ArchiveView + 右侧 CategoryNav)
+ * 布局：Toolbar + (左侧 TaskControls + TaskList + 右侧 CategoryNav)
+ * 归档模式：左侧保留共享 TaskControls，将 TaskList 切换为 ArchiveView。
  */
 export class Board {
 	private readonly containerEl: HTMLElement;
 	private readonly store: KanbanStore;
 	private readonly toolbar: Toolbar;
 	private readonly contentAreaEl: HTMLElement;
+	private readonly taskPaneEl: HTMLElement;
+	private readonly taskControls: TaskControls;
 	private readonly archiveContainerEl: HTMLElement;
 	private readonly taskList: TaskList;
 	private readonly categoryNav: CategoryNav;
@@ -30,10 +33,12 @@ export class Board {
 
 		// 看板视图容器（左侧任务列表 + 右侧分类导航）
 		this.contentAreaEl = this.containerEl.createDiv({ cls: 'aulyckanban-content-area' });
-		this.taskList = new TaskList(this.contentAreaEl, app, this.store);
+		this.taskPaneEl = this.contentAreaEl.createDiv({ cls: 'aulyckanban-task-pane' });
+		this.taskControls = new TaskControls(this.taskPaneEl, app, this.store);
+		this.taskList = new TaskList(this.taskPaneEl, app, this.store);
 
 		// 归档与普通任务列表共用左侧网格区域
-		this.archiveContainerEl = this.contentAreaEl.createDiv({
+		this.archiveContainerEl = this.taskPaneEl.createDiv({
 			cls: 'aulyckanban-archive-container',
 		});
 		this.archiveContainerEl.setAttribute('tabindex', '-1');
@@ -44,10 +49,11 @@ export class Board {
 
 	render(): void {
 		this.toolbar.render();
+		this.taskControls.render();
 
 		const isArchive = this.store.isShowingArchive();
 		// 归档/看板显隐由 .aulyckanban-mode-archive 对应的 CSS 规则控制
-		this.contentAreaEl.toggleClass('aulyckanban-mode-archive', isArchive);
+		this.taskPaneEl.toggleClass('aulyckanban-mode-archive', isArchive);
 		if (isArchive) this.archiveView.render();
 		else this.taskList.render();
 		this.categoryNav.render();

@@ -11,6 +11,7 @@ class MockElement {
 		this.dataset = {};
 		this.attributes = {};
 		this.listeners = new Map();
+		this.textContent = options.text ?? '';
 		this.classes = new Set(
 			String(options.cls ?? '')
 				.split(/\s+/)
@@ -124,13 +125,21 @@ function createHarness() {
 	};
 	vm.runInNewContext(output, context);
 
-	const card = new context.module.exports.TaskCard({}, { dispatch() {} }, 'column', {
-		id: 'task',
-		content: '测试',
-		completed: false,
-		createdAt: '2026-07-13T12:00:00Z',
-	}).getEl();
-	return { card, documentRef, inlineInputs };
+	const actions = [];
+	const card = new context.module.exports.TaskCard(
+		{},
+		{ dispatch: (action) => actions.push(action) },
+		'work',
+		'column',
+		{
+			id: 'task',
+			content: '测试',
+			completed: false,
+			createdAt: '2026-07-13T12:00:00Z',
+		},
+		'工作任务',
+	).getEl();
+	return { actions, card, documentRef, inlineInputs };
 }
 
 test('first mouse click selects a task and the second click edits it', () => {
@@ -157,4 +166,20 @@ test('Enter edits an already selected task', () => {
 
 	assert.equal(card.classList.contains('aulyckanban-task-editing'), true);
 	assert.equal(inlineInputs.length, 1);
+});
+
+test('aggregate cards display their source and dispatch edits to that exact task type', () => {
+	const { actions, card, documentRef, inlineInputs } = createHarness();
+	const sourceLabel = descendants(card).find((element) =>
+		element.classList.contains('aulyckanban-task-source'),
+	);
+	assert.equal(sourceLabel.textContent, '工作任务');
+	assert.equal(card.dataset.viewId, 'work');
+
+	documentRef.activeElement = card;
+	card.listeners.get('click')[0]({ stopPropagation() {} });
+	inlineInputs[0].onCommit('修改后', 'blur');
+	assert.equal(actions.at(-1).type, 'EDIT_TASK');
+	assert.equal(actions.at(-1).payload.viewId, 'work');
+	assert.equal(actions.at(-1).payload.columnId, 'column');
 });

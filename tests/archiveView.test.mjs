@@ -8,6 +8,7 @@ class MockElement {
 	constructor(tagName, options = {}) {
 		this.tagName = tagName;
 		this.children = [];
+		this.dataset = {};
 		this.listeners = new Map();
 		this.attributes = { ...(options.attr ?? {}) };
 		this.classes = new Set(
@@ -121,10 +122,20 @@ function createHarness() {
 	};
 	const store = {
 		getBoardData: () => boardData,
+		getVisibleTaskRefs: () => [
+			{
+				viewId: 'work',
+				viewTitle: '工作任务',
+				columnId: 'periodic',
+				columnTitle: '周期任务',
+				task,
+			},
+		],
 		getTaskViews: () => [{ id: 'work', title: '工作任务' }],
 		getArchive: () => [task],
 		getActiveColumnId: () => 'periodic',
 		getArchiveColumnId: () => 'periodic',
+		getSearchKeyword: () => '',
 		dispatch: () => {},
 	};
 	const container = new MockElement('div');
@@ -171,6 +182,11 @@ function createHarness() {
 					getArchivedAtTime: () => 1,
 				};
 			}
+			if (id === '../utils/taskQuery') {
+				return {
+					getTaskRefKey: (ref) => `${ref.viewId}:${ref.columnId}:${ref.task.id}`,
+				};
+			}
 			if (id === './InlineInput') {
 				return {
 					createInlineInput: (parent, options) => {
@@ -194,7 +210,7 @@ test('archive browse mode uses one compact toolbar and one-line card metadata', 
 	const { container } = createHarness();
 
 	assert.equal(byClass(container, 'aulyckanban-archive-toolbar-browse').length, 1);
-	assert.equal(byClass(container, 'aulyckanban-archive-search').length, 1);
+	assert.equal(byClass(container, 'aulyckanban-archive-search').length, 0);
 	assert.equal(byClass(container, 'aulyckanban-archive-sort-btn').length, 1);
 	assert.equal(byClass(container, 'aulyckanban-archive-filter-select').length, 0);
 	assert.equal(byClass(container, 'aulyckanban-archive-select-mode-btn').length, 1);

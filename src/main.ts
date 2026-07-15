@@ -6,20 +6,7 @@ import { KanbanSettingTab } from './ui/KanbanSettingTab';
 import { KanbanStore } from './store';
 import { VaultSyncService } from './services/syncService';
 import { PluginDataRepository } from './services/repository';
-import type { ActionType } from './types';
-
-/** 会同时影响全部任务类型的操作 */
-const MULTI_VIEW_MUTATION_ACTIONS: ReadonlySet<ActionType> = new Set([
-	'ADD_VIEW',
-	'RENAME_VIEW',
-	'DELETE_VIEW',
-	'ADD_COLUMN',
-	'RENAME_COLUMN',
-	'DELETE_COLUMN',
-	'REORDER_COLUMNS',
-	'SET_BOARD_DATA',
-	'CLEAR_ALL_DATA',
-]);
+import { getMutationSyncTarget } from './utils/syncTarget';
 
 export default class KanbanPlugin extends Plugin {
 	store: KanbanStore;
@@ -46,10 +33,16 @@ export default class KanbanPlugin extends Plugin {
 			if (!this.store.lastActionMutatedData) return;
 
 			const actionType = this.store.lastActionType;
-			if (actionType && MULTI_VIEW_MUTATION_ACTIONS.has(actionType)) {
+			if (!actionType) return;
+			const target = getMutationSyncTarget(
+				actionType,
+				this.store.getCurrentView(),
+				this.store.lastMutatedViewId,
+			);
+			if (target.kind === 'all') {
 				this.syncService.scheduleSyncAllViews();
 			} else {
-				this.syncService.scheduleSyncCurrentView();
+				this.syncService.scheduleSyncView(target.viewId);
 			}
 		});
 

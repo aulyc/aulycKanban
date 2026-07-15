@@ -17,19 +17,31 @@ export class TaskCard {
 	private readonly el: HTMLElement;
 	private readonly app: App;
 	private readonly store: KanbanStore;
+	private readonly viewId: string;
 	private readonly columnId: string;
 	private readonly task: Task;
+	private readonly sourceLabel?: string;
 
-	constructor(app: App, store: KanbanStore, columnId: string, task: Task) {
+	constructor(
+		app: App,
+		store: KanbanStore,
+		viewId: string,
+		columnId: string,
+		task: Task,
+		sourceLabel?: string,
+	) {
 		this.app = app;
 		this.store = store;
+		this.viewId = viewId;
 		this.columnId = columnId;
 		this.task = task;
+		this.sourceLabel = sourceLabel;
 
 		this.el = document.createElement('div');
 		this.el.className = `aulyckanban-task${task.completed ? ' aulyckanban-task-completed' : ''}`;
 		this.el.tabIndex = -1;
 		this.el.setAttribute('role', 'button');
+		this.el.dataset['viewId'] = viewId;
 		this.el.dataset['taskId'] = task.id;
 		this.el.dataset['columnId'] = columnId;
 
@@ -67,6 +79,9 @@ export class TaskCard {
 
 		// 底部信息行：时间（左） + 操作图标（右）
 		const metaRowEl = middleEl.createDiv({ cls: 'aulyckanban-task-meta-row' });
+		if (this.sourceLabel) {
+			metaRowEl.createDiv({ cls: 'aulyckanban-task-source', text: this.sourceLabel });
+		}
 		const timeEl = metaRowEl.createDiv({ cls: 'aulyckanban-task-time' });
 		timeEl.setText(formatDateTimeMinute(task.updatedAt ?? task.createdAt));
 
@@ -83,7 +98,11 @@ export class TaskCard {
 				onConfirm: () =>
 					this.store.dispatch({
 						type: 'TOGGLE_TASK',
-						payload: { columnId: this.columnId, taskId: this.task.id },
+						payload: {
+							viewId: this.viewId,
+							columnId: this.columnId,
+							taskId: this.task.id,
+						},
 					}),
 			}).open();
 		});
@@ -101,7 +120,11 @@ export class TaskCard {
 				onConfirm: () =>
 					this.store.dispatch({
 						type: 'DELETE_TASK',
-						payload: { columnId: this.columnId, taskId: this.task.id },
+						payload: {
+							viewId: this.viewId,
+							columnId: this.columnId,
+							taskId: this.task.id,
+						},
 					}),
 			}).open();
 		});
@@ -147,7 +170,12 @@ export class TaskCard {
 
 		this.store.dispatch({
 			type: 'EDIT_TASK',
-			payload: { columnId: this.columnId, taskId: this.task.id, content },
+			payload: {
+				viewId: this.viewId,
+				columnId: this.columnId,
+				taskId: this.task.id,
+				content,
+			},
 		});
 		if (restoreCardFocus) this.focusCardAfterRender();
 	}
@@ -157,7 +185,12 @@ export class TaskCard {
 		requestAnimationFrame(() => {
 			const card = Array.from(
 				boardEl?.querySelectorAll<HTMLElement>('.aulyckanban-task') ?? [],
-			).find((item) => item.dataset['taskId'] === this.task.id);
+			).find(
+				(item) =>
+					item.dataset['viewId'] === this.viewId &&
+					item.dataset['columnId'] === this.columnId &&
+					item.dataset['taskId'] === this.task.id,
+			);
 			card?.focus({ preventScroll: true });
 			card?.scrollIntoView({ block: 'nearest' });
 		});
