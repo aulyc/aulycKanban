@@ -38,19 +38,20 @@ npm run dev
 npm run build
 ```
 
-发布前完整验证：
+日常检查和本地 CI-equivalent 门禁：
 
 ```bash
-npm run release:verify
+npm run check
+npm run ci
 ```
 
-安装到本机正式 Vault：
+标签前 production 候选门禁（要求工作区 clean，不创建标签）：
 
 ```bash
-npm run install:prod
+npm run release:check
 ```
 
-默认安装到 `/Users/crp/Documents/Obsidian_Vault`，只覆盖 `main.js`、`manifest.json`、`styles.css`，不会覆盖运行数据 `data.json`。如需临时安装到其他 Vault，可设置 `OBSIDIAN_VAULT_PATH`。
+正式安装只接受显式传入且已验证的版本化 ZIP 和对应 `*.release-provenance.json`，不直接安装当前工作区 `dist/`，也不硬编码默认 Vault。安装器只覆盖 `main.js`、`manifest.json`、`styles.css`，并保留 `data.json` 和其他用户运行数据。完整命令见 [VERSIONING.md](VERSIONING.md)。
 
 使用已注册的官方 Obsidian CLI 进行真实运行冒烟验证：
 
@@ -58,17 +59,17 @@ npm run install:prod
 npm run smoke:obsidian
 ```
 
-该命令默认连接当前活动 Vault，依次重载插件、核对实际版本和启用状态、打开看板、确认看板 DOM 已渲染，并检查运行时错误。需要指定其他 Vault 时设置 `OBSIDIAN_VAULT_NAME`：
+该命令通过当前活动 Vault 的实际安装 manifest 获取期望插件 ID/版本，依次重载插件、核对启用状态和真实加载版本、验证命令与看板 DOM，并检查新运行时错误。需要指定其他 Vault 时设置 `OBSIDIAN_VAULT_NAME`：
 
 ```bash
 OBSIDIAN_VAULT_NAME="My Vault" npm run smoke:obsidian
 ```
 
-Obsidian CLI 仅用于本机开发验证，不属于插件运行时依赖，也不能替代单元测试、构建和移动端验证。
+Obsidian CLI 仅用于本机开发验证，不属于插件运行时依赖。插件声明支持移动端，因此桌面 smoke 不能替代单元测试、构建和移动端兼容性验证。
 
 ## 版本与发版
 
-项目使用标准 SemVer，支持 `alpha.N`、`beta.N`、`rc.N` 测试版本。版本准备、发布提交、裸版本标签和测试版/正式版流程见 [VERSIONING.md](VERSIONING.md)。
+项目使用 `release-version.json` 作为版本与构建号的唯一权威来源，采用标准 SemVer，支持 `alpha.N`、`beta.N`、`rc.N` 测试版本。新发布使用与版本完全一致的 annotated tag；历史标签保持只读。版本准备、隔离 tag 构建、ZIP/provenance 和测试版/正式版流程见 [VERSIONING.md](VERSIONING.md)。
 
 ## 可用命令（Command Palette）
 
