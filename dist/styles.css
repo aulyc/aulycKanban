@@ -28,6 +28,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	--aulyckanban-content-padding-left: 12px;
 	--aulyckanban-content-padding-right: 12px;
 	--aulyckanban-content-gap: 6px;
+	--aulyckanban-task-content-inset: 4px;
 	--aulyckanban-nav-width: 150px;
 	--aulyckanban-nav-inner-padding-x: 6px;
 	--aulyckanban-selection-border: var(--text-on-accent);
@@ -280,6 +281,8 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	flex-direction: column;
 	min-width: 0;
 	min-height: 0;
+	box-sizing: border-box;
+	padding-inline: var(--aulyckanban-task-content-inset);
 	overflow: hidden;
 }
 
@@ -304,7 +307,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	flex-direction: column;
 	gap: 8px;
 	min-width: 0;
-	padding: 0 4px 10px;
+	padding: 0 0 10px;
 }
 
 .aulyckanban-task-search-shell {
@@ -505,7 +508,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
-	padding: 0 4px;
+	padding: 0;
 	box-sizing: border-box;
 	background: var(--background-primary);
 	border-radius: 8px;
@@ -956,12 +959,12 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 .aulyckanban-archive-list {
 	display: flex;
 	flex-direction: column;
-	padding: 0 12px;
+	padding: 0;
 }
 
 .aulyckanban-archive-controls {
 	margin-bottom: 10px;
-	padding: 0 12px;
+	padding: 0;
 }
 
 .aulyckanban-archive-toolbar {

@@ -37,9 +37,15 @@ class MockElement {
 }
 
 const source = readFileSync(new URL('../src/ui/Board.ts', import.meta.url), 'utf8');
+const css = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
 const output = ts.transpileModule(source, {
 	compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
 }).outputText;
+
+function rule(selector) {
+	const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+	return css.match(new RegExp(`(?:^|})\\s*${escaped}\\s*\\{([^}]*)\\}`, 'm'))?.[1] ?? '';
+}
 
 test('shared search and add controls stay above both normal and archive task results', () => {
 	const instances = new Map();
@@ -93,4 +99,18 @@ test('shared search and add controls stay above both normal and archive task res
 	assert.equal(instances.get('controls').renderCount, 2);
 	assert.equal(instances.get('archive').renderCount, 1);
 	assert.equal(taskPane.classes.has('aulyckanban-mode-archive'), true);
+});
+
+test('normal and archive task components share one horizontal content edge', () => {
+	const root = rule('.aulyckanban-kanban-container');
+	assert.match(root, /--aulyckanban-task-content-inset:\s*4px/);
+
+	const pane = rule('.aulyckanban-task-pane');
+	assert.match(pane, /box-sizing:\s*border-box/);
+	assert.match(pane, /padding-inline:\s*var\(--aulyckanban-task-content-inset\)/);
+
+	assert.match(rule('.aulyckanban-task-controls'), /padding:\s*0 0 10px/);
+	assert.match(rule('.aulyckanban-task-list'), /padding:\s*0/);
+	assert.match(rule('.aulyckanban-archive-controls'), /padding:\s*0/);
+	assert.match(rule('.aulyckanban-archive-list'), /padding:\s*0/);
 });
