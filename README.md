@@ -27,6 +27,8 @@
 
 ## 开发与构建
 
+开发环境需要 Node.js 18 或更高版本。
+
 ```bash
 npm install
 npm run dev
