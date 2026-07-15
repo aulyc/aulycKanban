@@ -41,9 +41,14 @@ npm run build
 日常检查和本地 CI-equivalent 门禁：
 
 ```bash
+npm run format
+npm run format:check
+npm run lint
 npm run check
 npm run ci
 ```
+
+`npm run format` 使用 Prettier 写入统一格式；`npm run format:check` 和 ESLint 均已纳入 `npm run check`，因此也会被 `npm run ci` 与标签前候选门禁覆盖。
 
 标签前 production 候选门禁（要求工作区 clean，不创建标签）：
 

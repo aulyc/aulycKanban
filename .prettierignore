@@ -1,0 +1,8 @@
+node_modules/
+main.js
+dist/main.js
+release-artifacts/
+coverage/
+.cache/
+.claude/
+.codex/

@@ -32,10 +32,7 @@ export class BackupService {
 			const blob = new Blob([jsonStr], { type: 'application/json' });
 			const url = URL.createObjectURL(blob);
 
-			const timestamp = new Date()
-				.toISOString()
-				.replace(/[:.]/g, '-')
-				.slice(0, -5);
+			const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
 			const filename = `aulyckanban-backup-${timestamp}.json`;
 
 			const a = document.createElement('a');

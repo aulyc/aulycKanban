@@ -3,7 +3,8 @@ import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 
-const VERSION_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
+const VERSION_PATTERN =
+	/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
 const MIGRATION_VERSION = '2.1.19';
 const DERIVED_VERSION_FILES = [
 	'package.json',
@@ -127,7 +128,7 @@ async function loadVersionFiles(rootDir) {
 		readJson(paths.manifest),
 		readJson(paths.versions),
 	]);
-	const distManifest = await fileExists(paths.distManifest)
+	const distManifest = (await fileExists(paths.distManifest))
 		? await readJson(paths.distManifest)
 		: null;
 	return { paths, packageJson, lock, manifest, versions, distManifest };

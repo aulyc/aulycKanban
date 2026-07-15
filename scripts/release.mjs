@@ -9,7 +9,8 @@ import { buildFromExactTag } from './release-from-tag.mjs';
 
 function parseArguments(argv) {
 	const [channel, ...rest] = argv;
-	if (!['test', 'formal'].includes(channel)) throw new Error('Release channel must be test or formal');
+	if (!['test', 'formal'].includes(channel))
+		throw new Error('Release channel must be test or formal');
 	const values = { channel };
 	const allowed = new Set(['output-dir', 'vault']);
 	for (let index = 0; index < rest.length; index += 1) {
@@ -74,7 +75,9 @@ async function main() {
 		outputDir: args['output-dir'],
 		vaultPath: args.vault,
 	});
-	console.log(`[release] Completed ${result.installed.provenance.releaseChannel} local-vault release`);
+	console.log(
+		`[release] Completed ${result.installed.provenance.releaseChannel} local-vault release`,
+	);
 }
 
 const entryPath = process.argv[1] ? pathToFileURL(path.resolve(process.argv[1])).href : '';

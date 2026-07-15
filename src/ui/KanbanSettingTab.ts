@@ -107,7 +107,9 @@ export class KanbanSettingTab extends PluginSettingTab {
 			payload: (filePath) => ({ archive: { filePath } }),
 		});
 
-		const hintEl = containerEl.createDiv({ cls: 'setting-item-description aulyckanban-settings-hint' });
+		const hintEl = containerEl.createDiv({
+			cls: 'setting-item-description aulyckanban-settings-hint',
+		});
 		hintEl.setText(`💡 ${t('settings.sync.hint')}`);
 	}
 
@@ -131,9 +133,8 @@ export class KanbanSettingTab extends PluginSettingTab {
 					.setValue(opts.currentPath)
 					.onChange(async (value) => {
 						const normalized = value.trim() ? normalizePath(value.trim()) : '';
-						const isDuplicate = normalized && opts.otherPaths.some(
-							(p) => p && normalized === normalizePath(p),
-						);
+						const isDuplicate =
+							normalized && opts.otherPaths.some((p) => p && normalized === normalizePath(p));
 						if (isDuplicate) {
 							new Notice(t('settings.sync.duplicateError'));
 							return;
@@ -143,7 +144,7 @@ export class KanbanSettingTab extends PluginSettingTab {
 							payload: opts.payload(normalized),
 						});
 						// 保存失败时 persistData 已提示用户并安排重试
-						await this.plugin.store.saveNow().catch(() => {});
+						await this.plugin.store.saveNow().catch(() => undefined);
 					});
 				this.attachFileSuggest(text.inputEl);
 			});

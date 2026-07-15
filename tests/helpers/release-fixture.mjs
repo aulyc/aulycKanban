@@ -48,7 +48,7 @@ export async function createReleaseFixture({
 		scripts: {
 			'version:check': 'node -e ""',
 			'build:production': dirtyBuild
-				? 'node -e "require(\'fs\').writeFileSync(\'dirty.txt\', \'dirty\')"'
+				? "node -e \"require('fs').writeFileSync('dirty.txt', 'dirty')\""
 				: 'node -e ""',
 			'artifact:verify': 'node -e ""',
 		},
@@ -62,7 +62,8 @@ export async function createReleaseFixture({
 	};
 	await Promise.all([
 		writeJson(path.join(rootDir, 'release-version.json'), {
-			version: '2.1.19', buildNumber: 0,
+			version: '2.1.19',
+			buildNumber: 0,
 		}),
 		writeJson(path.join(rootDir, 'package.json'), packageJson),
 		writeJson(path.join(rootDir, 'package-lock.json'), lock),
@@ -87,7 +88,8 @@ export async function createReleaseFixture({
 		writeJson(path.join(rootDir, 'package.json'), packageJson),
 		writeJson(path.join(rootDir, 'package-lock.json'), lock),
 		writeJson(path.join(rootDir, 'versions.json'), {
-			'2.1.19': '1.5.0', [version]: '1.5.0',
+			'2.1.19': '1.5.0',
+			[version]: '1.5.0',
 		}),
 		writeFile(
 			path.join(rootDir, 'CHANGELOG.md'),

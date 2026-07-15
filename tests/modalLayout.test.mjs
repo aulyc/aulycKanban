@@ -9,14 +9,9 @@ const confirmModalSource = readFileSync(
 );
 
 test('confirmation dialogs use the dedicated compact modal layout', () => {
-	assert.match(
-		confirmModalSource,
-		/modalEl\.addClass\('aulyckanban-confirm-modal'\)/,
-	);
+	assert.match(confirmModalSource, /modalEl\.addClass\('aulyckanban-confirm-modal'\)/);
 
-	const declarations = css.match(
-		/\.modal\.aulyckanban-confirm-modal\s*\{([^}]*)\}/,
-	)?.[1] ?? '';
+	const declarations = css.match(/\.modal\.aulyckanban-confirm-modal\s*\{([^}]*)\}/)?.[1] ?? '';
 	assert.match(declarations, /width:\s*min\(360px,\s*calc\(100vw\s*-\s*32px\)\)/);
 	assert.match(declarations, /min-width:\s*0/);
 	assert.match(declarations, /min-height:\s*0/);

@@ -4,11 +4,11 @@
    ================================================ */
 
 /* 重置 Obsidian 默认间距，消除顶部多余空白 */
-.workspace-leaf-content[data-type="aulyckanban-view"] .view-header {
+.workspace-leaf-content[data-type='aulyckanban-view'] .view-header {
 	display: none;
 }
 
-.workspace-leaf-content[data-type="aulyckanban-view"] .view-content {
+.workspace-leaf-content[data-type='aulyckanban-view'] .view-content {
 	padding: 0 !important;
 }
 
@@ -79,8 +79,6 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	padding-left: 0;
 	border-left: 0;
 }
-
-
 
 .aulyckanban-tab {
 	appearance: none;
@@ -157,8 +155,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 }
 
 /* 新增控件接管工具栏的视觉选中，避免与当前任务类型同时呈紫色。 */
-.aulyckanban-toolbar:has(.aulyckanban-view-add-btn:focus)
-	.aulyckanban-tab.aulyckanban-tab-active,
+.aulyckanban-toolbar:has(.aulyckanban-view-add-btn:focus) .aulyckanban-tab.aulyckanban-tab-active,
 .aulyckanban-toolbar:has(.aulyckanban-view-add-btn:focus-visible)
 	.aulyckanban-tab.aulyckanban-tab-active,
 .aulyckanban-toolbar:has(.aulyckanban-view-inline-input:focus)
@@ -190,14 +187,18 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	color: var(--text-normal);
 }
 
-.aulyckanban-kanban-container .aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active:hover {
+.aulyckanban-kanban-container
+	.aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active:hover {
 	background: color-mix(in srgb, var(--color-orange) 54%, var(--background-primary));
 }
 
 /* 新增任务类型接管焦点时，归档退回非激活语义色，而不是普通按钮灰色。 */
-.aulyckanban-toolbar:has(.aulyckanban-view-add-btn:focus) .aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active,
-.aulyckanban-toolbar:has(.aulyckanban-view-add-btn:focus-visible) .aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active,
-.aulyckanban-toolbar:has(.aulyckanban-view-inline-input:focus) .aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active {
+.aulyckanban-toolbar:has(.aulyckanban-view-add-btn:focus)
+	.aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active,
+.aulyckanban-toolbar:has(.aulyckanban-view-add-btn:focus-visible)
+	.aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active,
+.aulyckanban-toolbar:has(.aulyckanban-view-inline-input:focus)
+	.aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active {
 	background: color-mix(in srgb, var(--color-orange) 16%, var(--interactive-normal));
 	border-color: color-mix(in srgb, var(--color-orange) 38%, var(--background-modifier-border));
 	color: var(--color-orange);
@@ -249,7 +250,8 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	column-gap: var(--aulyckanban-content-gap);
 	flex: 1;
 	min-height: 0;
-	padding: var(--aulyckanban-content-padding-y) var(--aulyckanban-content-padding-right) var(--aulyckanban-content-padding-y) var(--aulyckanban-content-padding-left);
+	padding: var(--aulyckanban-content-padding-y) var(--aulyckanban-content-padding-right)
+		var(--aulyckanban-content-padding-y) var(--aulyckanban-content-padding-left);
 	overflow: hidden;
 }
 
@@ -398,23 +400,23 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 }
 
 /* 新增控件接管象限区的视觉选中，原业务选中只保留在数据状态中。 */
-.aulyckanban-category-nav:has(.aulyckanban-nav-add-btn:focus)
-	.aulyckanban-nav-item-active,
-.aulyckanban-category-nav:has(.aulyckanban-nav-add-btn:focus-visible)
-	.aulyckanban-nav-item-active,
-.aulyckanban-category-nav:has(.aulyckanban-nav-inline-input:focus)
-	.aulyckanban-nav-item-active {
+.aulyckanban-category-nav:has(.aulyckanban-nav-add-btn:focus) .aulyckanban-nav-item-active,
+.aulyckanban-category-nav:has(.aulyckanban-nav-add-btn:focus-visible) .aulyckanban-nav-item-active,
+.aulyckanban-category-nav:has(.aulyckanban-nav-inline-input:focus) .aulyckanban-nav-item-active {
 	background: transparent;
 	color: var(--text-normal);
 	border-color: transparent;
 }
 
 .aulyckanban-category-nav:has(.aulyckanban-nav-add-btn:focus)
-	.aulyckanban-nav-item-active .aulyckanban-nav-item-count,
+	.aulyckanban-nav-item-active
+	.aulyckanban-nav-item-count,
 .aulyckanban-category-nav:has(.aulyckanban-nav-add-btn:focus-visible)
-	.aulyckanban-nav-item-active .aulyckanban-nav-item-count,
+	.aulyckanban-nav-item-active
+	.aulyckanban-nav-item-count,
 .aulyckanban-category-nav:has(.aulyckanban-nav-inline-input:focus)
-	.aulyckanban-nav-item-active .aulyckanban-nav-item-count {
+	.aulyckanban-nav-item-active
+	.aulyckanban-nav-item-count {
 	color: var(--text-muted);
 	opacity: 1;
 }
@@ -466,7 +468,9 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 }
 
 @keyframes aulyckanban-blink {
-	50% { caret-color: transparent; }
+	50% {
+		caret-color: transparent;
+	}
 }
 
 .aulyckanban-nav-add-input-wrapper {
@@ -570,7 +574,6 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	color: var(--text-error);
 	transform: scale(1.15);
 }
-
 
 /* ==================== 任务内容 ==================== */
 .aulyckanban-task-content {

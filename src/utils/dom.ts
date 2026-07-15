@@ -47,11 +47,12 @@ export function autoResizeTextarea(textarea: HTMLTextAreaElement): () => void {
 	const resize = (): void => {
 		textarea.style.height = 'auto';
 		const style = getComputedStyle(textarea);
-		textarea.style.height = getTextareaBorderBoxHeight(
-			textarea.scrollHeight,
-			style.borderTopWidth,
-			style.borderBottomWidth,
-		) + 'px';
+		textarea.style.height =
+			getTextareaBorderBoxHeight(
+				textarea.scrollHeight,
+				style.borderTopWidth,
+				style.borderBottomWidth,
+			) + 'px';
 	};
 	requestAnimationFrame(resize);
 	textarea.addEventListener('input', resize);

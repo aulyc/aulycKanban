@@ -59,8 +59,8 @@ test('task arrow navigation excludes hidden archive cards', () => {
 	assert.equal(items.length, 1);
 	assert.equal(items[0], visibleInput);
 	assert.deepEqual(selectors, [
-		'.aulyckanban-task-list .aulyckanban-inline-input, '
-			+ '.aulyckanban-task-list .aulyckanban-task',
+		'.aulyckanban-task-list .aulyckanban-inline-input, ' +
+			'.aulyckanban-task-list .aulyckanban-task',
 	]);
 });
 
@@ -89,11 +89,14 @@ test('orphaned Tab uses the fallback only for the active kanban view', () => {
 	};
 
 	assert.equal(shouldUseTabFocusFallback(base), true);
-	assert.equal(shouldUseTabFocusFallback({
-		...base,
-		activeElementIsInsideView: false,
-		documentLevelTarget: true,
-	}), true);
+	assert.equal(
+		shouldUseTabFocusFallback({
+			...base,
+			activeElementIsInsideView: false,
+			documentLevelTarget: true,
+		}),
+		true,
+	);
 	assert.equal(shouldUseTabFocusFallback({ ...base, viewIsActive: false }), false);
 });
 
@@ -108,11 +111,14 @@ test('Tab fallback leaves normal view events and external controls alone', () =>
 	};
 
 	assert.equal(shouldUseTabFocusFallback({ ...base, eventPathIncludesView: true }), false);
-	assert.equal(shouldUseTabFocusFallback({
-		...base,
-		activeElementIsInsideView: false,
-		documentLevelTarget: false,
-	}), false);
+	assert.equal(
+		shouldUseTabFocusFallback({
+			...base,
+			activeElementIsInsideView: false,
+			documentLevelTarget: false,
+		}),
+		false,
+	);
 	assert.equal(shouldUseTabFocusFallback({ ...base, defaultPrevented: true }), false);
 	assert.equal(shouldUseTabFocusFallback({ ...base, key: 'Enter' }), false);
 });
@@ -135,13 +141,9 @@ test('add and archive are the fixed last task type navigation items', () => {
 	const afterLastView = getTaskTypeNavigationTarget(['work', 'personal'], 'personal', false, 1);
 	assert.equal(afterLastView?.kind, 'add');
 
-	const afterAdd = getTaskTypeNavigationTarget(
-		['work', 'personal'],
-		'personal',
-		false,
-		1,
-		{ kind: 'add' },
-	);
+	const afterAdd = getTaskTypeNavigationTarget(['work', 'personal'], 'personal', false, 1, {
+		kind: 'add',
+	});
 	assert.equal(afterAdd?.kind, 'archive');
 
 	const afterArchive = getTaskTypeNavigationTarget(['work', 'personal'], 'work', true, 1);
@@ -151,12 +153,8 @@ test('add and archive are the fixed last task type navigation items', () => {
 	const beforeFirstView = getTaskTypeNavigationTarget(['work', 'personal'], 'work', false, -1);
 	assert.equal(beforeFirstView?.kind, 'archive');
 
-	const beforeArchive = getTaskTypeNavigationTarget(
-		['work', 'personal'],
-		'personal',
-		true,
-		-1,
-		{ kind: 'archive' },
-	);
+	const beforeArchive = getTaskTypeNavigationTarget(['work', 'personal'], 'personal', true, -1, {
+		kind: 'archive',
+	});
 	assert.equal(beforeArchive?.kind, 'add');
 });

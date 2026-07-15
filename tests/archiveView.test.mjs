@@ -10,7 +10,11 @@ class MockElement {
 		this.children = [];
 		this.listeners = new Map();
 		this.attributes = { ...(options.attr ?? {}) };
-		this.classes = new Set(String(options.cls ?? '').split(/\s+/).filter(Boolean));
+		this.classes = new Set(
+			String(options.cls ?? '')
+				.split(/\s+/)
+				.filter(Boolean),
+		);
 		this.textContent = options.text ?? '';
 		this.value = '';
 		this.checked = false;
@@ -107,11 +111,13 @@ function createHarness() {
 		archivedAt: '2026-07-12T21:10:00Z',
 	};
 	const boardData = {
-		views: [{
-			id: 'work',
-			title: '工作任务',
-			columns: [{ id: 'periodic', title: '周期任务' }],
-		}],
+		views: [
+			{
+				id: 'work',
+				title: '工作任务',
+				columns: [{ id: 'periodic', title: '周期任务' }],
+			},
+		],
 	};
 	const store = {
 		getBoardData: () => boardData,
@@ -133,27 +139,30 @@ function createHarness() {
 		document: documentRef,
 		Element: MockElement,
 		require: (id) => {
-		if (id === 'obsidian') {
+			if (id === 'obsidian') {
 				return {
-					setIcon: (element, icon) => { element.icon = icon; },
+					setIcon: (element, icon) => {
+						element.icon = icon;
+					},
 				};
 			}
 			if (id === '../i18n') {
 				return {
-					t: (key) => key === 'archive.delete.selectedCount'
-						? '已选 {count} 项'
-						: key,
+					t: (key) => (key === 'archive.delete.selectedCount' ? '已选 {count} 项' : key),
 				};
 			}
 			if (id === './ConfirmModal') return { ConfirmModal: class {} };
 			if (id === '../utils/datetime') return { formatDateTimeMinute: () => '2026/07/12 21:10' };
 			if (id === '../utils/dom') {
 				return {
-					appendAccessibleLabel: (element, text) => element.createSpan({
-						cls: 'aulyckanban-accessible-label',
-						text,
-					}),
-					setTextWithLineBreaks: (element, value) => { element.textContent = value; },
+					appendAccessibleLabel: (element, text) =>
+						element.createSpan({
+							cls: 'aulyckanban-accessible-label',
+							text,
+						}),
+					setTextWithLineBreaks: (element, value) => {
+						element.textContent = value;
+					},
 				};
 			}
 			if (id === '../utils/task') {
@@ -203,12 +212,18 @@ test('archive sort button toggles newest and oldest order without a select menu'
 	assert.equal(newestFirstButton.icon, 'arrow-down');
 	assert.equal(newestFirstButton.attributes['aria-label'], undefined);
 	assert.equal(newestFirstButton.attributes.title, undefined);
-	assert.equal(byClass(newestFirstButton, 'aulyckanban-accessible-label')[0].textContent, 'archive.sort.newest');
+	assert.equal(
+		byClass(newestFirstButton, 'aulyckanban-accessible-label')[0].textContent,
+		'archive.sort.newest',
+	);
 	newestFirstButton.listeners.get('click')[0]();
 
 	const oldestFirstButton = byClass(container, 'aulyckanban-archive-sort-btn')[0];
 	assert.equal(oldestFirstButton.icon, 'arrow-up');
-	assert.equal(byClass(oldestFirstButton, 'aulyckanban-accessible-label')[0].textContent, 'archive.sort.oldest');
+	assert.equal(
+		byClass(oldestFirstButton, 'aulyckanban-accessible-label')[0].textContent,
+		'archive.sort.oldest',
+	);
 });
 
 test('archive selection mode replaces browse controls and hides restore actions', () => {
@@ -225,13 +240,17 @@ test('archive selection mode replaces browse controls and hides restore actions'
 });
 
 test('archive selection mode has one explicit delete path and an unboxed toolbar', () => {
-	assert.doesNotMatch(source, /showFilteredDeleteMenu|archive\.delete\.filtered|archive\.confirm\.deleteFiltered/);
+	assert.doesNotMatch(
+		source,
+		/showFilteredDeleteMenu|archive\.delete\.filtered|archive\.confirm\.deleteFiltered/,
+	);
 
 	const toolbarRule = css.match(/\.aulyckanban-archive-toolbar-selection\s*\{([^}]*)\}/)?.[1] ?? '';
 	assert.match(toolbarRule, /border:\s*0;/);
 	assert.match(toolbarRule, /background:\s*transparent;/);
 
-	const disabledDeleteRule = css.match(/\.aulyckanban-archive-delete-selected-btn:disabled\s*\{([^}]*)\}/)?.[1] ?? '';
+	const disabledDeleteRule =
+		css.match(/\.aulyckanban-archive-delete-selected-btn:disabled\s*\{([^}]*)\}/)?.[1] ?? '';
 	assert.match(disabledDeleteRule, /border-color:\s*var\(--background-modifier-border\);/);
 	assert.match(disabledDeleteRule, /background:\s*var\(--interactive-normal\);/);
 });
@@ -243,6 +262,9 @@ test('clicking an archive card selects the whole card and updates the selected c
 	card.listeners.get('click')[0]({ target: card });
 
 	assert.equal(byClass(container, 'aulyckanban-archive-task-selected').length, 1);
-	assert.equal(byClass(container, 'aulyckanban-archive-selected-count')[0].textContent, '已选 1 项');
+	assert.equal(
+		byClass(container, 'aulyckanban-archive-selected-count')[0].textContent,
+		'已选 1 项',
+	);
 	assert.equal(byClass(container, 'aulyckanban-archive-delete-selected-btn')[0].disabled, false);
 });

@@ -94,9 +94,7 @@ test('fails when Obsidian captures a runtime error', () => {
 
 test('post-install smoke derives expected identity from the actual installed manifest', () => {
 	const vaultPath = mkdtempSync(path.join(os.tmpdir(), 'aulyckanban-smoke-vault-'));
-	const manifestPath = path.join(
-		vaultPath, '.obsidian', 'plugins', 'aulyckanban', 'manifest.json',
-	);
+	const manifestPath = path.join(vaultPath, '.obsidian', 'plugins', 'aulyckanban', 'manifest.json');
 	try {
 		mkdirSync(path.dirname(manifestPath), { recursive: true });
 		writeFileSync(manifestPath, `${JSON.stringify(manifest)}\n`);

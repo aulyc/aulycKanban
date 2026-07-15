@@ -9,7 +9,11 @@ class MockElement {
 		this.children = [];
 		this.dataset = {};
 		this.attributes = { ...(options.attr ?? {}) };
-		this.classes = new Set(String(options.cls ?? '').split(/\s+/).filter(Boolean));
+		this.classes = new Set(
+			String(options.cls ?? '')
+				.split(/\s+/)
+				.filter(Boolean),
+		);
 		this.textContent = options.text ?? '';
 		this.listeners = new Map();
 		this.classList = { contains: (value) => this.classes.has(value) };
@@ -80,7 +84,8 @@ function createCategoryNavHarness() {
 		exports: module.exports,
 		require: (id) => {
 			if (id === 'obsidian') return { Menu: class {} };
-			if (id === '../i18n') return { t: (key) => key === 'column.addPrompt' ? '输入新象限名称' : key };
+			if (id === '../i18n')
+				return { t: (key) => (key === 'column.addPrompt' ? '输入新象限名称' : key) };
 			if (id === './ConfirmModal') return { ConfirmModal: class {} };
 			if (id === './InlineInput') {
 				return {
@@ -89,10 +94,11 @@ function createCategoryNavHarness() {
 			}
 			if (id === '../utils/dom') {
 				return {
-					appendAccessibleLabel: (element, text) => element.createSpan({
-						cls: 'aulyckanban-accessible-label',
-						text,
-					}),
+					appendAccessibleLabel: (element, text) =>
+						element.createSpan({
+							cls: 'aulyckanban-accessible-label',
+							text,
+						}),
 				};
 			}
 			throw new Error(`Unexpected import: ${id}`);
@@ -115,25 +121,28 @@ function createCategoryNavHarness() {
 test('category add control has an accessible name without tooltip attributes', () => {
 	const { parent } = createCategoryNavHarness();
 	const nav = parent.children[0];
-	const initialAddButton = descendants(nav).find((element) => (
-		element.classList.contains('aulyckanban-nav-add-btn')
-	));
+	const initialAddButton = descendants(nav).find((element) =>
+		element.classList.contains('aulyckanban-nav-add-btn'),
+	);
 	assert.equal(initialAddButton.attributes['aria-label'], undefined);
 	assert.equal(initialAddButton.attributes.title, undefined);
-	const accessibleLabel = descendants(initialAddButton).find((element) => (
-		element.classList.contains('aulyckanban-accessible-label')
-	));
+	const accessibleLabel = descendants(initialAddButton).find((element) =>
+		element.classList.contains('aulyckanban-accessible-label'),
+	);
 	assert.equal(accessibleLabel.textContent, '输入新象限名称');
 
 	const keydown = initialAddButton.listeners.get('keydown')[0];
 	keydown({ key: 'Enter', preventDefault() {}, stopPropagation() {} });
 
-	const editingAddContainer = descendants(nav).find((element) => (
-		element.classList.contains('aulyckanban-nav-add-btn')
-	));
+	const editingAddContainer = descendants(nav).find((element) =>
+		element.classList.contains('aulyckanban-nav-add-btn'),
+	);
 	assert.equal(editingAddContainer.attributes['aria-label'], undefined);
 	assert.equal(editingAddContainer.attributes.role, undefined);
-	assert.equal(editingAddContainer.children[0].classList.contains('aulyckanban-nav-inline-input'), true);
+	assert.equal(
+		editingAddContainer.children[0].classList.contains('aulyckanban-nav-inline-input'),
+		true,
+	);
 });
 
 test('transient editor focus suppresses only the visual selection without a JS state class', () => {
@@ -147,12 +156,13 @@ test('transient editor focus suppresses only the visual selection without a JS s
 
 test('inline quadrant input uses the same one-pixel accent border as task editing', () => {
 	const css = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
-	const inputRule = css.match(
-		/\.aulyckanban-kanban-container \.aulyckanban-nav-inline-input\s*\{([^}]*)\}/,
-	)?.[1] ?? '';
-	const inputFocusRule = css.match(
-		/\.aulyckanban-kanban-container \.aulyckanban-nav-inline-input:focus\s*\{([^}]*)\}/,
-	)?.[1] ?? '';
+	const inputRule =
+		css.match(/\.aulyckanban-kanban-container \.aulyckanban-nav-inline-input\s*\{([^}]*)\}/)?.[1] ??
+		'';
+	const inputFocusRule =
+		css.match(
+			/\.aulyckanban-kanban-container \.aulyckanban-nav-inline-input:focus\s*\{([^}]*)\}/,
+		)?.[1] ?? '';
 	const taskRule = css.match(/\.aulyckanban-task\s*\{([^}]*)\}/)?.[1] ?? '';
 
 	assert.match(inputRule, /border:\s*1px solid var\(--interactive-accent\)/);

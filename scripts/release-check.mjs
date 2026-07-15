@@ -11,7 +11,8 @@ export async function checkRelease(rootDir = process.cwd()) {
 	const releaseChannel = getReleaseChannel(releaseVersion.version);
 	if (!releaseChannel) throw new Error(`Unsupported release version: ${releaseVersion.version}`);
 	const { manifest } = await verifyDistArtifacts({ rootDir });
-	if (manifest.version !== releaseVersion.version) throw new Error('Candidate manifest version drift');
+	if (manifest.version !== releaseVersion.version)
+		throw new Error('Candidate manifest version drift');
 	return {
 		version: releaseVersion.version,
 		buildNumber: releaseVersion.buildNumber,
@@ -21,7 +22,11 @@ export async function checkRelease(rootDir = process.cwd()) {
 
 function runCi(rootDir) {
 	const command = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-	const result = spawnSync(command, ['run', 'ci'], { cwd: rootDir, encoding: 'utf8', stdio: 'inherit' });
+	const result = spawnSync(command, ['run', 'ci'], {
+		cwd: rootDir,
+		encoding: 'utf8',
+		stdio: 'inherit',
+	});
 	if (result.error) throw result.error;
 	if (result.status !== 0) throw new Error(`CI-equivalent gate failed with exit ${result.status}`);
 }

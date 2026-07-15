@@ -12,7 +12,11 @@ class MockElement {
 		this.children = [];
 		this.dataset = {};
 		this.attributes = { ...(options?.attr ?? {}) };
-		this.classes = new Set(String(options?.cls ?? '').split(/\s+/).filter(Boolean));
+		this.classes = new Set(
+			String(options?.cls ?? '')
+				.split(/\s+/)
+				.filter(Boolean),
+		);
 		this.textContent = options?.text ?? '';
 		this.listeners = new Map();
 		this.classList = {
@@ -100,10 +104,11 @@ function createToolbarHarness() {
 			if (id === '../utils/focusCycle') return { revealTaskTypeItem: () => {} };
 			if (id === '../utils/dom') {
 				return {
-					appendAccessibleLabel: (element, text) => element.createSpan({
-						cls: 'aulyckanban-accessible-label',
-						text,
-					}),
+					appendAccessibleLabel: (element, text) =>
+						element.createSpan({
+							cls: 'aulyckanban-accessible-label',
+							text,
+						}),
 				};
 			}
 			if (id === 'obsidian') return { Menu: class {}, setIcon: () => {} };
@@ -114,7 +119,9 @@ function createToolbarHarness() {
 
 	const store = {
 		currentView: 'work',
-		getCurrentView() { return this.currentView; },
+		getCurrentView() {
+			return this.currentView;
+		},
 		isShowingArchive: () => false,
 		getTaskViews: () => [
 			{ id: 'work', title: 'Work' },
@@ -131,18 +138,27 @@ test('task type controls stay out of the native Tab order', () => {
 	const { parent } = createToolbarHarness();
 	const buttons = descendants(parent).filter((element) => element.tagName === 'button');
 	assert.equal(buttons.length, 4);
-	assert.equal(buttons.every((button) => button.attributes.tabindex === '-1'), true);
+	assert.equal(
+		buttons.every((button) => button.attributes.tabindex === '-1'),
+		true,
+	);
 });
 
 test('toolbar icon controls use hidden accessible text without tooltip attributes', () => {
 	const { parent } = createToolbarHarness();
 	const buttons = descendants(parent).filter((element) => element.tagName === 'button');
-	assert.equal(buttons.every((button) => button.attributes['aria-label'] === undefined), true);
-	assert.equal(buttons.every((button) => button.attributes.title === undefined), true);
 	assert.equal(
-		descendants(parent).filter((element) => (
-			element.classList.contains('aulyckanban-accessible-label')
-		)).length,
+		buttons.every((button) => button.attributes['aria-label'] === undefined),
+		true,
+	);
+	assert.equal(
+		buttons.every((button) => button.attributes.title === undefined),
+		true,
+	);
+	assert.equal(
+		descendants(parent).filter((element) =>
+			element.classList.contains('aulyckanban-accessible-label'),
+		).length,
 		2,
 	);
 });

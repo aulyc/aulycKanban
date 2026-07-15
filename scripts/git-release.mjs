@@ -41,7 +41,9 @@ export function verifyAnnotatedTag({ repoDir, tag, expectedVersion = tag, expect
 	}
 	const releaseVersion = readJsonAtCommit(repoDir, commit, 'release-version.json');
 	if (!releaseVersion || releaseVersion.version !== expectedVersion) {
-		throw new Error(`Tag version mismatch at ${tag}: release-version.json is not ${expectedVersion}`);
+		throw new Error(
+			`Tag version mismatch at ${tag}: release-version.json is not ${expectedVersion}`,
+		);
 	}
 	if (!Number.isInteger(releaseVersion.buildNumber) || releaseVersion.buildNumber <= 0) {
 		throw new Error(`Tagged releases require a positive integer buildNumber: ${tag}`);
@@ -49,7 +51,12 @@ export function verifyAnnotatedTag({ repoDir, tag, expectedVersion = tag, expect
 	return { tag, type: 'annotated', commit, releaseVersion };
 }
 
-export function validateBuildNumberHistory({ repoDir, version, buildNumber, currentTag = null } = {}) {
+export function validateBuildNumberHistory({
+	repoDir,
+	version,
+	buildNumber,
+	currentTag = null,
+} = {}) {
 	if (!Number.isInteger(buildNumber) || buildNumber <= 0) {
 		throw new Error('A future test or formal release requires a positive integer buildNumber');
 	}
@@ -60,7 +67,8 @@ export function validateBuildNumberHistory({ repoDir, version, buildNumber, curr
 		if (commitResult.status !== 0) continue;
 		const tagged = readJsonAtCommit(repoDir, commitResult.stdout.trim(), 'release-version.json');
 		if (!tagged || !Number.isInteger(tagged.buildNumber) || tagged.buildNumber <= 0) continue;
-		if (tag === currentTag && tagged.version === version && tagged.buildNumber === buildNumber) continue;
+		if (tag === currentTag && tagged.version === version && tagged.buildNumber === buildNumber)
+			continue;
 		if (tagged.buildNumber === buildNumber) {
 			throw new Error(`buildNumber ${buildNumber} was already used by tag ${tag}`);
 		}
@@ -78,9 +86,9 @@ export async function verifyReleaseMetadataCommit(repoDir, version) {
 	if (subject !== `chore: release ${version}`) {
 		throw new Error(`Release commit subject must be: chore: release ${version}`);
 	}
-	const changed = runGit(repoDir, [
-		'diff-tree', '--no-commit-id', '--name-only', '-r', 'HEAD',
-	]).stdout.split(/\r?\n/u).filter(Boolean);
+	const changed = runGit(repoDir, ['diff-tree', '--no-commit-id', '--name-only', '-r', 'HEAD'])
+		.stdout.split(/\r?\n/u)
+		.filter(Boolean);
 	const allowed = new Set([
 		'CHANGELOG.md',
 		'dist/manifest.json',

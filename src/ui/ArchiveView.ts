@@ -35,7 +35,9 @@ export class ArchiveView {
 
 	render(): void {
 		const prevListEl = this.containerEl.querySelector<HTMLElement>('.aulyckanban-archive-list');
-		const prevSearchInput = this.containerEl.querySelector<HTMLInputElement>('.aulyckanban-archive-search');
+		const prevSearchInput = this.containerEl.querySelector<HTMLInputElement>(
+			'.aulyckanban-archive-search',
+		);
 		const restoreSearchFocus = document.activeElement === prevSearchInput;
 		const searchSelectionStart = prevSearchInput?.selectionStart ?? null;
 		const searchSelectionEnd = prevSearchInput?.selectionEnd ?? null;
@@ -134,9 +136,8 @@ export class ArchiveView {
 			cls: 'aulyckanban-archive-sort-btn',
 			attr: { type: 'button' },
 		});
-		const sortLabel = this.sortOrder === 'desc'
-			? t('archive.sort.newest')
-			: t('archive.sort.oldest');
+		const sortLabel =
+			this.sortOrder === 'desc' ? t('archive.sort.newest') : t('archive.sort.oldest');
 		setIcon(sortBtn, this.sortOrder === 'desc' ? 'arrow-down' : 'arrow-up');
 		appendAccessibleLabel(sortBtn, sortLabel);
 		sortBtn.addEventListener('click', () => {
@@ -162,8 +163,8 @@ export class ArchiveView {
 	): void {
 		const filteredIds = filteredItems.map((item) => item.task.id);
 		const selectedCount = this.selectedTaskIds.size;
-		const allFilteredSelected = filteredIds.length > 0
-			&& filteredIds.every((id) => this.selectedTaskIds.has(id));
+		const allFilteredSelected =
+			filteredIds.length > 0 && filteredIds.every((id) => this.selectedTaskIds.has(id));
 		const someFilteredSelected = filteredIds.some((id) => this.selectedTaskIds.has(id));
 		const toolbarEl = controlsEl.createDiv({
 			cls: 'aulyckanban-archive-toolbar aulyckanban-archive-toolbar-selection',
@@ -236,9 +237,11 @@ export class ArchiveView {
 		task: Task;
 		viewKind: ViewKind;
 	}> {
-		return this.store.getTaskViews().flatMap((view) =>
-			this.store.getArchive(view.id).map((task) => ({ task, viewKind: view.id })),
-		);
+		return this.store
+			.getTaskViews()
+			.flatMap((view) =>
+				this.store.getArchive(view.id).map((task) => ({ task, viewKind: view.id })),
+			);
 	}
 
 	private applyFilters(
@@ -261,7 +264,9 @@ export class ArchiveView {
 		return filtered;
 	}
 
-	private syncSelectionWithFiltered(filteredItems: Array<{ task: Task; viewKind: ViewKind }>): void {
+	private syncSelectionWithFiltered(
+		filteredItems: Array<{ task: Task; viewKind: ViewKind }>,
+	): void {
 		if (!this.deleteMode) return;
 		const validIds = new Set(filteredItems.map((item) => item.task.id));
 		for (const id of Array.from(this.selectedTaskIds)) {
@@ -295,7 +300,9 @@ export class ArchiveView {
 				'aulyckanban-archive-task',
 				this.deleteMode ? 'aulyckanban-archive-task-selecting' : '',
 				isSelected ? 'aulyckanban-archive-task-selected' : '',
-			].filter(Boolean).join(' '),
+			]
+				.filter(Boolean)
+				.join(' '),
 		});
 		if (this.deleteMode) {
 			cardEl.setAttribute('role', 'checkbox');
@@ -342,10 +349,11 @@ export class ArchiveView {
 				new ConfirmModal(this.app, {
 					message: t('archive.confirm.restore'),
 					// RESTORE_TASK 会在全部任务类型的归档中定位任务并还原到原视图，无需先切换视图
-					onConfirm: () => this.store.dispatch({
-						type: 'RESTORE_TASK',
-						payload: { taskId: task.id },
-					}),
+					onConfirm: () =>
+						this.store.dispatch({
+							type: 'RESTORE_TASK',
+							payload: { taskId: task.id },
+						}),
 				}).open();
 			});
 		}

@@ -8,13 +8,17 @@ function escapeRegExp(value) {
 	return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function selectorPattern(selector) {
+	return selector.trim().split(/\s+/).map(escapeRegExp).join('\\s+');
+}
+
 function rule(selector) {
-	return css.match(new RegExp(`${escapeRegExp(selector)}\\s*\\{([^}]*)\\}`))?.[1] ?? '';
+	return css.match(new RegExp(`${selectorPattern(selector)}\\s*\\{([^}]*)\\}`))?.[1] ?? '';
 }
 
 function combinedRule(selectors) {
-	const selectorPattern = selectors.map(escapeRegExp).join('\\s*,\\s*');
-	return css.match(new RegExp(`${selectorPattern}\\s*\\{([^}]*)\\}`))?.[1] ?? '';
+	const selectorsPattern = selectors.map(selectorPattern).join('\\s*,\\s*');
+	return css.match(new RegExp(`${selectorsPattern}\\s*\\{([^}]*)\\}`))?.[1] ?? '';
 }
 
 test('business selection keeps its fill but never owns the white focus border', () => {
@@ -63,16 +67,14 @@ test('archive control has no separator and uses a semantic archive color', () =>
 	assert.match(slot, /padding-left:\s*0/);
 	assert.match(slot, /border-left:\s*0/);
 
-	const button = rule(
-		'.aulyckanban-kanban-container .aulyckanban-tab.aulyckanban-archive-btn',
-	);
+	const button = rule('.aulyckanban-kanban-container .aulyckanban-tab.aulyckanban-archive-btn');
 	assert.match(button, /background:\s*color-mix\([^;]*var\(--color-orange\)/);
 	assert.match(button, /border-color:\s*color-mix\([^;]*var\(--color-orange\)/);
 	assert.match(button, /color:\s*var\(--color-orange\)/);
 
 	const active = rule(
-		'.aulyckanban-kanban-container '
-			+ '.aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active',
+		'.aulyckanban-kanban-container ' +
+			'.aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active',
 	);
 	assert.match(active, /background:\s*color-mix\([^;]*var\(--color-orange\)/);
 	assert.match(active, /border-color:\s*var\(--color-orange\)/);
@@ -88,12 +90,12 @@ test('task type add glyph is optically centered', () => {
 
 test('add focus demotes active archive to its inactive semantic color', () => {
 	const declarations = combinedRule([
-		'.aulyckanban-toolbar:has(.aulyckanban-view-add-btn:focus) '
-			+ '.aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active',
-		'.aulyckanban-toolbar:has(.aulyckanban-view-add-btn:focus-visible) '
-			+ '.aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active',
-		'.aulyckanban-toolbar:has(.aulyckanban-view-inline-input:focus) '
-			+ '.aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active',
+		'.aulyckanban-toolbar:has(.aulyckanban-view-add-btn:focus) ' +
+			'.aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active',
+		'.aulyckanban-toolbar:has(.aulyckanban-view-add-btn:focus-visible) ' +
+			'.aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active',
+		'.aulyckanban-toolbar:has(.aulyckanban-view-inline-input:focus) ' +
+			'.aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active',
 	]);
 
 	assert.match(declarations, /background:\s*color-mix\([^;]*var\(--color-orange\) 16%/);
@@ -119,9 +121,10 @@ test('add buttons and editors use their own real focus for the white border', ()
 });
 
 test('task type add focus owns the only purple selection in the toolbar', () => {
-	const suppressionRule = css.match(
-		/\.aulyckanban-toolbar:has\(\.aulyckanban-view-add-btn:focus\)\s+\.aulyckanban-tab\.aulyckanban-tab-active,[\s\S]*?\.aulyckanban-toolbar:has\(\.aulyckanban-view-inline-input:focus\)\s+\.aulyckanban-tab\.aulyckanban-tab-active\s*\{([^}]*)\}/,
-	)?.[1] ?? '';
+	const suppressionRule =
+		css.match(
+			/\.aulyckanban-toolbar:has\(\.aulyckanban-view-add-btn:focus\)\s+\.aulyckanban-tab\.aulyckanban-tab-active,[\s\S]*?\.aulyckanban-toolbar:has\(\.aulyckanban-view-inline-input:focus\)\s+\.aulyckanban-tab\.aulyckanban-tab-active\s*\{([^}]*)\}/,
+		)?.[1] ?? '';
 
 	assert.notEqual(suppressionRule, '');
 	assert.match(suppressionRule, /background:\s*var\(--interactive-normal\)/);
@@ -130,9 +133,10 @@ test('task type add focus owns the only purple selection in the toolbar', () => 
 });
 
 test('quadrant add focus owns the only purple selection in category navigation', () => {
-	const suppressionRule = css.match(
-		/\.aulyckanban-category-nav:has\(\.aulyckanban-nav-add-btn:focus\)\s+\.aulyckanban-nav-item-active,[\s\S]*?\.aulyckanban-category-nav:has\(\.aulyckanban-nav-inline-input:focus\)\s+\.aulyckanban-nav-item-active\s*\{([^}]*)\}/,
-	)?.[1] ?? '';
+	const suppressionRule =
+		css.match(
+			/\.aulyckanban-category-nav:has\(\.aulyckanban-nav-add-btn:focus\)\s+\.aulyckanban-nav-item-active,[\s\S]*?\.aulyckanban-category-nav:has\(\.aulyckanban-nav-inline-input:focus\)\s+\.aulyckanban-nav-item-active\s*\{([^}]*)\}/,
+		)?.[1] ?? '';
 
 	assert.notEqual(suppressionRule, '');
 	assert.match(suppressionRule, /background:\s*transparent/);
@@ -141,7 +145,9 @@ test('quadrant add focus owns the only purple selection in category navigation',
 });
 
 test('every white selection border reference belongs to a focus selector', () => {
-	const rules = [...css.matchAll(/([^{}]+)\{([^{}]*var\(--aulyckanban-selection-border\)[^{}]*)\}/g)];
+	const rules = [
+		...css.matchAll(/([^{}]+)\{([^{}]*var\(--aulyckanban-selection-border\)[^{}]*)\}/g),
+	];
 	assert.ok(rules.length > 0);
 	for (const [, selectorList] of rules) {
 		for (const selector of selectorList.split(',')) {
@@ -152,7 +158,10 @@ test('every white selection border reference belongs to a focus selector', () =>
 
 test('focus styling has no board-level marker or cross-zone exception', () => {
 	assert.doesNotMatch(css, /aulyckanban-view-add-focused/);
-	assert.doesNotMatch(css, /\.aulyckanban-toolbar:has\([^)]*:focus[^)]*\)\s*\+\s*\.aulyckanban-content-area/);
+	assert.doesNotMatch(
+		css,
+		/\.aulyckanban-toolbar:has\([^)]*:focus[^)]*\)\s*\+\s*\.aulyckanban-content-area/,
+	);
 });
 
 test('task editing remains a one-pixel accent state distinct from keyboard focus', () => {

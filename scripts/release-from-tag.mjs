@@ -8,7 +8,8 @@ import { assertCleanGit, runGit, verifyAnnotatedTag } from './git-release.mjs';
 function run(command, args, cwd) {
 	const result = spawnSync(command, args, { cwd, encoding: 'utf8', stdio: 'inherit' });
 	if (result.error) throw result.error;
-	if (result.status !== 0) throw new Error(`${command} ${args.join(' ')} failed with exit ${result.status}`);
+	if (result.status !== 0)
+		throw new Error(`${command} ${args.join(' ')} failed with exit ${result.status}`);
 }
 
 export async function buildFromExactTag({ repoDir, tag, outputDir, expectedChannel } = {}) {
@@ -27,7 +28,12 @@ export async function buildFromExactTag({ repoDir, tag, outputDir, expectedChann
 		run('npm', ['run', 'build:production'], worktreeDir);
 		run('npm', ['run', 'artifact:verify'], worktreeDir);
 		assertCleanGit(worktreeDir, 'isolated tagged source after build');
-		return await buildReleaseArtifact({ repoDir, sourceDir: worktreeDir, outputDir, expectedChannel });
+		return await buildReleaseArtifact({
+			repoDir,
+			sourceDir: worktreeDir,
+			outputDir,
+			expectedChannel,
+		});
 	} finally {
 		if (worktreeAdded) {
 			runGit(repoDir, ['worktree', 'remove', '--force', worktreeDir], { allowFailure: true });

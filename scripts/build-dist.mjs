@@ -1,15 +1,15 @@
-import { cp, mkdir, readFile, rm } from "node:fs/promises";
-import path from "node:path";
-import process from "node:process";
+import { cp, mkdir, readFile, rm } from 'node:fs/promises';
+import path from 'node:path';
+import process from 'node:process';
 
 const rootDir = process.cwd();
-const distDir = path.join(rootDir, "dist");
+const distDir = path.join(rootDir, 'dist');
 
-const manifestPath = path.join(rootDir, "manifest.json");
-const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
-const pluginId = manifest.id ?? "plugin";
+const manifestPath = path.join(rootDir, 'manifest.json');
+const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+const pluginId = manifest.id ?? 'plugin';
 
-const filesToCopy = ["main.js", "manifest.json", "styles.css"];
+const filesToCopy = ['main.js', 'manifest.json', 'styles.css'];
 
 await rm(distDir, { recursive: true, force: true });
 await mkdir(distDir, { recursive: true });

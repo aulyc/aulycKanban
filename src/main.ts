@@ -32,10 +32,7 @@ export default class KanbanPlugin extends Plugin {
 		initI18n(this.getLocale());
 
 		// 初始化仓储并加载持久化数据
-		this.repository = new PluginDataRepository(
-			this.loadData.bind(this),
-			this.saveData.bind(this),
-		);
+		this.repository = new PluginDataRepository(this.loadData.bind(this), this.saveData.bind(this));
 		const { settings, board } = await this.repository.load();
 
 		// 初始化 Store
@@ -57,10 +54,7 @@ export default class KanbanPlugin extends Plugin {
 		});
 
 		// 注册自定义视图
-		this.registerView(
-			VIEW_TYPE_KANBAN,
-			(leaf: WorkspaceLeaf) => new KanbanView(leaf, this),
-		);
+		this.registerView(VIEW_TYPE_KANBAN, (leaf: WorkspaceLeaf) => new KanbanView(leaf, this));
 
 		// 添加 Ribbon 图标（左侧栏）
 		this.addRibbonIcon('list-todo', t('plugin.ribbonTip'), () => {
@@ -120,8 +114,8 @@ export default class KanbanPlugin extends Plugin {
 		const appWithConfig = this.app as unknown as {
 			vault?: { getConfig?: (key: string) => unknown };
 		};
-		const configLocale = appWithConfig.vault?.getConfig?.('language')
-			?? appWithConfig.vault?.getConfig?.('locale');
+		const configLocale =
+			appWithConfig.vault?.getConfig?.('language') ?? appWithConfig.vault?.getConfig?.('locale');
 		if (typeof configLocale === 'string' && configLocale) {
 			return configLocale;
 		}
@@ -177,10 +171,7 @@ export default class KanbanPlugin extends Plugin {
 	 */
 	async persistData(notifyFailure = true): Promise<void> {
 		try {
-			await this.repository.save(
-				this.store.getSettings(),
-				this.store.getBoardData(),
-			);
+			await this.repository.save(this.store.getSettings(), this.store.getBoardData());
 		} catch (error) {
 			console.error('[aulyckanban] Failed to save data:', error);
 			// 同一轮自动重试只在首次失败时提示，避免重复 Notice 干扰用户。

@@ -22,7 +22,7 @@ export function getNextFocusZone(
 	current: KanbanFocusZone | null,
 	reverse = false,
 ): KanbanFocusZone {
-	if (current === null) return reverse ? FOCUS_ORDER[FOCUS_ORDER.length - 1] ?? 'view' : 'view';
+	if (current === null) return reverse ? (FOCUS_ORDER[FOCUS_ORDER.length - 1] ?? 'view') : 'view';
 	const index = FOCUS_ORDER.indexOf(current);
 	const offset = reverse ? -1 : 1;
 	return FOCUS_ORDER[(index + offset + FOCUS_ORDER.length) % FOCUS_ORDER.length] ?? 'view';
@@ -33,24 +33,28 @@ export function getNextFocusZone(
  * 看板内部事件仍交给原监听器；弹窗、编辑器和侧栏控件不会被接管。
  */
 export function shouldUseTabFocusFallback(context: TabFocusFallbackContext): boolean {
-	return context.key === 'Tab'
-		&& !context.defaultPrevented
-		&& context.viewIsActive
-		&& !context.eventPathIncludesView
-		&& (context.activeElementIsInsideView || context.documentLevelTarget);
+	return (
+		context.key === 'Tab' &&
+		!context.defaultPrevented &&
+		context.viewIsActive &&
+		!context.eventPathIncludesView &&
+		(context.activeElementIsInsideView || context.documentLevelTarget)
+	);
 }
 
 /** 获取普通任务区的首个焦点目标，避免命中隐藏归档区复用的任务样式。 */
 export function getTaskZoneFocusTarget(root: ParentNode): HTMLElement | null {
-	return root.querySelector<HTMLElement>(TASK_ZONE_TASK_SELECTOR)
-		?? root.querySelector<HTMLElement>(TASK_ZONE_INPUT_SELECTOR);
+	return (
+		root.querySelector<HTMLElement>(TASK_ZONE_TASK_SELECTOR) ??
+		root.querySelector<HTMLElement>(TASK_ZONE_INPUT_SELECTOR)
+	);
 }
 
 /** 获取普通任务区的方向键目标，排除隐藏归档卡片。 */
 export function getTaskZoneNavigationItems(root: ParentNode): HTMLElement[] {
-	return Array.from(root.querySelectorAll<HTMLElement>(
-		`${TASK_ZONE_INPUT_SELECTOR}, ${TASK_ZONE_TASK_SELECTOR}`,
-	));
+	return Array.from(
+		root.querySelectorAll<HTMLElement>(`${TASK_ZONE_INPUT_SELECTOR}, ${TASK_ZONE_TASK_SELECTOR}`),
+	);
 }
 
 /** 计算方向键循环选择时的目标下标。 */
@@ -106,13 +110,14 @@ export function getTaskTypeNavigationTarget(
 		{ kind: 'archive' },
 	];
 	const currentIndex = focusedTarget
-		? navigationItems.findIndex((item) => (
-			item.kind === focusedTarget.kind
-			&& (item.kind !== 'view' || focusedTarget.kind !== 'view' || item.id === focusedTarget.id)
-		))
+		? navigationItems.findIndex(
+				(item) =>
+					item.kind === focusedTarget.kind &&
+					(item.kind !== 'view' || focusedTarget.kind !== 'view' || item.id === focusedTarget.id),
+			)
 		: showingArchive
 			? navigationItems.length - 1
 			: navigationItems.findIndex((item) => item.kind === 'view' && item.id === currentViewId);
 	const targetIndex = getWrappedItemIndex(currentIndex, navigationItems.length, offset);
-	return targetIndex >= 0 ? navigationItems[targetIndex] ?? null : null;
+	return targetIndex >= 0 ? (navigationItems[targetIndex] ?? null) : null;
 }

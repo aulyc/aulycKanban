@@ -22,9 +22,7 @@ test('board UI contains no tooltip-triggering attributes or APIs', () => {
 
 test('icon controls keep accessible text visually hidden', () => {
 	const css = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
-	const declarations = css.match(
-		/\.aulyckanban-accessible-label\s*\{([^}]*)\}/,
-	)?.[1] ?? '';
+	const declarations = css.match(/\.aulyckanban-accessible-label\s*\{([^}]*)\}/)?.[1] ?? '';
 
 	assert.match(declarations, /position:\s*absolute/);
 	assert.match(declarations, /clip-path:\s*inset\(50%\)/);

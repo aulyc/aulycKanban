@@ -16,8 +16,19 @@ import {
 import { createZipBuffer, readZipEntries } from './zip.mjs';
 
 const PROVENANCE_KEYS = [
-	'releaseProfile', 'releaseChannel', 'version', 'buildNumber', 'tag', 'commit', 'dirty',
-	'pluginId', 'minAppVersion', 'isDesktopOnly', 'distribution', 'artifact', 'files',
+	'releaseProfile',
+	'releaseChannel',
+	'version',
+	'buildNumber',
+	'tag',
+	'commit',
+	'dirty',
+	'pluginId',
+	'minAppVersion',
+	'isDesktopOnly',
+	'distribution',
+	'artifact',
+	'files',
 ];
 
 function sameNames(actual, expected) {
@@ -52,14 +63,16 @@ export async function verifyReleaseArtifact({
 	sourceDir,
 } = {}) {
 	if (!zipPath || !provenancePath) throw new Error('Both ZIP and release provenance are required');
-	if (path.extname(zipPath).toLowerCase() !== '.zip') throw new Error('Release artifact must be a ZIP file');
+	if (path.extname(zipPath).toLowerCase() !== '.zip')
+		throw new Error('Release artifact must be a ZIP file');
 	if (!provenancePath.endsWith('.release-provenance.json')) {
 		throw new Error('Release provenance must use the *.release-provenance.json suffix');
 	}
 	const provenance = await readJson(provenancePath);
 	assertExactKeys(provenance, PROVENANCE_KEYS, 'release provenance');
 	assertExactKeys(provenance.artifact, ['file', 'sha256'], 'release provenance artifact');
-	if (!Array.isArray(provenance.files)) throw new Error('release provenance files must be an array');
+	if (!Array.isArray(provenance.files))
+		throw new Error('release provenance files must be an array');
 	const tagInfo = verifyAnnotatedTag({
 		repoDir,
 		tag: provenance.tag,
@@ -119,7 +132,8 @@ export async function verifyReleaseArtifact({
 	if (sourceDir) {
 		assertCleanGit(sourceDir, 'isolated tagged source');
 		const head = runGit(sourceDir, ['rev-parse', 'HEAD']).stdout.trim();
-		if (head !== tagInfo.commit) throw new Error('Isolated source commit does not match release tag');
+		if (head !== tagInfo.commit)
+			throw new Error('Isolated source commit does not match release tag');
 		const source = await verifyDistArtifacts({ rootDir: sourceDir });
 		for (const file of source.files) {
 			const archived = entries.find((entry) => entry.name === file.file);
@@ -131,7 +145,12 @@ export async function verifyReleaseArtifact({
 	return { provenance, manifest, entries, tagInfo };
 }
 
-export async function buildReleaseArtifact({ repoDir, sourceDir, outputDir, expectedChannel } = {}) {
+export async function buildReleaseArtifact({
+	repoDir,
+	sourceDir,
+	outputDir,
+	expectedChannel,
+} = {}) {
 	assertCleanGit(sourceDir, 'isolated tagged source before packaging');
 	const sourceCommit = runGit(sourceDir, ['rev-parse', 'HEAD']).stdout.trim();
 	const releaseVersion = await readReleaseVersion(sourceDir);
@@ -188,8 +207,11 @@ async function main() {
 	const rootDir = process.cwd();
 	const result = await verifyDistArtifacts({ rootDir });
 	const releaseVersion = await readReleaseVersion(rootDir);
-	if (result.manifest.version !== releaseVersion.version) throw new Error('Dist version drift detected');
-	console.log(`[artifact] Verified candidate files for ${result.manifest.id} ${result.manifest.version}`);
+	if (result.manifest.version !== releaseVersion.version)
+		throw new Error('Dist version drift detected');
+	console.log(
+		`[artifact] Verified candidate files for ${result.manifest.id} ${result.manifest.version}`,
+	);
 }
 
 const entryPath = process.argv[1] ? pathToFileURL(path.resolve(process.argv[1])).href : '';

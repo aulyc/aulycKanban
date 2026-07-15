@@ -33,7 +33,9 @@ export class Board {
 		this.taskList = new TaskList(this.contentAreaEl, app, this.store);
 
 		// 归档与普通任务列表共用左侧网格区域
-		this.archiveContainerEl = this.contentAreaEl.createDiv({ cls: 'aulyckanban-archive-container' });
+		this.archiveContainerEl = this.contentAreaEl.createDiv({
+			cls: 'aulyckanban-archive-container',
+		});
 		this.archiveContainerEl.setAttribute('tabindex', '-1');
 		this.archiveView = new ArchiveView(this.archiveContainerEl, app, this.store);
 

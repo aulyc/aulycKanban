@@ -14,10 +14,7 @@ export class PluginDataRepository {
 	private readonly loadDataFn: () => Promise<unknown>;
 	private readonly saveDataFn: (data: PluginData) => Promise<void>;
 
-	constructor(
-		loadDataFn: () => Promise<unknown>,
-		saveDataFn: (data: PluginData) => Promise<void>,
-	) {
+	constructor(loadDataFn: () => Promise<unknown>, saveDataFn: (data: PluginData) => Promise<void>) {
 		this.loadDataFn = loadDataFn;
 		this.saveDataFn = saveDataFn;
 	}
@@ -35,20 +32,27 @@ export class PluginDataRepository {
 
 			const data = raw as Record<string, unknown>;
 
-			const rawSettings = data['settings'] && typeof data['settings'] === 'object'
-				? data['settings'] as Record<string, unknown>
-				: {};
-			const rawTargets = rawSettings['viewSyncTargets'] && typeof rawSettings['viewSyncTargets'] === 'object'
-				? rawSettings['viewSyncTargets'] as PluginSettings['viewSyncTargets']
-				: {};
+			const rawSettings =
+				data['settings'] && typeof data['settings'] === 'object'
+					? (data['settings'] as Record<string, unknown>)
+					: {};
+			const rawTargets =
+				rawSettings['viewSyncTargets'] && typeof rawSettings['viewSyncTargets'] === 'object'
+					? (rawSettings['viewSyncTargets'] as PluginSettings['viewSyncTargets'])
+					: {};
 			const legacyWork = rawSettings['work'] as { filePath?: string } | undefined;
 			const legacyPersonal = rawSettings['personal'] as { filePath?: string } | undefined;
 			const settings: PluginSettings = {
 				...DEFAULT_SETTINGS,
 				...(rawSettings as Partial<PluginSettings>),
 				viewSyncTargets: {
-					work: { filePath: legacyWork?.filePath ?? DEFAULT_SETTINGS.viewSyncTargets.work?.filePath ?? '' },
-					personal: { filePath: legacyPersonal?.filePath ?? DEFAULT_SETTINGS.viewSyncTargets.personal?.filePath ?? '' },
+					work: {
+						filePath: legacyWork?.filePath ?? DEFAULT_SETTINGS.viewSyncTargets.work?.filePath ?? '',
+					},
+					personal: {
+						filePath:
+							legacyPersonal?.filePath ?? DEFAULT_SETTINGS.viewSyncTargets.personal?.filePath ?? '',
+					},
 					...rawTargets,
 				},
 				archive: {

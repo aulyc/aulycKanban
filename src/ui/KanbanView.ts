@@ -75,14 +75,19 @@ export class KanbanView extends ItemView {
 				return;
 			}
 
-			const isEmptyTaskInputArrow = active instanceof HTMLTextAreaElement
-				&& active.matches('.aulyckanban-inline-input')
-				&& active.value.trim().length === 0
-				&& (e.key === 'ArrowUp' || e.key === 'ArrowDown');
-			if (!isEmptyTaskInputArrow && active?.matches(
-				'.aulyckanban-view-inline-input, .aulyckanban-nav-inline-input, '
-				+ '.aulyckanban-inline-input, .aulyckanban-edit-textarea',
-			)) return;
+			const isEmptyTaskInputArrow =
+				active instanceof HTMLTextAreaElement &&
+				active.matches('.aulyckanban-inline-input') &&
+				active.value.trim().length === 0 &&
+				(e.key === 'ArrowUp' || e.key === 'ArrowDown');
+			if (
+				!isEmptyTaskInputArrow &&
+				active?.matches(
+					'.aulyckanban-view-inline-input, .aulyckanban-nav-inline-input, ' +
+						'.aulyckanban-inline-input, .aulyckanban-edit-textarea',
+				)
+			)
+				return;
 			const zone = this.getFocusZone(active);
 			if (zone === 'view' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
 				e.preventDefault();
@@ -94,8 +99,8 @@ export class KanbanView extends ItemView {
 				this.selectAdjacentColumn(e.key === 'ArrowUp' ? -1 : 1);
 			} else if (zone === 'tasks' && !this.plugin.store.isShowingArchive()) {
 				if (
-					active?.matches('.aulyckanban-task, .aulyckanban-inline-input')
-					&& (e.key === 'ArrowUp' || e.key === 'ArrowDown')
+					active?.matches('.aulyckanban-task, .aulyckanban-inline-input') &&
+					(e.key === 'ArrowUp' || e.key === 'ArrowDown')
 				) {
 					e.preventDefault();
 					e.stopPropagation();
@@ -114,20 +119,24 @@ export class KanbanView extends ItemView {
 				const ownerDocument = container.ownerDocument;
 				const active = this.getActiveElement();
 				const eventTarget = e.target;
-				const documentLevelTarget = eventTarget === null
-					|| eventTarget === fallbackWindow
-					|| eventTarget === ownerDocument
-					|| eventTarget === ownerDocument.body
-					|| eventTarget === ownerDocument.documentElement;
+				const documentLevelTarget =
+					eventTarget === null ||
+					eventTarget === fallbackWindow ||
+					eventTarget === ownerDocument ||
+					eventTarget === ownerDocument.body ||
+					eventTarget === ownerDocument.documentElement;
 
-				if (!shouldUseTabFocusFallback({
-					key: e.key,
-					defaultPrevented: e.defaultPrevented,
-					viewIsActive: this.app.workspace.getActiveViewOfType(KanbanView) === this,
-					eventPathIncludesView: e.composedPath().includes(container),
-					activeElementIsInsideView: active !== null && container.contains(active),
-					documentLevelTarget,
-				})) return;
+				if (
+					!shouldUseTabFocusFallback({
+						key: e.key,
+						defaultPrevented: e.defaultPrevented,
+						viewIsActive: this.app.workspace.getActiveViewOfType(KanbanView) === this,
+						eventPathIncludesView: e.composedPath().includes(container),
+						activeElementIsInsideView: active !== null && container.contains(active),
+						documentLevelTarget,
+					})
+				)
+					return;
 
 				this.handleTabKey(e, active);
 			};
@@ -179,17 +188,21 @@ export class KanbanView extends ItemView {
 		const ownerWindow = ownerDocument.defaultView;
 		const active = ownerDocument.activeElement;
 		return ownerWindow && active instanceof ownerWindow.HTMLElement
-			? active as HTMLElement
+			? (active as HTMLElement)
 			: null;
 	}
 
 	private handleTabKey(e: KeyboardEvent, active: HTMLElement | null): void {
 		e.preventDefault();
 		e.stopPropagation();
-		this.focusNextZone(e.shiftKey, active?.matches(
-			'.aulyckanban-view-inline-input, .aulyckanban-nav-inline-input, '
-			+ '.aulyckanban-inline-input, .aulyckanban-edit-textarea',
-		) ?? false, active);
+		this.focusNextZone(
+			e.shiftKey,
+			active?.matches(
+				'.aulyckanban-view-inline-input, .aulyckanban-nav-inline-input, ' +
+					'.aulyckanban-inline-input, .aulyckanban-edit-textarea',
+			) ?? false,
+			active,
+		);
 	}
 
 	private focusNextZone(
@@ -228,9 +241,11 @@ export class KanbanView extends ItemView {
 				if (this.plugin.store.isShowingArchive()) {
 					return this.contentEl.querySelector<HTMLElement>('.aulyckanban-archive-btn');
 				}
-				return this.contentEl.querySelector<HTMLElement>(
-					'.aulyckanban-view-tab.aulyckanban-tab-active',
-				) ?? this.contentEl.querySelector<HTMLElement>('.aulyckanban-view-tab');
+				return (
+					this.contentEl.querySelector<HTMLElement>(
+						'.aulyckanban-view-tab.aulyckanban-tab-active',
+					) ?? this.contentEl.querySelector<HTMLElement>('.aulyckanban-view-tab')
+				);
 			case 'tasks':
 				if (this.plugin.store.isShowingArchive()) {
 					return this.contentEl.querySelector<HTMLElement>(
@@ -239,9 +254,10 @@ export class KanbanView extends ItemView {
 				}
 				return getTaskZoneFocusTarget(this.contentEl);
 			case 'columns':
-				return this.contentEl.querySelector<HTMLElement>(
-					'.aulyckanban-nav-item-active',
-				) ?? this.contentEl.querySelector<HTMLElement>('.aulyckanban-nav-item');
+				return (
+					this.contentEl.querySelector<HTMLElement>('.aulyckanban-nav-item-active') ??
+					this.contentEl.querySelector<HTMLElement>('.aulyckanban-nav-item')
+				);
 		}
 	}
 
@@ -284,13 +300,17 @@ export class KanbanView extends ItemView {
 
 	private selectAdjacentColumn(offset: number): void {
 		const store = this.plugin.store;
-		const items = Array.from(this.contentEl.querySelectorAll<HTMLElement>(
-			'.aulyckanban-nav-item:not(.aulyckanban-nav-item-editing), '
-			+ '.aulyckanban-nav-add-btn:not(.aulyckanban-nav-item-editing)',
-		));
+		const items = Array.from(
+			this.contentEl.querySelectorAll<HTMLElement>(
+				'.aulyckanban-nav-item:not(.aulyckanban-nav-item-editing), ' +
+					'.aulyckanban-nav-add-btn:not(.aulyckanban-nav-item-editing)',
+			),
+		);
 		const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-		const focusedItem = active?.closest<HTMLElement>('.aulyckanban-nav-item, .aulyckanban-nav-add-btn') ?? null;
-		const fallbackItem = items.find((item) => item.dataset['columnId'] === store.getActiveColumnId()) ?? null;
+		const focusedItem =
+			active?.closest<HTMLElement>('.aulyckanban-nav-item, .aulyckanban-nav-add-btn') ?? null;
+		const fallbackItem =
+			items.find((item) => item.dataset['columnId'] === store.getActiveColumnId()) ?? null;
 		const currentItem = focusedItem ?? fallbackItem;
 		const currentIndex = currentItem ? items.indexOf(currentItem) : -1;
 		const target = items[getWrappedItemIndex(currentIndex, items.length, offset)];

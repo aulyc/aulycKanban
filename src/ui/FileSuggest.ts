@@ -21,9 +21,7 @@ export class FileSuggest extends AbstractInputSuggest<TFile> {
 			return files.slice(0, 20);
 		}
 
-		return files
-			.filter((file) => file.path.toLowerCase().includes(lowerQuery))
-			.slice(0, 20);
+		return files.filter((file) => file.path.toLowerCase().includes(lowerQuery)).slice(0, 20);
 	}
 
 	renderSuggestion(file: TFile, el: HTMLElement): void {

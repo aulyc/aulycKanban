@@ -9,7 +9,7 @@ const UNIX_FILE_MODE = 0o100644;
 const crcTable = Array.from({ length: 256 }, (_, index) => {
 	let value = index;
 	for (let bit = 0; bit < 8; bit += 1) {
-		value = (value & 1) ? (0xedb88320 ^ (value >>> 1)) : (value >>> 1);
+		value = value & 1 ? 0xedb88320 ^ (value >>> 1) : value >>> 1;
 	}
 	return value >>> 0;
 });
@@ -97,14 +97,17 @@ export function readZipEntries(buffer) {
 		throw new Error('Multi-disk ZIP files are not supported');
 	}
 	if (eocdOffset + 22 + commentLength !== buffer.length) throw new Error('Malformed ZIP trailer');
-	if (centralOffset + centralSize !== eocdOffset) throw new Error('Malformed ZIP central directory');
+	if (centralOffset + centralSize !== eocdOffset)
+		throw new Error('Malformed ZIP central directory');
 
 	const entries = [];
 	const seen = new Set();
 	let centralCursor = centralOffset;
 	for (let index = 0; index < entryCount; index += 1) {
-		if (centralCursor + 46 > eocdOffset
-			|| buffer.readUInt32LE(centralCursor) !== CENTRAL_SIGNATURE) {
+		if (
+			centralCursor + 46 > eocdOffset ||
+			buffer.readUInt32LE(centralCursor) !== CENTRAL_SIGNATURE
+		) {
 			throw new Error('Malformed ZIP central entry');
 		}
 		const flags = buffer.readUInt16LE(centralCursor + 8);
@@ -123,15 +126,16 @@ export function readZipEntries(buffer) {
 			throw new Error('Encrypted or data-descriptor ZIP entries are not allowed');
 		}
 		if (![0, 8].includes(method)) throw new Error(`Unsupported ZIP compression method: ${method}`);
-		const name = buffer.subarray(centralCursor + 46, centralCursor + 46 + nameLength).toString('utf8');
+		const name = buffer
+			.subarray(centralCursor + 46, centralCursor + 46 + nameLength)
+			.toString('utf8');
 		validateEntryPath(name);
 		if (seen.has(name)) throw new Error(`Duplicate ZIP entry: ${name}`);
 		seen.add(name);
 		const mode = (externalAttributes >>> 16) & 0xffff;
 		if ((mode & 0o170000) === 0o120000) throw new Error(`Symbolic links are not allowed: ${name}`);
 
-		if (localOffset + 30 > centralOffset
-			|| buffer.readUInt32LE(localOffset) !== LOCAL_SIGNATURE) {
+		if (localOffset + 30 > centralOffset || buffer.readUInt32LE(localOffset) !== LOCAL_SIGNATURE) {
 			throw new Error(`Malformed local ZIP entry: ${name}`);
 		}
 		const localFlags = buffer.readUInt16LE(localOffset + 6);
@@ -139,7 +143,9 @@ export function readZipEntries(buffer) {
 		const localNameLength = buffer.readUInt16LE(localOffset + 26);
 		const localExtraLength = buffer.readUInt16LE(localOffset + 28);
 		const localNameStart = localOffset + 30;
-		const localName = buffer.subarray(localNameStart, localNameStart + localNameLength).toString('utf8');
+		const localName = buffer
+			.subarray(localNameStart, localNameStart + localNameLength)
+			.toString('utf8');
 		if (localName !== name || localFlags !== flags || localMethod !== method) {
 			throw new Error(`ZIP local and central metadata differ: ${name}`);
 		}

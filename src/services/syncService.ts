@@ -14,10 +14,17 @@ export class VaultSyncService {
 	private syncTimeout: ReturnType<typeof setTimeout> | null = null;
 	private pendingAllViews = false;
 
-	constructor(private readonly vault: Vault, private readonly store: KanbanStore) {}
+	constructor(
+		private readonly vault: Vault,
+		private readonly store: KanbanStore,
+	) {}
 
-	scheduleSyncCurrentView(): void { this.scheduleSync(false); }
-	scheduleSyncAllViews(): void { this.scheduleSync(true); }
+	scheduleSyncCurrentView(): void {
+		this.scheduleSync(false);
+	}
+	scheduleSyncAllViews(): void {
+		this.scheduleSync(true);
+	}
 
 	private scheduleSync(allViews: boolean): void {
 		if (allViews) this.pendingAllViews = true;
@@ -49,11 +56,14 @@ export class VaultSyncService {
 		const view = this.store.getView(viewId);
 		if (!view) return;
 		try {
-			await this.writeToFile(normalizePath(target.filePath), generateMarkdown([
-				...view.columns,
-			].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))), silent);
+			await this.writeToFile(
+				normalizePath(target.filePath),
+				generateMarkdown([...view.columns].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))),
+				silent,
+			);
 		} catch (error) {
-			if (!silent) new Notice(`${t('sync.fail')}：${error instanceof Error ? error.message : String(error)}`);
+			if (!silent)
+				new Notice(`${t('sync.fail')}：${error instanceof Error ? error.message : String(error)}`);
 		}
 	}
 
@@ -63,7 +73,8 @@ export class VaultSyncService {
 		try {
 			await this.writeToFile(normalizePath(path), this.generateArchiveMarkdown(), silent);
 		} catch (error) {
-			if (!silent) new Notice(`${t('sync.fail')}：${error instanceof Error ? error.message : String(error)}`);
+			if (!silent)
+				new Notice(`${t('sync.fail')}：${error instanceof Error ? error.message : String(error)}`);
 		}
 	}
 
@@ -72,7 +83,8 @@ export class VaultSyncService {
 		const total = views.reduce((count, view) => count + this.store.getArchive(view.id).length, 0);
 		let markdown = `> ${t('md.syncTime')}：${formatDateTime(new Date())}\n\n`;
 		markdown += `## ${t('md.archiveStats')}\n\n- ${t('md.archiveTotal')}：${total}\n`;
-		for (const view of views) markdown += `- ${view.title}：${this.store.getArchive(view.id).length}\n`;
+		for (const view of views)
+			markdown += `- ${view.title}：${this.store.getArchive(view.id).length}\n`;
 		markdown += '\n';
 		for (const view of views) {
 			const tasks = this.store.getArchive(view.id);
@@ -86,14 +98,18 @@ export class VaultSyncService {
 		const grouped = new Map<string, Task[]>(view.columns.map((column) => [column.id, []]));
 		grouped.set(ARCHIVE_UNCATEGORIZED_ID, []);
 		for (const task of tasks) {
-			const key = grouped.has(task.sourceColumnId ?? '') ? task.sourceColumnId! : ARCHIVE_UNCATEGORIZED_ID;
+			const sourceColumnId = task.sourceColumnId;
+			const key =
+				sourceColumnId && grouped.has(sourceColumnId) ? sourceColumnId : ARCHIVE_UNCATEGORIZED_ID;
 			grouped.get(key)?.push(task);
 		}
 		let markdown = '';
 		const render = (title: string, columnTasks: Task[]): void => {
 			if (columnTasks.length === 0) return;
 			markdown += `### ${title}\n\n`;
-			for (const task of [...columnTasks].sort((a, b) => getArchivedAtTime(b) - getArchivedAtTime(a))) {
+			for (const task of [...columnTasks].sort(
+				(a, b) => getArchivedAtTime(b) - getArchivedAtTime(a),
+			)) {
 				const time = formatDateTimeMinute(getArchivedAtIso(task));
 				markdown += `- [x] ${task.content}  *(${t('archive.archivedAt')} ${time})*\n`;
 			}
@@ -119,7 +135,8 @@ export class VaultSyncService {
 			return;
 		}
 		const directory = filePath.substring(0, filePath.lastIndexOf('/'));
-		if (directory && !this.vault.getAbstractFileByPath(directory)) await this.vault.createFolder(directory);
+		if (directory && !this.vault.getAbstractFileByPath(directory))
+			await this.vault.createFolder(directory);
 		await this.vault.create(filePath, wrapped);
 		if (!silent) new Notice(t('sync.exported'));
 	}

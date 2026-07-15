@@ -6,10 +6,7 @@ import test from 'node:test';
 import { buildReleaseArtifact, verifyReleaseArtifact } from '../scripts/artifact.mjs';
 import { sha256Buffer } from '../scripts/release-constants.mjs';
 import { createZipBuffer, readZipEntries } from '../scripts/zip.mjs';
-import {
-	cleanupFixture,
-	createReleaseFixture,
-} from './helpers/release-fixture.mjs';
+import { cleanupFixture, createReleaseFixture } from './helpers/release-fixture.mjs';
 
 async function buildFixtureArtifact() {
 	const fixture = await createReleaseFixture();
@@ -37,9 +34,10 @@ test('versioned ZIP and release provenance are derived from real Git and artifac
 		assert.equal(result.provenance.distribution, 'local-vault');
 		assert.equal(result.provenance.commit, fixture.releaseCommit);
 		assert.equal(result.provenance.dirty, false);
-		assert.deepEqual(result.entries.map((entry) => entry.name), [
-			'main.js', 'manifest.json', 'styles.css',
-		]);
+		assert.deepEqual(
+			result.entries.map((entry) => entry.name),
+			['main.js', 'manifest.json', 'styles.css'],
+		);
 	} finally {
 		await cleanupFixture(fixture.rootDir);
 		await rm(fixture.outputDir, { recursive: true, force: true });
@@ -86,18 +84,25 @@ test('ZIP parser rejects duplicate, traversal, absolute, and symlink entries', (
 		{ name: 'manifest.json', data: '{}' },
 		{ name: 'styles.css', data: 'styles' },
 	];
-	assert.throws(() => readZipEntries(createZipBuffer([
-		...required, { name: 'main.js', data: 'duplicate' },
-	])), /Duplicate ZIP entry/);
-	assert.throws(() => readZipEntries(createZipBuffer([
-		...required, { name: '../data.json', data: 'secret' },
-	])), /root-level file|Unsafe ZIP/);
-	assert.throws(() => readZipEntries(createZipBuffer([
-		...required, { name: '/tmp/evil', data: 'evil' },
-	])), /root-level file|Unsafe ZIP/);
-	assert.throws(() => readZipEntries(createZipBuffer([
-		...required, { name: 'link', data: 'main.js', mode: 0o120777 },
-	])), /Symbolic links are not allowed/);
+	assert.throws(
+		() => readZipEntries(createZipBuffer([...required, { name: 'main.js', data: 'duplicate' }])),
+		/Duplicate ZIP entry/,
+	);
+	assert.throws(
+		() => readZipEntries(createZipBuffer([...required, { name: '../data.json', data: 'secret' }])),
+		/root-level file|Unsafe ZIP/,
+	);
+	assert.throws(
+		() => readZipEntries(createZipBuffer([...required, { name: '/tmp/evil', data: 'evil' }])),
+		/root-level file|Unsafe ZIP/,
+	);
+	assert.throws(
+		() =>
+			readZipEntries(
+				createZipBuffer([...required, { name: 'link', data: 'main.js', mode: 0o120777 }]),
+			),
+		/Symbolic links are not allowed/,
+	);
 });
 
 test('artifact verifier rejects missing and extra ZIP files even with matching outer SHA-256', async () => {

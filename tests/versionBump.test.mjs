@@ -76,7 +76,10 @@ test('version check fails closed on any derived version drift', async () => {
 			...manifest,
 			version: '2.1.18',
 		});
-		await assert.rejects(checkVersionFiles(rootDir), /Version drift detected in dist\/manifest\.json/);
+		await assert.rejects(
+			checkVersionFiles(rootDir),
+			/Version drift detected in dist\/manifest\.json/,
+		);
 	} finally {
 		await rm(rootDir, { recursive: true, force: true });
 	}
@@ -94,10 +97,14 @@ test('semantic versions support multi-digit fields and ordered prereleases', () 
 test('release channels only accept stable or numbered alpha, beta, and rc versions', () => {
 	assert.deepEqual(getReleaseChannel('2.2.0'), { channel: 'formal', sequence: null });
 	assert.deepEqual(getReleaseChannel('2.2.0-alpha.1'), {
-		channel: 'test', stage: 'alpha', sequence: 1,
+		channel: 'test',
+		stage: 'alpha',
+		sequence: 1,
 	});
 	assert.deepEqual(getReleaseChannel('2.2.0-beta.3'), {
-		channel: 'test', stage: 'beta', sequence: 3,
+		channel: 'test',
+		stage: 'beta',
+		sequence: 3,
 	});
 	assert.equal(getReleaseChannel('2.2.0-preview.1'), null);
 	assert.equal(getReleaseChannel('2.2.0+build.5'), null);

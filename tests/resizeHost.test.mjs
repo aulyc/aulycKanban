@@ -30,7 +30,7 @@ test('right sidedock is preferred over inner workspace tabs as resize host', () 
 	const sideDock = element('sideDock');
 	const tabs = element('tabs');
 	const container = {
-		closest: (selector) => selector.includes('mod-sidedock') ? sideDock : tabs,
+		closest: (selector) => (selector.includes('mod-sidedock') ? sideDock : tabs),
 	};
 	assert.equal(findResizeHost(container), sideDock);
 });
@@ -40,7 +40,7 @@ test('main workspace uses workspace tabs and moves the marker between hosts', ()
 	const tabs = element('tabs');
 	oldHost.classList.add('aulyckanban-resize-host');
 	const container = {
-		closest: (selector) => selector.includes('mod-sidedock') ? null : tabs,
+		closest: (selector) => (selector.includes('mod-sidedock') ? null : tabs),
 	};
 
 	const nextHost = updateResizeHost(oldHost, container);
@@ -53,7 +53,8 @@ test('main workspace uses workspace tabs and moves the marker between hosts', ()
 });
 
 test('desktop resize host is fixed to exactly 500px', () => {
-	const rule = styles.match(/body:not\(\.is-mobile\) \.aulyckanban-resize-host\s*\{([^}]*)\}/)?.[1] ?? '';
+	const rule =
+		styles.match(/body:not\(\.is-mobile\) \.aulyckanban-resize-host\s*\{([^}]*)\}/)?.[1] ?? '';
 	assert.match(rule, /flex:\s*0 0 500px !important/);
 	assert.match(rule, /width:\s*500px !important/);
 	assert.match(rule, /min-width:\s*500px !important/);

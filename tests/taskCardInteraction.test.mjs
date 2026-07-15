@@ -11,7 +11,11 @@ class MockElement {
 		this.dataset = {};
 		this.attributes = {};
 		this.listeners = new Map();
-		this.classes = new Set(String(options.cls ?? '').split(/\s+/).filter(Boolean));
+		this.classes = new Set(
+			String(options.cls ?? '')
+				.split(/\s+/)
+				.filter(Boolean),
+		);
 		this.classList = {
 			contains: (value) => this.classes.has(value),
 		};
@@ -98,7 +102,12 @@ function createHarness() {
 		require: (id) => {
 			if (id === '../i18n') return { t: (key) => key };
 			if (id === '../utils/datetime') return { formatDateTimeMinute: () => '2026/07/13 12:00' };
-			if (id === '../utils/dom') return { setTextWithLineBreaks: (el, value) => { el.textContent = value; } };
+			if (id === '../utils/dom')
+				return {
+					setTextWithLineBreaks: (el, value) => {
+						el.textContent = value;
+					},
+				};
 			if (id === './ConfirmModal') return { ConfirmModal: class {} };
 			if (id === './InlineInput') {
 				return {
@@ -115,12 +124,12 @@ function createHarness() {
 	};
 	vm.runInNewContext(output, context);
 
-	const card = new context.module.exports.TaskCard(
-		{},
-		{ dispatch() {} },
-		'column',
-		{ id: 'task', content: '测试', completed: false, createdAt: '2026-07-13T12:00:00Z' },
-	).getEl();
+	const card = new context.module.exports.TaskCard({}, { dispatch() {} }, 'column', {
+		id: 'task',
+		content: '测试',
+		completed: false,
+		createdAt: '2026-07-13T12:00:00Z',
+	}).getEl();
 	return { card, documentRef, inlineInputs };
 }
 

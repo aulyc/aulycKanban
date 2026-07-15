@@ -42,7 +42,10 @@ export interface InlineInputOptions {
  * 统一处理 IME 组合态、Enter 提交 / Escape 取消 / blur 策略、
  * 防抖回调与挂载后聚焦，替代各组件各自手写的输入框逻辑。
  */
-export function createInlineInput(parentEl: HTMLElement, options: InlineInputOptions): InlineInputEl {
+export function createInlineInput(
+	parentEl: HTMLElement,
+	options: InlineInputOptions,
+): InlineInputEl {
 	const attr: Record<string, string> = {};
 	if (options.placeholder !== undefined) attr['placeholder'] = options.placeholder;
 	const el: InlineInputEl = options.multiline
@@ -71,10 +74,14 @@ export function createInlineInput(parentEl: HTMLElement, options: InlineInputOpt
 	};
 
 	let trigger: 'enter' | 'blur' = 'enter';
-	const controller = options.persistent ? null : createInlineCommitController(
-		() => options.onCommit(el.value, trigger),
-		() => { options.onCancel?.(); },
-	);
+	const controller = options.persistent
+		? null
+		: createInlineCommitController(
+				() => options.onCommit(el.value, trigger),
+				() => {
+					options.onCancel?.();
+				},
+			);
 	const commit = (via: 'enter' | 'blur'): void => {
 		clearDebounce();
 		if (!controller) {
@@ -94,7 +101,9 @@ export function createInlineInput(parentEl: HTMLElement, options: InlineInputOpt
 		options.onInput?.(el.value);
 		if (!composing) scheduleDebounce();
 	});
-	el.addEventListener('compositionstart', () => { composing = true; });
+	el.addEventListener('compositionstart', () => {
+		composing = true;
+	});
 	el.addEventListener('compositionend', () => {
 		composing = false;
 		options.onInput?.(el.value);

@@ -13,9 +13,7 @@ function normalizeOutput(value) {
 }
 
 function getInfoField(output, field) {
-	const line = output
-		.split(/\r?\n/u)
-		.find((candidate) => candidate.split(/\s+/u, 1)[0] === field);
+	const line = output.split(/\r?\n/u).find((candidate) => candidate.split(/\s+/u, 1)[0] === field);
 	return line ? line.slice(field.length).trim() : '';
 }
 
@@ -82,11 +80,7 @@ export function runObsidianSmoke({
 	}
 
 	run('open board', ['command', `id=${commandId}`]);
-	const renderedCountOutput = run('query board DOM', [
-		'dev:dom',
-		`selector=${selector}`,
-		'total',
-	]);
+	const renderedCountOutput = run('query board DOM', ['dev:dom', `selector=${selector}`, 'total']);
 	const renderedCount = Number.parseInt(renderedCountOutput, 10);
 	if (!Number.isInteger(renderedCount) || renderedCount < 1) {
 		throw new Error(`[smoke] Board DOM did not render: ${selector}`);
@@ -113,18 +107,21 @@ export function runInstalledObsidianSmoke({
 	const resolvedManifestPath = manifestPath
 		? path.resolve(manifestPath)
 		: path.join(
-			discoverVaultPath({
-				vaultPath,
-				runner,
-				cli,
-				vaultName,
-				env: {
-					...process.env,
-					OBSIDIAN_VAULT_NAME: vaultName,
-				},
-			}),
-			'.obsidian', 'plugins', pluginId, 'manifest.json',
-		);
+				discoverVaultPath({
+					vaultPath,
+					runner,
+					cli,
+					vaultName,
+					env: {
+						...process.env,
+						OBSIDIAN_VAULT_NAME: vaultName,
+					},
+				}),
+				'.obsidian',
+				'plugins',
+				pluginId,
+				'manifest.json',
+			);
 	const manifest = JSON.parse(readFileSync(resolvedManifestPath, 'utf8'));
 	if (manifest.id !== pluginId) {
 		throw new Error(`[smoke] Installed manifest plugin id mismatch: ${String(manifest.id)}`);

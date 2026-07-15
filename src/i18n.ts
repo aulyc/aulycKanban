@@ -21,7 +21,8 @@ const zh = {
 	'view.rename': '重命名',
 	'view.delete': '删除任务类型',
 	'view.deleteConfirm': '确定删除任务类型“{title}”吗？',
-	'view.deleteData': '其中 {taskCount} 条任务和 {archiveCount} 条归档任务将永久删除；已同步的 Markdown 文件不会删除。',
+	'view.deleteData':
+		'其中 {taskCount} 条任务和 {archiveCount} 条归档任务将永久删除；已同步的 Markdown 文件不会删除。',
 
 	// 列标题
 	'column.periodic': '🔄 周期任务',
@@ -112,8 +113,8 @@ const zh = {
 	'md.archiveTotal': '总归档数',
 
 	// 通用
-	'confirm': '确定',
-	'cancel': '取消',
+	confirm: '确定',
+	cancel: '取消',
 };
 
 /** 全部翻译键；en 通过 Record 约束与 zh 保持完全一致，缺失或多余的键在编译期报错 */
@@ -134,7 +135,8 @@ const en: Record<I18nKey, string> = {
 	'view.rename': 'Rename',
 	'view.delete': 'Delete task type',
 	'view.deleteConfirm': 'Delete the “{title}” task type?',
-	'view.deleteData': '{taskCount} tasks and {archiveCount} archived tasks will be permanently deleted. Synced Markdown files will not be deleted.',
+	'view.deleteData':
+		'{taskCount} tasks and {archiveCount} archived tasks will be permanently deleted. Synced Markdown files will not be deleted.',
 
 	'column.periodic': '🔄 Periodic',
 	'column.urgentImportant': '🔥 Urgent & Important',
@@ -170,7 +172,8 @@ const en: Record<I18nKey, string> = {
 	'archive.delete.selectAll': 'Select all',
 	'archive.delete.selectTask': 'Select task',
 	'archive.confirm.restore': 'Restore this archived task?',
-	'archive.confirm.deleteSelected': 'Delete the {count} selected archived tasks? This cannot be undone.',
+	'archive.confirm.deleteSelected':
+		'Delete the {count} selected archived tasks? This cannot be undone.',
 
 	'settings.dataManagement': 'Data management',
 	'settings.backup.name': 'Backup data',
@@ -187,7 +190,8 @@ const en: Record<I18nKey, string> = {
 	'settings.clear.name': 'Clear all data',
 	'settings.clear.desc': 'Delete task data from every task type (irreversible)',
 	'settings.clear.button': 'Clear data',
-	'settings.clear.warning': 'This will delete all task data from every task type. This cannot be undone!',
+	'settings.clear.warning':
+		'This will delete all task data from every task type. This cannot be undone!',
 	'settings.clear.suggestion': 'Please backup your data first before clearing.',
 	'settings.clear.backupFirst': 'Backup first',
 	'settings.clear.confirm': 'Confirm clear',
@@ -197,7 +201,8 @@ const en: Record<I18nKey, string> = {
 	'settings.sync.viewPath.suffix': ' sync file',
 	'settings.sync.viewPath.desc': 'Markdown file path for this task type',
 	'settings.sync.archivePath.name': 'Archive sync file',
-	'settings.sync.archivePath.desc': 'Markdown file path to sync archived tasks (e.g. Kanban/Archive.md)',
+	'settings.sync.archivePath.desc':
+		'Markdown file path to sync archived tasks (e.g. Kanban/Archive.md)',
 	'settings.sync.archivePath.placeholder': 'Kanban/Archive.md',
 	'settings.sync.hint': 'Board changes are automatically synced to the corresponding note',
 	'settings.sync.duplicateError': 'Sync file paths cannot be the same',
@@ -216,8 +221,8 @@ const en: Record<I18nKey, string> = {
 	'md.archiveStats': '📦 Archive Statistics',
 	'md.archiveTotal': 'Total archived',
 
-	'confirm': 'OK',
-	'cancel': 'Cancel',
+	confirm: 'OK',
+	cancel: 'Cancel',
 };
 
 /** 当前语言字典 */

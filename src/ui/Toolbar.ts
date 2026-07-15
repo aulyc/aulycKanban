@@ -26,15 +26,12 @@ export class Toolbar {
 	}
 
 	render(): void {
-		const focusedEl = document.activeElement instanceof HTMLElement
-			? document.activeElement
-			: null;
-		const restoreSelectedFocus = !!focusedEl
-			&& this.el.contains(focusedEl)
-			&& (
-				focusedEl.classList.contains('aulyckanban-view-tab')
-				|| focusedEl.classList.contains('aulyckanban-archive-btn')
-			);
+		const focusedEl = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+		const restoreSelectedFocus =
+			!!focusedEl &&
+			this.el.contains(focusedEl) &&
+			(focusedEl.classList.contains('aulyckanban-view-tab') ||
+				focusedEl.classList.contains('aulyckanban-archive-btn'));
 
 		this.el.empty();
 		const currentView = this.store.getCurrentView();
@@ -107,7 +104,9 @@ export class Toolbar {
 			initialValue: this.draftTitle,
 			focusOnMount: true,
 			blurBehavior: 'cancel',
-			onInput: (value) => { this.draftTitle = value; },
+			onInput: (value) => {
+				this.draftTitle = value;
+			},
 			onCommit: (value) => {
 				const title = value.trim();
 				if (!title) return false;
@@ -127,7 +126,9 @@ export class Toolbar {
 			initialValue: this.draftTitle || currentTitle,
 			focusOnMount: this.consumeFocusRequest(),
 			blurBehavior: 'commit',
-			onInput: (value) => { this.draftTitle = value; },
+			onInput: (value) => {
+				this.draftTitle = value;
+			},
 			onCommit: (value) => {
 				const title = value.trim();
 				if (!title) return false;
@@ -191,10 +192,14 @@ export class Toolbar {
 			event.preventDefault();
 			event.stopPropagation();
 			const rect = button.getBoundingClientRect();
-			this.showViewMenu(new MouseEvent('contextmenu', {
-				clientX: rect.left + rect.width / 2,
-				clientY: rect.bottom,
-			}), view, label);
+			this.showViewMenu(
+				new MouseEvent('contextmenu', {
+					clientX: rect.left + rect.width / 2,
+					clientY: rect.bottom,
+				}),
+				view,
+				label,
+			);
 		});
 		return button;
 	}
@@ -202,13 +207,15 @@ export class Toolbar {
 	private showViewMenu(event: MouseEvent, viewId: ViewKind, currentTitle: string): void {
 		const menu = new Menu();
 		menu.addItem((item) => {
-			item.setTitle(t('view.rename'))
+			item
+				.setTitle(t('view.rename'))
 				.setIcon('pencil')
 				.onClick(() => this.startRename(viewId, currentTitle));
 		});
 		menu.addSeparator();
 		menu.addItem((item) => {
-			item.setTitle(t('view.delete'))
+			item
+				.setTitle(t('view.delete'))
 				.setIcon('trash')
 				.setDisabled(this.store.getTaskViews().length <= 1)
 				.onClick(() => this.confirmDelete(viewId));
@@ -230,7 +237,9 @@ export class Toolbar {
 		if (!view) return;
 		const taskCount = view.columns.reduce((count, column) => count + column.tasks.length, 0);
 		const archiveCount = this.store.getArchive(viewId).length;
-		const message = `${t('view.deleteConfirm').replace('{title}', view.title)}\n${t('view.deleteData')
+		const message = `${t('view.deleteConfirm').replace('{title}', view.title)}\n${t(
+			'view.deleteData',
+		)
 			.replace('{taskCount}', String(taskCount))
 			.replace('{archiveCount}', String(archiveCount))}`;
 		new ConfirmModal(this.app, {
@@ -246,5 +255,7 @@ export class Toolbar {
 		return shouldFocus;
 	}
 
-	getEl(): HTMLElement { return this.el; }
+	getEl(): HTMLElement {
+		return this.el;
+	}
 }

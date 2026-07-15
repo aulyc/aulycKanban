@@ -20,12 +20,7 @@ export class TaskCard {
 	private readonly columnId: string;
 	private readonly task: Task;
 
-	constructor(
-		app: App,
-		store: KanbanStore,
-		columnId: string,
-		task: Task,
-	) {
+	constructor(app: App, store: KanbanStore, columnId: string, task: Task) {
 		this.app = app;
 		this.store = store;
 		this.columnId = columnId;
@@ -85,10 +80,11 @@ export class TaskCard {
 			e.stopPropagation();
 			new ConfirmModal(this.app, {
 				message: t('task.confirm.archive'),
-				onConfirm: () => this.store.dispatch({
-					type: 'TOGGLE_TASK',
-					payload: { columnId: this.columnId, taskId: this.task.id },
-				}),
+				onConfirm: () =>
+					this.store.dispatch({
+						type: 'TOGGLE_TASK',
+						payload: { columnId: this.columnId, taskId: this.task.id },
+					}),
 			}).open();
 		});
 
@@ -102,10 +98,11 @@ export class TaskCard {
 			new ConfirmModal(this.app, {
 				message: t('task.confirm.delete'),
 				isDestructive: true,
-				onConfirm: () => this.store.dispatch({
-					type: 'DELETE_TASK',
-					payload: { columnId: this.columnId, taskId: this.task.id },
-				}),
+				onConfirm: () =>
+					this.store.dispatch({
+						type: 'DELETE_TASK',
+						payload: { columnId: this.columnId, taskId: this.task.id },
+					}),
 			}).open();
 		});
 	}
@@ -158,8 +155,9 @@ export class TaskCard {
 	private focusCardAfterRender(): void {
 		const boardEl = this.el.closest<HTMLElement>('.aulyckanban-kanban-container');
 		requestAnimationFrame(() => {
-			const card = Array.from(boardEl?.querySelectorAll<HTMLElement>('.aulyckanban-task') ?? [])
-				.find((item) => item.dataset['taskId'] === this.task.id);
+			const card = Array.from(
+				boardEl?.querySelectorAll<HTMLElement>('.aulyckanban-task') ?? [],
+			).find((item) => item.dataset['taskId'] === this.task.id);
 			card?.focus({ preventScroll: true });
 			card?.scrollIntoView({ block: 'nearest' });
 		});

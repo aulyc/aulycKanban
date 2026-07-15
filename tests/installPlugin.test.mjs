@@ -42,9 +42,10 @@ test('verified ZIP installer overwrites only three release files and preserves r
 		assert.equal(result.manifest.version, fixture.version);
 		assert.equal(await readFile(path.join(pluginDir, 'data.json'), 'utf8'), 'runtime-data');
 		assert.equal(await readFile(path.join(pluginDir, 'user-cache.json'), 'utf8'), 'user-cache');
-		assert.deepEqual((await readdir(pluginDir)).sort(), [
-			...RELEASE_FILES, 'data.json', 'user-cache.json',
-		].sort());
+		assert.deepEqual(
+			(await readdir(pluginDir)).sort(),
+			[...RELEASE_FILES, 'data.json', 'user-cache.json'].sort(),
+		);
 		for (const expected of fixture.provenance.files) {
 			assert.equal(
 				sha256Buffer(await readFile(path.join(pluginDir, expected.file))),
@@ -91,9 +92,7 @@ test('Vault target is discovered through a mocked Obsidian CLI when no path is c
 			return { status: 0, stdout: `${vaultPath}\n`, stderr: '' };
 		};
 		assert.equal(discoverVaultPath({ env: {}, runner }), vaultPath);
-		assert.deepEqual(calls, [[
-			'obsidian', 'eval', 'code=app.vault.adapter.basePath',
-		]]);
+		assert.deepEqual(calls, [['obsidian', 'eval', 'code=app.vault.adapter.basePath']]);
 	} finally {
 		await rm(vaultPath, { recursive: true, force: true });
 	}

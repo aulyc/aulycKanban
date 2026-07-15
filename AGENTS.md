@@ -30,7 +30,9 @@
 - Development: `npm run dev`
 - Generate derived version files: `npm run version:sync`
 - Local production build: `npm run build:production`
-- Formatter check: N/A，仓库当前没有独立 formatter 配置
+- Formatter write: `npm run format`
+- Formatter check: `npm run format:check`
+- Lint gate: `npm run lint`
 - Language gate: `npm run typecheck`
 - Shared development gate: `npm run check`
 - Full CI-equivalent gate: `npm run ci`
@@ -40,7 +42,7 @@
 
 ## Quality gates by change scope
 
-- TypeScript、UI、数据或样式行为：最少运行相关测试和 `npm run typecheck`。
+- TypeScript、UI、数据或样式行为：最少运行 `npm run format:check`、`npm run lint`、相关测试和 `npm run typecheck`。
 - 构建、依赖、版本或发布脚本：运行 `npm run ci`。
 - 标签前候选：工作区 clean 后运行 `npm run release:check`。
 - 文档：核对命令、文件和合同与真实脚本一致；若命令或合同变化，运行对应自动化测试。
@@ -101,7 +103,7 @@
 
 ### Required release gates
 
-- `npm run version:check`、`npm run typecheck`、全部测试、production bundle 和三文件白名单验证。
+- `npm run version:check`、`npm run format:check`、`npm run lint`、`npm run typecheck`、全部测试、production bundle 和三文件白名单验证。
 - `release:check` 使用与最终 ZIP 相同的 `build:production` 和文件白名单，并在前后验证调用工作区 clean；它不得创建标签。
 - 新发布只接受名称等于权威版本、指向独立发布元数据提交的 annotated tag。
 - 最终测试/正式 ZIP 从精确 tag 的 detached worktree 构建，构建前后均须 clean。

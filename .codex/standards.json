@@ -136,7 +136,7 @@
   "trackedFiles": [
     {
       "path": "AGENTS.md",
-      "sha256": "4a693ad4ce967d8cb3437ab987676a02af9e6d822e3aa52fccccff40e730fc43"
+      "sha256": "5f9aeb7056e4bee2fb99b0048a69cbd3a4ef36fa7e6b6e1e9add47816e181436"
     },
     {
       "path": "VERSIONING.md",
@@ -144,31 +144,31 @@
     },
     {
       "path": "version-bump.mjs",
-      "sha256": "d5c63836662fc9c2e86a2ecc3f566eeefc1d3f3a8248b7cab4a4d64dd2ddee00"
+      "sha256": "b1e902b252bc6e4f9ec2de5c364a7fdcaf7dbd853035fd97f71fe9cd1c883bf9"
     },
     {
       "path": "scripts/artifact.mjs",
-      "sha256": "d0792f0a14af78f889d9be359727a09f66368032d9be5e6d0f1367d3381bc6da"
+      "sha256": "a8792a3756079d82e955b74fcefaa9fada9681f7383e06a04a89dfb0722147df"
     },
     {
       "path": "scripts/build-dist.mjs",
-      "sha256": "1b5ae008cd879900baccc3315a23ca75b8595a88b7069dc58d5006b1836672fa"
+      "sha256": "1b35f60b98b9bdc1a142a127ebf18d7d83c6ca13f462f3b27ff01ff416034e0b"
     },
     {
       "path": "scripts/git-release.mjs",
-      "sha256": "f0a5a708c7157c72c864ccb7219be59ec3ac1eee20bbfbde7e75af48c3ba66c6"
+      "sha256": "c1480c5d32b633a0c580ad50930ffb03174188de1130d4fbef7cfb8f20c156e6"
     },
     {
       "path": "scripts/install-plugin.mjs",
-      "sha256": "e7eee572c24c06472a6333645e4efda55b1184a483dba6d137076596a6428c48"
+      "sha256": "76fa65cc00f4e63b7e1df2eb3c5eb3b65aae134a9241242bfd4396ef3d0228d2"
     },
     {
       "path": "scripts/obsidian-smoke.mjs",
-      "sha256": "1969305121dfd72f8b5c2c028ba8871bfb9d59ce902af54e28edb4026e2ae26c"
+      "sha256": "c6b7af173c4e6545d2aa5c1ee3e2804614c769b3ba840cc7215db01742bf1b7d"
     },
     {
       "path": "scripts/release-check.mjs",
-      "sha256": "e921f4960c365e4ae8d3c8627fc63b87aa5bfb24c7ebed2ff8ec9ce3f5b0615d"
+      "sha256": "daa85bf1bdb726ed87b31510ee1ab945225b09e9e81909fffb2c0d5bcd18d921"
     },
     {
       "path": "scripts/release-constants.mjs",
@@ -176,19 +176,19 @@
     },
     {
       "path": "scripts/release-from-tag.mjs",
-      "sha256": "facb1353796717f33715c4b9241fd60209d3e83d623df69891b8e15a76b30200"
+      "sha256": "459787b66bb272c63e88e5eec66af53033271ef9c246e9e8fc8d217f828ba09b"
     },
     {
       "path": "scripts/release-tag.mjs",
-      "sha256": "2855088a5e7c7603ef1dfe7c6a20a531fb02d6eb77742ef88802a162447f735a"
+      "sha256": "7e7fad75f1840652eff37b48fedc4e7e479ec830ba3ef5ff9ec711821c74d2e6"
     },
     {
       "path": "scripts/release.mjs",
-      "sha256": "e7547d52dab839804ad3180a1983704627a393144cf39793967f5c6c26dd740b"
+      "sha256": "adb5ec595a572a76e2ba29899551902c8601baf72470a373cd4d9c3159f2c81b"
     },
     {
       "path": "scripts/zip.mjs",
-      "sha256": "577664593e101594fc83ca289c972d31a0f93f2f357a590704681aceb55c64da"
+      "sha256": "333e09b8e83cf3980b873eb43f5712f8fb76d2880db1b566ad9ff00291012979"
     }
   ],
   "releaseSignals": {

@@ -10,13 +10,18 @@ async function createCandidate(version = '2.1.19') {
 	const rootDir = await mkdtemp(path.join(os.tmpdir(), 'aulyckanban-candidate-'));
 	await mkdir(path.join(rootDir, 'dist'));
 	const manifest = {
-		id: 'aulyckanban', version, minAppVersion: '1.5.0', isDesktopOnly: false,
+		id: 'aulyckanban',
+		version,
+		minAppVersion: '1.5.0',
+		isDesktopOnly: false,
 	};
 	await Promise.all([
 		writeJson(path.join(rootDir, 'release-version.json'), { version, buildNumber: 0 }),
 		writeJson(path.join(rootDir, 'package.json'), { name: 'aulyckanban', version }),
 		writeJson(path.join(rootDir, 'package-lock.json'), {
-			name: 'aulyckanban', version, packages: { '': { name: 'aulyckanban', version } },
+			name: 'aulyckanban',
+			version,
+			packages: { '': { name: 'aulyckanban', version } },
 		}),
 		writeJson(path.join(rootDir, 'manifest.json'), manifest),
 		writeJson(path.join(rootDir, 'dist', 'manifest.json'), manifest),
@@ -33,7 +38,9 @@ test('pre-tag candidate accepts the unpublished 2.1.19 migration identity', asyn
 	const rootDir = await createCandidate();
 	try {
 		assert.deepEqual(await checkRelease(rootDir), {
-			version: '2.1.19', buildNumber: 0, channel: 'formal',
+			version: '2.1.19',
+			buildNumber: 0,
+			channel: 'formal',
 		});
 	} finally {
 		await rm(rootDir, { recursive: true, force: true });
@@ -43,11 +50,14 @@ test('pre-tag candidate accepts the unpublished 2.1.19 migration identity', asyn
 test('pre-tag candidate fails on version drift', async () => {
 	const rootDir = await createCandidate();
 	try {
-		const manifest = JSON.parse(await (await import('node:fs/promises')).readFile(
-			path.join(rootDir, 'dist', 'manifest.json'), 'utf8',
-		));
+		const manifest = JSON.parse(
+			await (
+				await import('node:fs/promises')
+			).readFile(path.join(rootDir, 'dist', 'manifest.json'), 'utf8'),
+		);
 		await writeJson(path.join(rootDir, 'dist', 'manifest.json'), {
-			...manifest, version: '2.1.18',
+			...manifest,
+			version: '2.1.18',
 		});
 		await assert.rejects(checkRelease(rootDir), /Version drift detected/);
 	} finally {
@@ -66,10 +76,15 @@ test('pre-tag candidate rejects missing or extra release files', async () => {
 });
 
 test('package command topology separates daily, CI, candidate, and tag gates', async () => {
-	const packageJson = JSON.parse(await (await import('node:fs/promises')).readFile(
-		new URL('../package.json', import.meta.url), 'utf8',
-	));
-	assert.equal(packageJson.scripts.check, 'npm run typecheck && npm test');
+	const packageJson = JSON.parse(
+		await (
+			await import('node:fs/promises')
+		).readFile(new URL('../package.json', import.meta.url), 'utf8'),
+	);
+	assert.equal(
+		packageJson.scripts.check,
+		'npm run format:check && npm run lint && npm run typecheck && npm test',
+	);
 	assert.match(packageJson.scripts.ci, /version:check/);
 	assert.match(packageJson.scripts.ci, /build:production/);
 	assert.equal(packageJson.scripts['release:check'], 'node scripts/release-check.mjs');

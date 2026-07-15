@@ -4,7 +4,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { verifyReleaseArtifact } from './artifact.mjs';
-import { PLUGIN_ID, RELEASE_FILES, sha256Buffer } from './release-constants.mjs';
+import { RELEASE_FILES, sha256Buffer } from './release-constants.mjs';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -74,7 +74,9 @@ export async function installReleaseArtifact({
 	runner = spawnSync,
 } = {}) {
 	if (!zipPath || !provenancePath) {
-		throw new Error('Installer requires explicit --zip and --provenance inputs; dist fallback is forbidden');
+		throw new Error(
+			'Installer requires explicit --zip and --provenance inputs; dist fallback is forbidden',
+		);
 	}
 	const verified = await verifyReleaseArtifact({
 		repoDir,
@@ -104,9 +106,13 @@ export async function installReleaseArtifact({
 			throw new Error(`Installed file SHA-256 mismatch: ${expected.file}`);
 		}
 	}
-	const installedManifest = JSON.parse(await readFile(path.join(pluginDir, 'manifest.json'), 'utf8'));
-	if (installedManifest.id !== verified.provenance.pluginId
-		|| installedManifest.version !== verified.provenance.version) {
+	const installedManifest = JSON.parse(
+		await readFile(path.join(pluginDir, 'manifest.json'), 'utf8'),
+	);
+	if (
+		installedManifest.id !== verified.provenance.pluginId ||
+		installedManifest.version !== verified.provenance.version
+	) {
 		throw new Error('Installed manifest identity does not match verified release provenance');
 	}
 	return {

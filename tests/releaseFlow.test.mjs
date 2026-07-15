@@ -4,22 +4,18 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { buildFromExactTag } from '../scripts/release-from-tag.mjs';
-import {
-	validateBuildNumberHistory,
-	verifyAnnotatedTag,
-} from '../scripts/git-release.mjs';
+import { validateBuildNumberHistory, verifyAnnotatedTag } from '../scripts/git-release.mjs';
 import { createOrVerifyReleaseTag } from '../scripts/release-tag.mjs';
 import { runRelease } from '../scripts/release.mjs';
-import {
-	cleanupFixture,
-	createReleaseFixture,
-	git,
-} from './helpers/release-fixture.mjs';
+import { cleanupFixture, createReleaseFixture, git } from './helpers/release-fixture.mjs';
 
 test('historical lightweight tags remain while new release tags must be annotated', async () => {
 	const fixture = await createReleaseFixture();
 	try {
-		assert.equal(git(fixture.rootDir, ['cat-file', '-t', 'refs/tags/2.1.19']).stdout.trim(), 'commit');
+		assert.equal(
+			git(fixture.rootDir, ['cat-file', '-t', 'refs/tags/2.1.19']).stdout.trim(),
+			'commit',
+		);
 		assert.deepEqual(
 			verifyAnnotatedTag({
 				repoDir: fixture.rootDir,
@@ -47,11 +43,12 @@ test('tag type, name, version, and commit mismatches are rejected', async () => 
 			/must be annotated/,
 		);
 		assert.throws(
-			() => verifyAnnotatedTag({
-				repoDir: fixture.rootDir,
-				tag: fixture.version,
-				expectedVersion: '2.1.20-beta.2',
-			}),
+			() =>
+				verifyAnnotatedTag({
+					repoDir: fixture.rootDir,
+					tag: fixture.version,
+					expectedVersion: '2.1.20-beta.2',
+				}),
 			/Tag name must exactly match release version/,
 		);
 	} finally {
@@ -63,12 +60,13 @@ test('annotated tag pointing at the wrong commit is rejected', async () => {
 	const fixture = await createReleaseFixture();
 	try {
 		assert.throws(
-			() => verifyAnnotatedTag({
-				repoDir: fixture.rootDir,
-				tag: fixture.version,
-				expectedVersion: fixture.version,
-				expectedCommit: fixture.initialCommit,
-			}),
+			() =>
+				verifyAnnotatedTag({
+					repoDir: fixture.rootDir,
+					tag: fixture.version,
+					expectedVersion: fixture.version,
+					expectedCommit: fixture.initialCommit,
+				}),
 			/Tag commit mismatch/,
 		);
 	} finally {
@@ -80,14 +78,19 @@ test('build number history rejects reuse and rollback but ignores legacy build z
 	const fixture = await createReleaseFixture();
 	try {
 		assert.throws(
-			() => validateBuildNumberHistory({
-				repoDir: fixture.rootDir, version: '2.1.20-beta.2', buildNumber: 1,
-			}),
+			() =>
+				validateBuildNumberHistory({
+					repoDir: fixture.rootDir,
+					version: '2.1.20-beta.2',
+					buildNumber: 1,
+				}),
 			/already used/,
 		);
 		assert.deepEqual(
 			validateBuildNumberHistory({
-				repoDir: fixture.rootDir, version: '2.1.20-beta.2', buildNumber: 2,
+				repoDir: fixture.rootDir,
+				version: '2.1.20-beta.2',
+				buildNumber: 2,
 			}),
 			{ maximumPreviousBuildNumber: 1 },
 		);

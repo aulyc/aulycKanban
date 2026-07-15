@@ -40,7 +40,7 @@ export class CategoryNav {
 			const isActive = column.id === activeId;
 			const taskCount = isArchive
 				? this.store.getArchiveTaskCount(column.id)
-				: column.tasks?.length ?? 0;
+				: (column.tasks?.length ?? 0);
 
 			const itemEl = listEl.createDiv({
 				cls: `aulyckanban-nav-item ${isActive ? 'aulyckanban-nav-item-active' : ''}`,
@@ -89,9 +89,7 @@ export class CategoryNav {
 		// 添加分类按钮（紧跟在分类列表下方）
 		const addBtn = listEl.createDiv({
 			cls: 'aulyckanban-nav-add-btn',
-			attr: this.isAdding
-				? {}
-				: { tabindex: '-1', role: 'button' },
+			attr: this.isAdding ? {} : { tabindex: '-1', role: 'button' },
 		});
 		if (this.isAdding) {
 			addBtn.addClass('aulyckanban-nav-item-editing');
@@ -101,7 +99,9 @@ export class CategoryNav {
 				initialValue: this.draftTitle,
 				focusOnMount: this.consumeFocusRequest(),
 				blurBehavior: 'cancel',
-				onInput: (value) => { this.draftTitle = value; },
+				onInput: (value) => {
+					this.draftTitle = value;
+				},
 				onCommit: (value) => {
 					this.draftTitle = value;
 					return this.commitAdd();
@@ -136,7 +136,8 @@ export class CategoryNav {
 		const menu = new Menu();
 
 		menu.addItem((item) => {
-			item.setTitle(t('column.rename'))
+			item
+				.setTitle(t('column.rename'))
 				.setIcon('pencil')
 				.onClick(() => {
 					this.startInlineRename(columnId, itemEl);
@@ -146,7 +147,8 @@ export class CategoryNav {
 		menu.addSeparator();
 
 		menu.addItem((item) => {
-			item.setTitle(t('column.delete'))
+			item
+				.setTitle(t('column.delete'))
 				.setIcon('trash')
 				.onClick(() => {
 					this.handleDeleteColumn(columnId);
@@ -191,7 +193,9 @@ export class CategoryNav {
 			focusOnMount: this.consumeFocusRequest(),
 			blurBehavior: 'commit',
 			stopClickPropagation: true,
-			onInput: (value) => { this.draftTitle = value; },
+			onInput: (value) => {
+				this.draftTitle = value;
+			},
 			onCommit: (value) => {
 				this.draftTitle = value;
 				this.commitRename(columnId, currentTitle);
@@ -262,10 +266,11 @@ export class CategoryNav {
 		new ConfirmModal(this.app, {
 			message: msg,
 			isDestructive: true,
-			onConfirm: () => this.store.dispatch({
-				type: 'DELETE_COLUMN',
-				payload: { columnId, moveTasks: true },
-			}),
+			onConfirm: () =>
+				this.store.dispatch({
+					type: 'DELETE_COLUMN',
+					payload: { columnId, moveTasks: true },
+				}),
 		}).open();
 	}
 

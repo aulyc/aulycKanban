@@ -15,15 +15,20 @@ export async function createOrVerifyReleaseTag({ repoDir, runCandidateGate = tru
 	assertCleanGit(repoDir, 'calling worktree before release tag');
 	const { version, buildNumber } = await readReleaseVersion(repoDir);
 	const metadata = await verifyReleaseMetadataCommit(repoDir, version);
-	const existing = runGit(repoDir, ['show-ref', '--verify', `refs/tags/${version}`], { allowFailure: true });
+	const existing = runGit(repoDir, ['show-ref', '--verify', `refs/tags/${version}`], {
+		allowFailure: true,
+	});
 	if (existing.status === 0) {
 		validateBuildNumberHistory({ repoDir, version, buildNumber, currentTag: version });
-		return { ...verifyAnnotatedTag({
-			repoDir,
-			tag: version,
-			expectedVersion: version,
-			expectedCommit: metadata.commit,
-		}), created: false };
+		return {
+			...verifyAnnotatedTag({
+				repoDir,
+				tag: version,
+				expectedVersion: version,
+				expectedCommit: metadata.commit,
+			}),
+			created: false,
+		};
 	}
 	validateBuildNumberHistory({ repoDir, version, buildNumber });
 	if (runCandidateGate) {
@@ -36,14 +41,24 @@ export async function createOrVerifyReleaseTag({ repoDir, runCandidateGate = tru
 		if (result.status !== 0) throw new Error('Pre-tag candidate gate failed');
 	}
 	assertCleanGit(repoDir, 'calling worktree before tag creation');
-	const result = runGit(repoDir, ['tag', '-a', version, '-m', `Release ${version}`, metadata.commit]);
+	const result = runGit(repoDir, [
+		'tag',
+		'-a',
+		version,
+		'-m',
+		`Release ${version}`,
+		metadata.commit,
+	]);
 	if (result.status !== 0) throw new Error(`Failed to create release tag ${version}`);
-	return { ...verifyAnnotatedTag({
-		repoDir,
-		tag: version,
-		expectedVersion: version,
-		expectedCommit: metadata.commit,
-	}), created: true };
+	return {
+		...verifyAnnotatedTag({
+			repoDir,
+			tag: version,
+			expectedVersion: version,
+			expectedCommit: metadata.commit,
+		}),
+		created: true,
+	};
 }
 
 const entryPath = process.argv[1] ? pathToFileURL(path.resolve(process.argv[1])).href : '';
