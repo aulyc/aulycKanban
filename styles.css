@@ -791,8 +791,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 
 .aulyckanban-archive-sort-btn,
 .aulyckanban-archive-select-mode-btn,
-.aulyckanban-archive-selection-btn,
-.aulyckanban-archive-more-btn {
+.aulyckanban-archive-selection-btn {
 	height: 30px;
 	padding: 0 10px;
 	border: 1px solid var(--background-modifier-border);
@@ -826,8 +825,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 
 .aulyckanban-archive-sort-btn:hover,
 .aulyckanban-archive-select-mode-btn:hover,
-.aulyckanban-archive-selection-btn:hover,
-.aulyckanban-archive-more-btn:hover {
+.aulyckanban-archive-selection-btn:hover {
 	background: var(--interactive-hover);
 }
 
@@ -863,11 +861,11 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 }
 
 .aulyckanban-archive-toolbar-selection {
-	min-height: 34px;
-	padding: 4px 6px 4px 8px;
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 8px;
-	background: color-mix(in srgb, var(--interactive-accent) 8%, var(--background-secondary));
+	min-height: 30px;
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
 }
 
 .aulyckanban-archive-select-all {
@@ -880,9 +878,17 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	cursor: pointer;
 }
 
+.aulyckanban-archive-select-all span {
+	white-space: nowrap;
+}
+
 .aulyckanban-archive-selected-count {
+	min-width: 0;
+	margin-right: auto;
+	overflow: hidden;
 	color: var(--text-muted);
 	font-size: 12px;
+	text-overflow: ellipsis;
 	white-space: nowrap;
 }
 
@@ -890,7 +896,16 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	display: flex;
 	align-items: center;
 	gap: 6px;
-	margin-left: auto;
+	flex: 0 0 auto;
+}
+
+.aulyckanban-archive-selection-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 48px;
+	box-shadow: none;
+	white-space: nowrap;
 }
 
 .aulyckanban-archive-delete-selected-btn {
@@ -899,28 +914,22 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	color: #fff;
 }
 
-.aulyckanban-archive-delete-selected-btn:hover {
+.aulyckanban-archive-delete-selected-btn:not(:disabled):hover {
 	border-color: var(--text-error);
 	background: color-mix(in srgb, var(--text-error) 88%, #000);
 }
 
-.aulyckanban-archive-delete-selected-btn:disabled,
-.aulyckanban-archive-more-btn:disabled,
-.aulyckanban-archive-select-mode-btn:disabled {
-	opacity: 0.45;
+.aulyckanban-archive-delete-selected-btn:disabled {
+	border-color: var(--background-modifier-border);
+	background: var(--interactive-normal);
+	color: var(--text-muted);
+	opacity: 0.55;
 	cursor: not-allowed;
 }
 
-.aulyckanban-archive-more-btn {
-	display: grid;
-	place-items: center;
-	width: 30px;
-	padding: 0;
-}
-
-.aulyckanban-archive-more-btn svg {
-	width: 15px;
-	height: 15px;
+.aulyckanban-archive-select-mode-btn:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
 }
 
 /* 归档大类区块（工作/个人） */

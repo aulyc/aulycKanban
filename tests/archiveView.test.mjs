@@ -91,6 +91,7 @@ function byClass(root, className) {
 }
 
 const source = readFileSync(new URL('../src/ui/ArchiveView.ts', import.meta.url), 'utf8');
+const css = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
 const output = ts.transpileModule(source, {
 	compilerOptions: {
 		module: ts.ModuleKind.CommonJS,
@@ -132,9 +133,8 @@ function createHarness() {
 		document: documentRef,
 		Element: MockElement,
 		require: (id) => {
-			if (id === 'obsidian') {
+		if (id === 'obsidian') {
 				return {
-					Menu: class {},
 					setIcon: (element, icon) => { element.icon = icon; },
 				};
 			}
@@ -220,8 +220,20 @@ test('archive selection mode replaces browse controls and hides restore actions'
 	assert.equal(byClass(container, 'aulyckanban-archive-toolbar-selection').length, 1);
 	assert.equal(byClass(container, 'aulyckanban-archive-search').length, 0);
 	assert.equal(byClass(container, 'aulyckanban-archive-restore-btn').length, 0);
-	assert.equal(byClass(container, 'aulyckanban-archive-more-btn').length, 1);
+	assert.equal(byClass(container, 'aulyckanban-archive-more-btn').length, 0);
 	assert.equal(byClass(container, 'aulyckanban-archive-delete-selected-btn')[0].disabled, true);
+});
+
+test('archive selection mode has one explicit delete path and an unboxed toolbar', () => {
+	assert.doesNotMatch(source, /showFilteredDeleteMenu|archive\.delete\.filtered|archive\.confirm\.deleteFiltered/);
+
+	const toolbarRule = css.match(/\.aulyckanban-archive-toolbar-selection\s*\{([^}]*)\}/)?.[1] ?? '';
+	assert.match(toolbarRule, /border:\s*0;/);
+	assert.match(toolbarRule, /background:\s*transparent;/);
+
+	const disabledDeleteRule = css.match(/\.aulyckanban-archive-delete-selected-btn:disabled\s*\{([^}]*)\}/)?.[1] ?? '';
+	assert.match(disabledDeleteRule, /border-color:\s*var\(--background-modifier-border\);/);
+	assert.match(disabledDeleteRule, /background:\s*var\(--interactive-normal\);/);
 });
 
 test('clicking an archive card selects the whole card and updates the selected count', () => {

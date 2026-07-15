@@ -1,6 +1,6 @@
 import type { Task, ViewKind } from '../types';
 import type { KanbanStore } from '../store';
-import { Menu, setIcon } from 'obsidian';
+import { setIcon } from 'obsidian';
 import type { App } from 'obsidian';
 import { t } from '../i18n';
 import { ConfirmModal } from './ConfirmModal';
@@ -213,15 +213,6 @@ export class ArchiveView {
 		deleteSelectedBtn.addEventListener('click', () => {
 			this.confirmDeleteSelected(Array.from(this.selectedTaskIds));
 		});
-
-		const moreBtn = actionsEl.createEl('button', {
-			cls: 'aulyckanban-archive-more-btn',
-			attr: { type: 'button' },
-		});
-		setIcon(moreBtn, 'more-horizontal');
-		appendAccessibleLabel(moreBtn, t('archive.delete.more'));
-		moreBtn.disabled = filteredIds.length === 0;
-		moreBtn.addEventListener('click', () => this.showFilteredDeleteMenu(moreBtn, filteredIds));
 	}
 
 	private confirmDeleteSelected(ids: string[]): void {
@@ -234,30 +225,6 @@ export class ArchiveView {
 				this.store.dispatch({ type: 'DELETE_ARCHIVE_TASKS', payload: { taskIds: ids } });
 			},
 		}).open();
-	}
-
-	private showFilteredDeleteMenu(anchorEl: HTMLElement, filteredIds: string[]): void {
-		if (filteredIds.length === 0) return;
-		const menu = new Menu();
-		menu.addItem((item) => {
-			item.setTitle(t('archive.delete.filtered').replace('{count}', String(filteredIds.length)))
-				.setIcon('trash')
-				.onClick(() => {
-					new ConfirmModal(this.app, {
-						message: t('archive.confirm.deleteFiltered').replace('{count}', String(filteredIds.length)),
-						isDestructive: true,
-						onConfirm: () => {
-							this.selectedTaskIds.clear();
-							this.store.dispatch({
-								type: 'DELETE_ARCHIVE_TASKS',
-								payload: { taskIds: filteredIds },
-							});
-						},
-					}).open();
-				});
-		});
-		const rect = anchorEl.getBoundingClientRect();
-		menu.showAtPosition({ x: rect.right, y: rect.bottom });
 	}
 
 	private applySearch(value: string): void {
