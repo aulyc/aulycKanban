@@ -14,10 +14,10 @@
 
 /* Obsidian 没有公开分栏宽度 API；此类由 KanbanView 标记到实际 resize 宿主。 */
 body:not(.is-mobile) .aulyckanban-resize-host {
-	flex: 0 0 500px !important;
-	width: 500px !important;
-	min-width: 500px !important;
-	max-width: 500px !important;
+	flex: 0 0 600px !important;
+	width: 600px !important;
+	min-width: 600px !important;
+	max-width: 600px !important;
 }
 
 /* 容器 */

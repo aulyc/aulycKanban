@@ -52,11 +52,11 @@ test('main workspace uses workspace tabs and moves the marker between hosts', ()
 	assert.equal(tabs.classList.contains('aulyckanban-resize-host'), false);
 });
 
-test('desktop resize host is fixed to exactly 500px', () => {
+test('desktop resize host is fixed to exactly 600px', () => {
 	const rule =
 		styles.match(/body:not\(\.is-mobile\) \.aulyckanban-resize-host\s*\{([^}]*)\}/)?.[1] ?? '';
-	assert.match(rule, /flex:\s*0 0 500px !important/);
-	assert.match(rule, /width:\s*500px !important/);
-	assert.match(rule, /min-width:\s*500px !important/);
-	assert.match(rule, /max-width:\s*500px !important/);
+	assert.match(rule, /flex:\s*0 0 600px !important/);
+	assert.match(rule, /width:\s*600px !important/);
+	assert.match(rule, /min-width:\s*600px !important/);
+	assert.match(rule, /max-width:\s*600px !important/);
 });
