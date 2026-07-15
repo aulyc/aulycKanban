@@ -1,0 +1,220 @@
+{
+  "$schema": "urn:codex-engineering-standards:project-adoption:1",
+  "schemaVersion": 1,
+  "projectId": "aulyckanban",
+  "applicability": "applicable",
+  "coreVersion": "1.0.0",
+  "artifacts": [
+    {
+      "id": "aulyckanban-obsidian-plugin",
+      "type": "obsidian-plugin",
+      "profile": "obsidian-plugin",
+      "profileVersion": "1.0.0"
+    }
+  ],
+  "ruleBindings": [
+    {
+      "ruleId": "REL-001",
+      "evidence": ["AGENTS.md#versioning-and-release-profile"]
+    },
+    {
+      "ruleId": "REL-002",
+      "evidence": [
+        "AGENTS.md#generated-files-and-build-outputs",
+        "version-bump.mjs"
+      ]
+    },
+    {
+      "ruleId": "REL-003",
+      "evidence": [
+        "VERSIONING.md",
+        "AGENTS.md#project-specific-adaptations"
+      ]
+    },
+    {
+      "ruleId": "REL-004",
+      "evidence": [
+        "VERSIONING.md",
+        "scripts/git-release.mjs"
+      ]
+    },
+    {
+      "ruleId": "REL-005",
+      "evidence": [
+        "VERSIONING.md",
+        "scripts/git-release.mjs"
+      ]
+    },
+    {
+      "ruleId": "REL-006",
+      "evidence": [
+        "AGENTS.md#required-release-gates",
+        "scripts/release-check.mjs"
+      ]
+    },
+    {
+      "ruleId": "REL-007",
+      "evidence": [
+        "scripts/release-from-tag.mjs",
+        "scripts/artifact.mjs"
+      ]
+    },
+    {
+      "ruleId": "REL-008",
+      "evidence": ["scripts/artifact.mjs"]
+    },
+    {
+      "ruleId": "REL-009",
+      "evidence": [
+        "AGENTS.md#project-specific-adaptations",
+        "scripts/release.mjs"
+      ]
+    },
+    {
+      "ruleId": "REL-010",
+      "evidence": [
+        "scripts/install-plugin.mjs",
+        "scripts/obsidian-smoke.mjs"
+      ]
+    },
+    {
+      "ruleId": "REL-011",
+      "evidence": ["AGENTS.md#data-credentials-and-sensitive-information"]
+    },
+    {
+      "ruleId": "REL-012",
+      "evidence": [".codex/standards.json"]
+    },
+    {
+      "ruleId": "REL-013",
+      "evidence": [".codex/standards.json"]
+    },
+    {
+      "ruleId": "OBS-001",
+      "evidence": ["AGENTS.md#versioning-and-release-profile"]
+    },
+    {
+      "ruleId": "OBS-002",
+      "evidence": ["version-bump.mjs"]
+    },
+    {
+      "ruleId": "OBS-003",
+      "evidence": [
+        "AGENTS.md#repository-map",
+        "scripts/artifact.mjs"
+      ]
+    },
+    {
+      "ruleId": "OBS-004",
+      "evidence": [
+        "scripts/build-dist.mjs",
+        "scripts/release-constants.mjs",
+        "scripts/artifact.mjs"
+      ]
+    },
+    {
+      "ruleId": "OBS-005",
+      "evidence": [
+        "VERSIONING.md",
+        "scripts/release-from-tag.mjs",
+        "scripts/release.mjs"
+      ]
+    },
+    {
+      "ruleId": "OBS-006",
+      "evidence": ["scripts/install-plugin.mjs"]
+    },
+    {
+      "ruleId": "OBS-007",
+      "evidence": [
+        "AGENTS.md#obsidian-cli",
+        "scripts/obsidian-smoke.mjs"
+      ]
+    }
+  ],
+  "exceptions": [],
+  "trackedFiles": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "4a693ad4ce967d8cb3437ab987676a02af9e6d822e3aa52fccccff40e730fc43"
+    },
+    {
+      "path": "VERSIONING.md",
+      "sha256": "b25ac3c5d338093c495450928c6e33fa0c22b735237da7b3f26265fc86ea2281"
+    },
+    {
+      "path": "version-bump.mjs",
+      "sha256": "d5c63836662fc9c2e86a2ecc3f566eeefc1d3f3a8248b7cab4a4d64dd2ddee00"
+    },
+    {
+      "path": "scripts/artifact.mjs",
+      "sha256": "d0792f0a14af78f889d9be359727a09f66368032d9be5e6d0f1367d3381bc6da"
+    },
+    {
+      "path": "scripts/build-dist.mjs",
+      "sha256": "1b5ae008cd879900baccc3315a23ca75b8595a88b7069dc58d5006b1836672fa"
+    },
+    {
+      "path": "scripts/git-release.mjs",
+      "sha256": "f0a5a708c7157c72c864ccb7219be59ec3ac1eee20bbfbde7e75af48c3ba66c6"
+    },
+    {
+      "path": "scripts/install-plugin.mjs",
+      "sha256": "e7eee572c24c06472a6333645e4efda55b1184a483dba6d137076596a6428c48"
+    },
+    {
+      "path": "scripts/obsidian-smoke.mjs",
+      "sha256": "1969305121dfd72f8b5c2c028ba8871bfb9d59ce902af54e28edb4026e2ae26c"
+    },
+    {
+      "path": "scripts/release-check.mjs",
+      "sha256": "e921f4960c365e4ae8d3c8627fc63b87aa5bfb24c7ebed2ff8ec9ce3f5b0615d"
+    },
+    {
+      "path": "scripts/release-constants.mjs",
+      "sha256": "d09903063c63e5fa8518b460910bc96e333b13e4554329310903723de4238fcd"
+    },
+    {
+      "path": "scripts/release-from-tag.mjs",
+      "sha256": "facb1353796717f33715c4b9241fd60209d3e83d623df69891b8e15a76b30200"
+    },
+    {
+      "path": "scripts/release-tag.mjs",
+      "sha256": "2855088a5e7c7603ef1dfe7c6a20a531fb02d6eb77742ef88802a162447f735a"
+    },
+    {
+      "path": "scripts/release.mjs",
+      "sha256": "e7547d52dab839804ad3180a1983704627a393144cf39793967f5c6c26dd740b"
+    },
+    {
+      "path": "scripts/zip.mjs",
+      "sha256": "577664593e101594fc83ca289c972d31a0f93f2f357a590704681aceb55c64da"
+    }
+  ],
+  "releaseSignals": {
+    "versionSources": [
+      "release-version.json"
+    ],
+    "releaseFiles": [
+      "AGENTS.md",
+      "CHANGELOG.md",
+      "VERSIONING.md",
+      "package.json",
+      "version-bump.mjs",
+      "scripts/artifact.mjs",
+      "scripts/build-dist.mjs",
+      "scripts/git-release.mjs",
+      "scripts/install-plugin.mjs",
+      "scripts/obsidian-smoke.mjs",
+      "scripts/release-check.mjs",
+      "scripts/release-constants.mjs",
+      "scripts/release-from-tag.mjs",
+      "scripts/release-tag.mjs",
+      "scripts/release.mjs",
+      "scripts/zip.mjs"
+    ],
+    "ciPaths": [
+      "package.json"
+    ]
+  }
+}

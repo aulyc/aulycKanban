@@ -70,6 +70,7 @@
 ## Versioning and Release Profile
 
 - Baseline: 必须加载并遵循 `general-release-versioning` Skill。
+- Standards adoption: `.codex/standards.json`；采用状态由中央扫描器计算，项目不得自行声明 `compatible`。
 - Release profile: `obsidian-plugin`
 - Project type: Obsidian plugin
 - Supported release targets: Obsidian 桌面端和移动端兼容插件文件
@@ -84,6 +85,8 @@
 
 ### Release command mapping
 
+- Non-blocking standards check: `python3 "/Users/crp/Projects/Codex 开发规范/scripts/standards_check.py" project --path "/Users/crp/Projects/aulyckanban"`
+- Strict standards release gate: `python3 "/Users/crp/Projects/Codex 开发规范/scripts/standards_check.py" project --path "/Users/crp/Projects/aulyckanban" --strict`
 - Local development build: `npm run build:production`
 - Local development installation: N/A
 - Version consistency check: `npm run version:check`
@@ -112,6 +115,15 @@
 - Historical tags: 历史 lightweight 与 annotated tags 均为只读遗留记录；不得移动、删除或重建。新规则从 `2.1.19` 之后的第一个版本开始执行。
 - CI: 当前没有远端 CI 配置；以 `npm run ci` 作为本地等价门禁。
 - macOS trust fields: N/A；本仓库不发布原生 macOS artifact。
+
+### Standards evidence and feedback
+
+- Version-source signals: `release-version.json`。
+- Release-document and script signals: `AGENTS.md`、`CHANGELOG.md`、`VERSIONING.md`、`package.json`、`version-bump.mjs` 和 `scripts/` 下的发布、构建、安装、ZIP、provenance、tag 与 smoke 脚本。
+- CI signals: `package.json`；仓库当前没有远端 CI workflow。
+- Tracked drift evidence: `AGENTS.md`、`VERSIONING.md`、`version-bump.mjs` 和稳定发布控制脚本；复核后的 SHA-256 记录在 `.codex/standards.json`。
+- Active exceptions: none。
+- Release-process feedback classification: `project-only`；本次只补齐项目采用映射和中央登记，不修改公共核心或 `obsidian-plugin` Profile。
 
 ### Release documentation and invariants
 
