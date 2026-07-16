@@ -2,7 +2,7 @@
 
 ## Repository purpose
 
-本仓库构建 Obsidian 看板插件 `aulyckanban`。首要保证是插件数据兼容、用户运行数据不进入发布产物且安装升级不覆盖 `data.json`。
+本仓库构建 Obsidian 看板插件 `aulycKanban`。首要保证是插件数据兼容、用户运行数据不进入发布产物且安装升级不覆盖 `data.json`。
 
 ## Stack and platform
 
@@ -24,6 +24,14 @@
 1. `src/` 拥有运行时行为，不得依赖发布脚本、Obsidian CLI、Vault 绝对路径或发布凭据。
 2. `scripts/` 只处理仓库元数据和发布文件；正式产物不得包含 Vault 内容、用户数据、`data.json`、开发文件或本机身份。
 3. `release-version.json` 到派生版本文件只能单向同步；变更后运行 `npm run version:sync`，检查生成 diff，并提交必要派生文件。
+
+## Product naming and compatibility identities
+
+- Product/display name: `aulycKanban`。
+- Repository folder: `/Users/crp/Projects/aulycKanban`。
+- Plugin ID、npm package name 和安装目录保留 `aulyckanban`；安装目录固定为 `.obsidian/plugins/aulyckanban/`。
+- Obsidian view type `aulyckanban-view`、`aulyckanban-*` CSS/DOM 前缀、`data.json` 结构和内部存储键均为兼容身份，不随品牌大小写改名。
+- 新 ZIP 和 release provenance 使用 `aulycKanban-<version>` 前缀；验证器仅为 `2.3.5` 及以前的历史产物兼容旧前缀 `aulyckanban-<version>`。
 
 ## Command mapping
 
@@ -81,14 +89,14 @@
 - Build-number source: `release-version.json#buildNumber`
 - Product/package metadata: `manifest.json`、`package.json`、`package-lock.json`、`versions.json`
 - Derived version files: `package.json`、`package-lock.json`、`manifest.json`、`versions.json`、`dist/manifest.json`
-- Release provenance: `release-artifacts/aulyckanban-<version>.release-provenance.json`，由精确 annotated tag 的隔离构建生成
+- Release provenance: `release-artifacts/aulycKanban-<version>.release-provenance.json`，由精确 annotated tag 的隔离构建生成
 
 只读取公共核心和 `obsidian-plugin` Profile。不得应用 `macos-arm64-app` 的 Apple 构建号、架构、Developer ID、签名、公证、Staple 或 Gatekeeper 规则。
 
 ### Release command mapping
 
-- Non-blocking standards check: `python3 "/Users/crp/Projects/Codex 开发规范/scripts/standards_check.py" project --path "/Users/crp/Projects/aulyckanban"`
-- Strict standards release gate: `python3 "/Users/crp/Projects/Codex 开发规范/scripts/standards_check.py" project --path "/Users/crp/Projects/aulyckanban" --strict`
+- Non-blocking standards check: `python3 "/Users/crp/Projects/Codex 开发规范/scripts/standards_check.py" project --path "/Users/crp/Projects/aulycKanban"`
+- Strict standards release gate: `python3 "/Users/crp/Projects/Codex 开发规范/scripts/standards_check.py" project --path "/Users/crp/Projects/aulycKanban" --strict`
 - Local development build: `npm run build:production`
 - Local development installation: N/A
 - Version consistency check: `npm run version:check`

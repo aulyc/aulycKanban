@@ -1,6 +1,6 @@
 {
 	"id": "aulyckanban",
-	"name": "aulyckanban",
+	"name": "aulycKanban",
 	"version": "2.3.5",
 	"minAppVersion": "1.5.0",
 	"description": "Manage tasks with kanban board based on the Eisenhower Matrix.",

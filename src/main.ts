@@ -155,7 +155,7 @@ export default class KanbanPlugin extends Plugin {
 				}
 			}
 		} catch (error) {
-			console.error('[aulyckanban] Failed to activate view:', error);
+			console.error('[aulycKanban] Failed to activate view:', error);
 		}
 	}
 
@@ -166,7 +166,7 @@ export default class KanbanPlugin extends Plugin {
 		try {
 			await this.repository.save(this.store.getSettings(), this.store.getBoardData());
 		} catch (error) {
-			console.error('[aulyckanban] Failed to save data:', error);
+			console.error('[aulycKanban] Failed to save data:', error);
 			// 同一轮自动重试只在首次失败时提示，避免重复 Notice 干扰用户。
 			if (notifyFailure) new Notice(t('save.fail'));
 			throw error;

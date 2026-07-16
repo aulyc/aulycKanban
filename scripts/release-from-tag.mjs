@@ -14,7 +14,7 @@ function run(command, args, cwd) {
 
 export async function buildFromExactTag({ repoDir, tag, outputDir, expectedChannel } = {}) {
 	const tagInfo = verifyAnnotatedTag({ repoDir, tag, expectedVersion: tag });
-	const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), 'aulyckanban-release-worktree-'));
+	const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), 'aulycKanban-release-worktree-'));
 	const worktreeDir = path.join(temporaryRoot, 'source');
 	let worktreeAdded = false;
 	try {

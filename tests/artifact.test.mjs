@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -10,7 +10,7 @@ import { cleanupFixture, createReleaseFixture } from './helpers/release-fixture.
 
 async function buildFixtureArtifact() {
 	const fixture = await createReleaseFixture();
-	const outputDir = await mkdtemp(path.join(os.tmpdir(), 'aulyckanban-artifact-'));
+	const outputDir = await mkdtemp(path.join(os.tmpdir(), 'aulycKanban-artifact-'));
 	const artifact = await buildReleaseArtifact({
 		repoDir: fixture.rootDir,
 		sourceDir: fixture.rootDir,
@@ -34,10 +34,84 @@ test('versioned ZIP and release provenance are derived from real Git and artifac
 		assert.equal(result.provenance.distribution, 'local-vault');
 		assert.equal(result.provenance.commit, fixture.releaseCommit);
 		assert.equal(result.provenance.dirty, false);
+		assert.equal(result.manifest.name, 'aulycKanban');
+		assert.equal(path.basename(fixture.zipPath), `aulycKanban-${fixture.version}.zip`);
+		assert.equal(
+			path.basename(fixture.provenancePath),
+			`aulycKanban-${fixture.version}.release-provenance.json`,
+		);
 		assert.deepEqual(
 			result.entries.map((entry) => entry.name),
 			['main.js', 'manifest.json', 'styles.css'],
 		);
+	} finally {
+		await cleanupFixture(fixture.rootDir);
+		await rm(fixture.outputDir, { recursive: true, force: true });
+	}
+});
+
+test('legacy artifact filenames are rejected after the rename compatibility boundary', async () => {
+	const fixture = await createReleaseFixture({ version: '2.3.6-beta.1', buildNumber: 9 });
+	const outputDir = await mkdtemp(path.join(os.tmpdir(), 'aulycKanban-new-artifact-'));
+	const artifact = await buildReleaseArtifact({
+		repoDir: fixture.rootDir,
+		sourceDir: fixture.rootDir,
+		outputDir,
+		expectedChannel: 'test',
+	});
+	const legacyZipPath = path.join(outputDir, `aulyckanban-${fixture.version}.zip`);
+	const legacyProvenancePath = path.join(
+		outputDir,
+		`aulyckanban-${fixture.version}.release-provenance.json`,
+	);
+	try {
+		const provenance = JSON.parse(await readFile(artifact.provenancePath, 'utf8'));
+		provenance.artifact.file = path.basename(legacyZipPath);
+		await rename(artifact.zipPath, legacyZipPath);
+		await writeFile(legacyProvenancePath, `${JSON.stringify(provenance, null, 2)}\n`);
+		await assert.rejects(
+			verifyReleaseArtifact({
+				repoDir: fixture.rootDir,
+				zipPath: legacyZipPath,
+				provenancePath: legacyProvenancePath,
+				expectedChannel: 'test',
+			}),
+			/Versioned ZIP name mismatch: expected aulycKanban-2\.3\.6-beta\.1\.zip/,
+		);
+	} finally {
+		await cleanupFixture(fixture.rootDir);
+		await rm(outputDir, { recursive: true, force: true });
+	}
+});
+
+test('historical artifacts keep legacy filename compatibility without affecting new output names', async () => {
+	const fixture = await buildFixtureArtifact();
+	const legacyZipPath = path.join(fixture.outputDir, `aulyckanban-${fixture.version}.zip`);
+	const legacyProvenancePath = path.join(
+		fixture.outputDir,
+		`aulyckanban-${fixture.version}.release-provenance.json`,
+	);
+	try {
+		const provenance = JSON.parse(await readFile(fixture.provenancePath, 'utf8'));
+		provenance.artifact.file = path.basename(legacyZipPath);
+		const temporaryZipPath = path.join(fixture.outputDir, 'legacy-artifact-rename.tmp.zip');
+		const temporaryProvenancePath = path.join(
+			fixture.outputDir,
+			'legacy-provenance-rename.tmp.json',
+		);
+		await rename(fixture.zipPath, temporaryZipPath);
+		await rename(temporaryZipPath, legacyZipPath);
+		await rename(fixture.provenancePath, temporaryProvenancePath);
+		await rename(temporaryProvenancePath, legacyProvenancePath);
+		await writeFile(legacyProvenancePath, `${JSON.stringify(provenance, null, 2)}\n`);
+
+		const result = await verifyReleaseArtifact({
+			repoDir: fixture.rootDir,
+			zipPath: legacyZipPath,
+			provenancePath: legacyProvenancePath,
+			expectedChannel: 'test',
+		});
+		assert.equal(result.provenance.artifact.file, path.basename(legacyZipPath));
 	} finally {
 		await cleanupFixture(fixture.rootDir);
 		await rm(fixture.outputDir, { recursive: true, force: true });
@@ -136,7 +210,7 @@ test('artifact verifier rejects missing and extra ZIP files even with matching o
 
 test('dirty tagged source cannot be packaged', async () => {
 	const fixture = await createReleaseFixture();
-	const outputDir = await mkdtemp(path.join(os.tmpdir(), 'aulyckanban-artifact-dirty-'));
+	const outputDir = await mkdtemp(path.join(os.tmpdir(), 'aulycKanban-artifact-dirty-'));
 	try {
 		await writeFile(path.join(fixture.rootDir, 'dirty.txt'), 'dirty');
 		await assert.rejects(

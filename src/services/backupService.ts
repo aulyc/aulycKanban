@@ -33,7 +33,7 @@ export class BackupService {
 			const url = URL.createObjectURL(blob);
 
 			const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-			const filename = `aulyckanban-backup-${timestamp}.json`;
+			const filename = `aulycKanban-backup-${timestamp}.json`;
 
 			const a = document.createElement('a');
 			a.href = url;

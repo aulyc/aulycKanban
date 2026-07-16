@@ -2,13 +2,17 @@ import { lstat, mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
-import { getReleaseChannel, readReleaseVersion } from '../version-bump.mjs';
+import { compareSemVer, getReleaseChannel, readReleaseVersion } from '../version-bump.mjs';
 import { assertCleanGit, runGit, verifyAnnotatedTag } from './git-release.mjs';
 import {
 	assertExactKeys,
 	DISTRIBUTION,
+	LEGACY_ARTIFACT_BASENAME,
+	LEGACY_ARTIFACT_MAX_VERSION,
 	PLUGIN_ID,
+	PRODUCT_NAME,
 	readJson,
+	RELEASE_ARTIFACT_BASENAME,
 	RELEASE_FILES,
 	RELEASE_PROFILE,
 	sha256Buffer,
@@ -35,6 +39,21 @@ function sameNames(actual, expected) {
 	return [...actual].sort().join('\0') === [...expected].sort().join('\0');
 }
 
+function artifactNames(version, basename) {
+	return {
+		zip: `${basename}-${version}.zip`,
+		provenance: `${basename}-${version}.release-provenance.json`,
+	};
+}
+
+function acceptedArtifactNames(version) {
+	const accepted = [artifactNames(version, RELEASE_ARTIFACT_BASENAME)];
+	if (compareSemVer(version, LEGACY_ARTIFACT_MAX_VERSION) <= 0) {
+		accepted.push(artifactNames(version, LEGACY_ARTIFACT_BASENAME));
+	}
+	return accepted;
+}
+
 export async function verifyDistArtifacts({ rootDir, distDir = path.join(rootDir, 'dist') } = {}) {
 	const names = await readdir(distDir);
 	if (!sameNames(names, RELEASE_FILES)) {
@@ -52,6 +71,9 @@ export async function verifyDistArtifacts({ rootDir, distDir = path.join(rootDir
 	}
 	const manifest = JSON.parse(files.find((entry) => entry.file === 'manifest.json').data);
 	if (manifest.id !== PLUGIN_ID) throw new Error(`Unexpected plugin id: ${String(manifest.id)}`);
+	if (manifest.name !== PRODUCT_NAME) {
+		throw new Error(`Unexpected plugin display name: ${String(manifest.name)}`);
+	}
 	return { manifest, files };
 }
 
@@ -92,13 +114,23 @@ export async function verifyReleaseArtifact({
 	}
 	const manifestEntry = entries.find((entry) => entry.name === 'manifest.json');
 	const manifest = JSON.parse(manifestEntry.data);
-	const expectedZipName = `${manifest.id}-${manifest.version}.zip`;
-	const expectedProvenanceName = `${manifest.id}-${manifest.version}.release-provenance.json`;
-	if (path.basename(zipPath) !== expectedZipName || provenance.artifact.file !== expectedZipName) {
-		throw new Error(`Versioned ZIP name mismatch: expected ${expectedZipName}`);
+	const zipName = path.basename(zipPath);
+	const provenanceName = path.basename(provenancePath);
+	const acceptedNames = acceptedArtifactNames(manifest.version);
+	const matchingNames = acceptedNames.find((candidate) => candidate.zip === zipName);
+	if (!matchingNames || provenance.artifact.file !== zipName) {
+		throw new Error(
+			`Versioned ZIP name mismatch: expected ${acceptedNames.map((candidate) => candidate.zip).join(' or ')}`,
+		);
 	}
-	if (path.basename(provenancePath) !== expectedProvenanceName) {
-		throw new Error(`Release provenance name mismatch: expected ${expectedProvenanceName}`);
+	if (provenanceName !== matchingNames.provenance) {
+		throw new Error(`Release provenance name mismatch: expected ${matchingNames.provenance}`);
+	}
+	if (
+		matchingNames.zip.startsWith(`${RELEASE_ARTIFACT_BASENAME}-`) &&
+		manifest.name !== PRODUCT_NAME
+	) {
+		throw new Error(`Unexpected plugin display name: ${String(manifest.name)}`);
 	}
 	const expectedFields = {
 		releaseProfile: RELEASE_PROFILE,
@@ -166,8 +198,10 @@ export async function buildReleaseArtifact({
 	});
 	const { manifest, files } = await verifyDistArtifacts({ rootDir: sourceDir });
 	await mkdir(outputDir, { recursive: true });
-	const zipName = `${manifest.id}-${manifest.version}.zip`;
-	const provenanceName = `${manifest.id}-${manifest.version}.release-provenance.json`;
+	const { zip: zipName, provenance: provenanceName } = artifactNames(
+		manifest.version,
+		RELEASE_ARTIFACT_BASENAME,
+	);
 	const zipPath = path.join(outputDir, zipName);
 	const provenancePath = path.join(outputDir, provenanceName);
 	const zip = createZipBuffer(files.map(({ file, data }) => ({ name: file, data })));
@@ -210,7 +244,7 @@ async function main() {
 	if (result.manifest.version !== releaseVersion.version)
 		throw new Error('Dist version drift detected');
 	console.log(
-		`[artifact] Verified candidate files for ${result.manifest.id} ${result.manifest.version}`,
+		`[artifact] Verified candidate files for ${result.manifest.name} ${result.manifest.version} (plugin id: ${result.manifest.id})`,
 	);
 }
 

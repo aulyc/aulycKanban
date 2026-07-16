@@ -1,6 +1,6 @@
-# aulyckanban（Obsidian 插件）
+# aulycKanban（Obsidian 插件）
 
-`aulyckanban` 是一个面向 Obsidian 的任务看板插件，核心目标是用轻量、清晰的方式管理多个任务类型，并支持归档、筛选与 Markdown 同步。
+`aulycKanban` 是一个面向 Obsidian 的任务看板插件，核心目标是用轻量、清晰的方式管理多个任务类型，并支持归档、筛选与 Markdown 同步。
 
 ## 主要功能
 
@@ -24,7 +24,9 @@
    - `styles.css`
 3. 在 Obsidian 中进入：
    - `设置 -> 第三方插件`
-4. 启用 `aulyckanban`
+4. 启用 `aulycKanban`
+
+> 插件 ID 仍为 `aulyckanban`，所以安装目录保留旧的小写名称。这样升级时 Obsidian 会继续读取原有 `data.json`、启用状态和工作区布局，不会把改名后的插件识别为另一个新插件。
 
 ## 开发与构建
 

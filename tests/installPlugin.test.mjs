@@ -10,8 +10,8 @@ import { cleanupFixture, createReleaseFixture } from './helpers/release-fixture.
 
 async function createArtifactAndVault() {
 	const fixture = await createReleaseFixture();
-	const outputDir = await mkdtemp(path.join(os.tmpdir(), 'aulyckanban-install-artifact-'));
-	const vaultPath = await mkdtemp(path.join(os.tmpdir(), 'aulyckanban-vault-'));
+	const outputDir = await mkdtemp(path.join(os.tmpdir(), 'aulycKanban-install-artifact-'));
+	const vaultPath = await mkdtemp(path.join(os.tmpdir(), 'aulycKanban-vault-'));
 	await mkdir(path.join(vaultPath, '.obsidian'));
 	const artifact = await buildReleaseArtifact({
 		repoDir: fixture.rootDir,
@@ -84,7 +84,7 @@ test('installer rejects current workspace dist and has no silent fallback', asyn
 });
 
 test('Vault target is discovered through a mocked Obsidian CLI when no path is configured', async () => {
-	const vaultPath = await mkdtemp(path.join(os.tmpdir(), 'aulyckanban-discovered-vault-'));
+	const vaultPath = await mkdtemp(path.join(os.tmpdir(), 'aulycKanban-discovered-vault-'));
 	try {
 		const calls = [];
 		const runner = (command, args) => {

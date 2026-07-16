@@ -14,7 +14,7 @@ function createRunner(overrides = {}) {
 		'plugin:reload id=aulyckanban': 'Reloaded: aulyckanban\n',
 		'plugin id=aulyckanban': [
 			'type\tcommunity',
-			'name\taulyckanban',
+			'name\taulycKanban',
 			'version\t2.1.10',
 			'enabled\ttrue',
 		].join('\n'),
@@ -93,7 +93,7 @@ test('fails when Obsidian captures a runtime error', () => {
 });
 
 test('post-install smoke derives expected identity from the actual installed manifest', () => {
-	const vaultPath = mkdtempSync(path.join(os.tmpdir(), 'aulyckanban-smoke-vault-'));
+	const vaultPath = mkdtempSync(path.join(os.tmpdir(), 'aulycKanban-smoke-vault-'));
 	const manifestPath = path.join(vaultPath, '.obsidian', 'plugins', 'aulyckanban', 'manifest.json');
 	try {
 		mkdirSync(path.dirname(manifestPath), { recursive: true });

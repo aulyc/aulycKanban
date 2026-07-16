@@ -19,7 +19,7 @@ export async function writeJson(filePath, value) {
 async function writeProductFiles(rootDir, version) {
 	const manifest = {
 		id: 'aulyckanban',
-		name: 'aulyckanban',
+		name: 'aulycKanban',
 		version,
 		minAppVersion: '1.5.0',
 		isDesktopOnly: false,
@@ -40,7 +40,7 @@ export async function createReleaseFixture({
 	tag = 'annotated',
 	dirtyBuild = false,
 } = {}) {
-	const rootDir = await mkdtemp(path.join(os.tmpdir(), 'aulyckanban-release-fixture-'));
+	const rootDir = await mkdtemp(path.join(os.tmpdir(), 'aulycKanban-release-fixture-'));
 	await mkdir(path.join(rootDir, 'dist'));
 	const packageJson = {
 		name: 'aulyckanban',

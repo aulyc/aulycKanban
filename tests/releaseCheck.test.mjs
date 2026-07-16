@@ -7,10 +7,11 @@ import { checkRelease } from '../scripts/release-check.mjs';
 import { writeJson } from './helpers/release-fixture.mjs';
 
 async function createCandidate(version = '2.1.19') {
-	const rootDir = await mkdtemp(path.join(os.tmpdir(), 'aulyckanban-candidate-'));
+	const rootDir = await mkdtemp(path.join(os.tmpdir(), 'aulycKanban-candidate-'));
 	await mkdir(path.join(rootDir, 'dist'));
 	const manifest = {
 		id: 'aulyckanban',
+		name: 'aulycKanban',
 		version,
 		minAppVersion: '1.5.0',
 		isDesktopOnly: false,

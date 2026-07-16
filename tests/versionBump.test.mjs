@@ -21,7 +21,7 @@ async function readJson(filePath) {
 }
 
 async function createFixture({ version = '2.1.19', buildNumber = 0 } = {}) {
-	const rootDir = await mkdtemp(path.join(os.tmpdir(), 'aulyckanban-version-'));
+	const rootDir = await mkdtemp(path.join(os.tmpdir(), 'aulycKanban-version-'));
 	await mkdir(path.join(rootDir, 'dist'));
 	const oldVersion = '2.1.18';
 	const manifest = {

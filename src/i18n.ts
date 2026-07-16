@@ -13,7 +13,7 @@ const zh = {
 	'command.focusPersonal': '聚焦：个人任务',
 
 	// 视图
-	'view.displayName': 'aulyckanban',
+	'view.displayName': 'aulycKanban',
 	'view.work': '💼 工作任务',
 	'view.personal': '👤 个人任务',
 	'view.all': '全部任务',
@@ -134,7 +134,7 @@ const en: Record<I18nKey, string> = {
 	'command.focusWork': 'Focus: Work tasks',
 	'command.focusPersonal': 'Focus: Personal tasks',
 
-	'view.displayName': 'aulyckanban',
+	'view.displayName': 'aulycKanban',
 	'view.work': '💼 Work',
 	'view.personal': '👤 Personal',
 	'view.all': 'All tasks',

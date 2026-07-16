@@ -4,6 +4,10 @@ import { readFile } from 'node:fs/promises';
 export const RELEASE_PROFILE = 'obsidian-plugin';
 export const DISTRIBUTION = 'local-vault';
 export const PLUGIN_ID = 'aulyckanban';
+export const PRODUCT_NAME = 'aulycKanban';
+export const RELEASE_ARTIFACT_BASENAME = 'aulycKanban';
+export const LEGACY_ARTIFACT_BASENAME = 'aulyckanban';
+export const LEGACY_ARTIFACT_MAX_VERSION = '2.3.5';
 export const RELEASE_FILES = Object.freeze(['main.js', 'manifest.json', 'styles.css']);
 
 export async function readJson(filePath) {

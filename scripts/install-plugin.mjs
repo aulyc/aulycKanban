@@ -59,7 +59,7 @@ async function assertVault(vaultPath) {
 }
 
 async function atomicWrite(filePath, data) {
-	const temporaryPath = `${filePath}.aulyckanban-install-${process.pid}`;
+	const temporaryPath = `${filePath}.aulycKanban-install-${process.pid}`;
 	await writeFile(temporaryPath, data, { flag: 'wx' });
 	await rename(temporaryPath, filePath);
 }
@@ -147,7 +147,9 @@ async function main() {
 		expectedChannel: args.channel || 'formal',
 		vaultPath: args.vault,
 	});
-	console.log(`[install] Installed ${result.manifest.id} ${result.manifest.version}`);
+	console.log(
+		`[install] Installed ${result.manifest.name ?? result.manifest.id} ${result.manifest.version} (plugin id: ${result.manifest.id})`,
+	);
 	console.log('[install] Verified three release files and preserved runtime data');
 }
 

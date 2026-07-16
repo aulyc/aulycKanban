@@ -20,4 +20,6 @@ for (const fileName of filesToCopy) {
 	await cp(sourcePath, targetPath);
 }
 
-console.log(`[dist] Generated ${path.relative(rootDir, distDir)} for ${pluginId}`);
+console.log(
+	`[dist] Generated ${path.relative(rootDir, distDir)} for ${manifest.name ?? pluginId} (plugin id: ${pluginId})`,
+);

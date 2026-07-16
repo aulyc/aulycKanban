@@ -95,7 +95,7 @@ npm run release:check
 3. 构建前检查 worktree clean，运行 `npm ci --ignore-scripts`、版本检查和 production 构建。
 4. 验证 `dist/` 只含 `main.js`、`manifest.json`、`styles.css`，且与构建目录逐文件一致。
 5. 构建后再次检查 worktree clean。
-6. 生成 `aulyckanban-<version>.zip` 和 `aulyckanban-<version>.release-provenance.json`。
+6. 生成 `aulycKanban-<version>.zip` 和 `aulycKanban-<version>.release-provenance.json`。
 7. 安全移除临时 worktree。
 
 ZIP 根目录只允许：
@@ -107,6 +107,8 @@ ZIP 根目录只允许：
 验证器拒绝额外/缺失/重复路径、目录、绝对路径、路径穿越、反斜杠路径、符号链接、`data.json`、用户数据和开发文件。已存在的同版本产物不会被覆盖。
 
 provenance 从真实 Git、tag 和 ZIP 提取并交叉验证：Profile、渠道、版本、构建号、tag、Commit、`dirty:false`、插件 ID、最低 Obsidian 版本、`isDesktopOnly`、Distribution、ZIP 文件名/SHA-256，以及三个文件的 SHA-256。它不得包含 Vault 路径、用户数据、Token、凭据或本机身份。
+
+新构建只能生成 `aulycKanban-<version>` 前缀的 ZIP 和 provenance。当前验证器为只读历史兼容，可继续验证 `2.3.5` 及以前使用 `aulyckanban-<version>` 前缀的既有产物；该兼容分支不能用于生成新产物，也不能重写历史文件。
 
 ## 8. 测试与正式发版命令
 
@@ -130,14 +132,16 @@ npm run release:formal -- --vault <vault-path>
 
 ```bash
 npm run install:formal -- \
-  --zip <aulyckanban-version.zip> \
-  --provenance <aulyckanban-version.release-provenance.json> \
-  --vault <vault-path>
+	--zip <aulycKanban-version.zip> \
+	--provenance <aulycKanban-version.release-provenance.json> \
+	--vault <vault-path>
 ```
 
 目标 Vault 的优先级为显式 `--vault`、`OBSIDIAN_VAULT_PATH`、Obsidian CLI 当前/指定 Vault 发现；不硬编码默认 Vault。
 
 安装前验证 ZIP、provenance、tag、Commit、版本、构建号、渠道、插件 ID、文件集合和所有 SHA-256。安装时只覆盖三个发布文件，保留 `data.json` 及其他用户运行数据；安装后逐文件复算 SHA-256，并核对目标 `manifest.json` 的 ID 和版本。
+
+产品显示名为 `aulycKanban`，但插件 ID、npm package name 和目标目录 `.obsidian/plugins/aulyckanban/` 保持不变。安装器不得把该兼容目录当作旧品牌残留删除，也不得迁移或覆盖其中的 `data.json`。
 
 ## 10. 安装后 Obsidian smoke
 

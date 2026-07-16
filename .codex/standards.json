@@ -136,11 +136,11 @@
   "trackedFiles": [
     {
       "path": "AGENTS.md",
-      "sha256": "5f9aeb7056e4bee2fb99b0048a69cbd3a4ef36fa7e6b6e1e9add47816e181436"
+      "sha256": "a03a86cc9216d2f2cef425c9e363d82160a163623bde26a4b6622a967489f043"
     },
     {
       "path": "VERSIONING.md",
-      "sha256": "b25ac3c5d338093c495450928c6e33fa0c22b735237da7b3f26265fc86ea2281"
+      "sha256": "3d88eea296478f6427579465927421778497d780c9c4aaf26e02a726f3336cc7"
     },
     {
       "path": "version-bump.mjs",
@@ -148,11 +148,11 @@
     },
     {
       "path": "scripts/artifact.mjs",
-      "sha256": "a8792a3756079d82e955b74fcefaa9fada9681f7383e06a04a89dfb0722147df"
+      "sha256": "1dae9fddf2421e930729c1eb55abbe0eb7c9420224bb0ef1ccc1f7ea0294c330"
     },
     {
       "path": "scripts/build-dist.mjs",
-      "sha256": "1b35f60b98b9bdc1a142a127ebf18d7d83c6ca13f462f3b27ff01ff416034e0b"
+      "sha256": "1db70b010d6a75bf42a78b053deaef1e9918f3fabd39c5f624a95f760022530c"
     },
     {
       "path": "scripts/git-release.mjs",
@@ -160,7 +160,7 @@
     },
     {
       "path": "scripts/install-plugin.mjs",
-      "sha256": "76fa65cc00f4e63b7e1df2eb3c5eb3b65aae134a9241242bfd4396ef3d0228d2"
+      "sha256": "e02ace8ead62cb1597a2c79034da468ec2db2e15692b4ea3201728c93ca53d41"
     },
     {
       "path": "scripts/obsidian-smoke.mjs",
@@ -172,11 +172,11 @@
     },
     {
       "path": "scripts/release-constants.mjs",
-      "sha256": "d09903063c63e5fa8518b460910bc96e333b13e4554329310903723de4238fcd"
+      "sha256": "d5ca057afefc5e717a62b6f84ea0dd6cca8af1180b3c103c40c99a73bc225332"
     },
     {
       "path": "scripts/release-from-tag.mjs",
-      "sha256": "459787b66bb272c63e88e5eec66af53033271ef9c246e9e8fc8d217f828ba09b"
+      "sha256": "eff1bec82bcb7d278f71cda1f2e114277f5b16fe94b34a2188c6c86f1af37b4e"
     },
     {
       "path": "scripts/release-tag.mjs",

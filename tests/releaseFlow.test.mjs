@@ -121,7 +121,7 @@ test('release tag command creates and then only verifies an annotated fixture ta
 
 test('final artifact builds from an exact detached tag and cleans the temporary worktree', async () => {
 	const fixture = await createReleaseFixture();
-	const outputDir = await mkdtemp(path.join(os.tmpdir(), 'aulyckanban-tag-build-'));
+	const outputDir = await mkdtemp(path.join(os.tmpdir(), 'aulycKanban-tag-build-'));
 	try {
 		const result = await buildFromExactTag({
 			repoDir: fixture.rootDir,
@@ -129,7 +129,7 @@ test('final artifact builds from an exact detached tag and cleans the temporary 
 			outputDir,
 			expectedChannel: 'test',
 		});
-		assert.match(result.zipPath, /aulyckanban-2\.1\.20-beta\.1\.zip$/u);
+		assert.match(result.zipPath, /aulycKanban-2\.1\.20-beta\.1\.zip$/u);
 		const worktrees = git(fixture.rootDir, ['worktree', 'list', '--porcelain']).stdout;
 		assert.equal((worktrees.match(/^worktree /gmu) ?? []).length, 1);
 	} finally {
@@ -140,7 +140,7 @@ test('final artifact builds from an exact detached tag and cleans the temporary 
 
 test('detached build fails if its production command dirties tagged source and still cleans up', async () => {
 	const fixture = await createReleaseFixture({ dirtyBuild: true });
-	const outputDir = await mkdtemp(path.join(os.tmpdir(), 'aulyckanban-tag-dirty-'));
+	const outputDir = await mkdtemp(path.join(os.tmpdir(), 'aulycKanban-tag-dirty-'));
 	try {
 		await assert.rejects(
 			buildFromExactTag({
@@ -161,8 +161,8 @@ test('detached build fails if its production command dirties tagged source and s
 
 test('test release orchestrates tagged build, verified install, and mocked post-install smoke', async () => {
 	const fixture = await createReleaseFixture();
-	const outputDir = await mkdtemp(path.join(os.tmpdir(), 'aulyckanban-release-output-'));
-	const vaultPath = await mkdtemp(path.join(os.tmpdir(), 'aulyckanban-release-vault-'));
+	const outputDir = await mkdtemp(path.join(os.tmpdir(), 'aulycKanban-release-output-'));
+	const vaultPath = await mkdtemp(path.join(os.tmpdir(), 'aulycKanban-release-vault-'));
 	const pluginDir = path.join(vaultPath, '.obsidian', 'plugins', 'aulyckanban');
 	const calls = [];
 	const outputs = {
