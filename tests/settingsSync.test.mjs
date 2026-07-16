@@ -105,29 +105,17 @@ const output = ts.transpileModule(source, {
 function createHarness() {
 	const module = { exports: {} };
 	const settings = {
-		syncMode: 'aggregate',
-		aggregate: { filePath: '' },
+		syncFolder: 'X-aulyc看板',
 		viewSyncTargets: { work: { filePath: '旧/工作.md' } },
 		archive: { filePath: '旧/归档.md' },
 	};
-	const syncCalls = { all: 0, view: [], archive: 0 };
+	const syncCalls = { all: 0 };
 	const store = {
 		getSettings: () => settings,
 		getTaskViews: () => [{ id: 'work', title: '工作任务' }],
 		dispatch(action) {
 			if (action.type !== 'UPDATE_SETTINGS') return;
-			if (action.payload.syncMode) settings.syncMode = action.payload.syncMode;
-			if (action.payload.aggregate)
-				settings.aggregate = { ...settings.aggregate, ...action.payload.aggregate };
-			if (action.payload.viewSyncTargets) {
-				for (const [id, target] of Object.entries(action.payload.viewSyncTargets))
-					settings.viewSyncTargets[id] = {
-						...settings.viewSyncTargets[id],
-						...target,
-					};
-			}
-			if (action.payload.archive)
-				settings.archive = { ...settings.archive, ...action.payload.archive };
+			if (action.payload.syncFolder !== undefined) settings.syncFolder = action.payload.syncFolder;
 		},
 		async saveNow() {},
 	};
@@ -136,10 +124,6 @@ function createHarness() {
 		syncService: {
 			scheduleSyncAllViews: () => {
 				syncCalls.all += 1;
-			},
-			scheduleSyncView: (id) => syncCalls.view.push(id),
-			scheduleSyncArchive: () => {
-				syncCalls.archive += 1;
 			},
 		},
 	};
@@ -158,14 +142,18 @@ function createHarness() {
 			}
 			if (id === '../i18n') return { t: (key) => key };
 			if (id === '../services/backupService') return { BackupService: class {} };
-			if (id === './ClearDataModal' || id === './ConfirmModal')
-				return { ClearDataModal: class {}, ConfirmModal: class {} };
-			if (id === './FileSuggest')
+			if (id === '../utils/noteSync')
 				return {
-					FileSuggest: class {
-						close() {}
+					normalizeSyncFolder: (value) => {
+						const folder = value
+							.trim()
+							.replace(/\/{2,}/g, '/')
+							.replace(/^\/+|\/+$/g, '');
+						return folder || 'X-aulyc看板';
 					},
 				};
+			if (id === './ClearDataModal' || id === './ConfirmModal')
+				return { ClearDataModal: class {}, ConfirmModal: class {} };
 			throw new Error(`Unexpected import: ${id}`);
 		},
 	};
@@ -174,49 +162,42 @@ function createHarness() {
 	return { tab, settings, syncCalls };
 }
 
-test('aggregate mode shows one path and schedules creation after it is saved', async () => {
+test('settings expose one automatic sync folder without layout or per-note controls', async () => {
 	const { tab, settings, syncCalls } = createHarness();
 	const start = renderedSettings.length;
 	tab.display();
 	const rendered = renderedSettings.slice(start);
 
-	const mode = rendered.find((item) => item.name === 'settings.sync.mode.name');
-	assert.equal(mode.dropdown.value, 'aggregate');
-	assert.equal(mode.dropdown.options.get('aggregate'), 'settings.sync.mode.aggregate');
-	assert.equal(mode.dropdown.options.get('per-view'), 'settings.sync.mode.perView');
-
-	const aggregate = rendered.find((item) => item.name === 'settings.sync.aggregatePath.name');
-	assert.ok(aggregate);
+	assert.equal(
+		rendered.some((item) => item.dropdown),
+		false,
+	);
 	assert.equal(
 		rendered.some((item) => item.name === '工作任务settings.sync.viewPath.suffix'),
 		false,
 	);
-	await aggregate.text.onChangeHandler(' 看板/全部任务.md ');
-	assert.equal(settings.aggregate.filePath, '看板/全部任务.md');
+	assert.equal(
+		rendered.some((item) => item.name === 'settings.sync.archivePath.name'),
+		false,
+	);
+
+	const folder = rendered.find((item) => item.name === 'settings.sync.folder.name');
+	assert.ok(folder);
+	assert.equal(folder.text.value, 'X-aulyc看板');
+	await folder.text.onChangeHandler(' 新目录/任务同步/ ');
+	assert.equal(settings.syncFolder, '新目录/任务同步');
 	assert.equal(syncCalls.all, 0);
-	aggregate.text.listeners.get('change')();
+	folder.text.listeners.get('change')();
 	assert.equal(syncCalls.all, 1);
 });
 
-test('switching to compatible mode restores per-task-type and archive path controls', async () => {
-	const { tab, settings, syncCalls } = createHarness();
+test('clearing the folder restores the default managed directory', async () => {
+	const { tab, settings } = createHarness();
 	const start = renderedSettings.length;
 	tab.display();
-	const firstRender = renderedSettings.slice(start);
-	const mode = firstRender.find((item) => item.name === 'settings.sync.mode.name');
-	const secondStart = renderedSettings.length;
+	const rendered = renderedSettings.slice(start);
+	const folder = rendered.find((item) => item.name === 'settings.sync.folder.name');
 
-	await mode.dropdown.onChangeHandler('per-view');
-	const secondRender = renderedSettings.slice(secondStart);
-
-	assert.equal(settings.syncMode, 'per-view');
-	assert.equal(
-		secondRender.some((item) => item.name === '工作任务settings.sync.viewPath.suffix'),
-		true,
-	);
-	assert.equal(
-		secondRender.some((item) => item.name === 'settings.sync.archivePath.name'),
-		true,
-	);
-	assert.equal(syncCalls.all, 1);
+	await folder.text.onChangeHandler('   ');
+	assert.equal(settings.syncFolder, 'X-aulyc看板');
 });

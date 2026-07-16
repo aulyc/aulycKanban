@@ -44,7 +44,7 @@ async function loadSettings(rawSettings) {
 	return (await repository.load()).settings;
 }
 
-test('legacy configured note paths preserve per-task-type synchronization mode', async () => {
+test('legacy per-task-type paths migrate into the single managed folder model', async () => {
 	const settings = await loadSettings({
 		currentView: 'work',
 		activeColumnId: 'base',
@@ -52,12 +52,13 @@ test('legacy configured note paths preserve per-task-type synchronization mode',
 		archive: { filePath: '看板/归档任务.md' },
 	});
 
-	assert.equal(settings.syncMode, 'per-view');
-	assert.equal(settings.aggregate.filePath, '');
+	assert.equal(settings.syncFolder, '看板');
 	assert.equal(settings.viewSyncTargets.work.filePath, '看板/工作任务.md');
+	assert.equal('syncMode' in settings, false);
+	assert.equal('aggregate' in settings, false);
 });
 
-test('legacy settings without note paths migrate to recommended aggregate mode', async () => {
+test('settings without note paths use the default automatic sync folder', async () => {
 	const settings = await loadSettings({
 		currentView: 'work',
 		activeColumnId: 'base',
@@ -65,22 +66,22 @@ test('legacy settings without note paths migrate to recommended aggregate mode',
 		archive: { filePath: '' },
 	});
 
-	assert.equal(settings.syncMode, 'aggregate');
-	assert.equal(settings.aggregate.filePath, '');
-	assert.equal(settings.schemaVersion, 5);
+	assert.equal(settings.syncFolder, 'X-aulyc看板');
+	assert.equal(settings.viewSyncTargets.work.filePath, '');
+	assert.equal(settings.schemaVersion, 6);
 });
 
-test('explicit aggregate settings preserve their configured note path', async () => {
+test('legacy aggregate settings contribute only their folder and leave the old note untouched', async () => {
 	const settings = await loadSettings({
 		currentView: 'work',
 		activeColumnId: 'base',
 		syncMode: 'aggregate',
-		aggregate: { filePath: '看板/全部任务.md' },
-		viewSyncTargets: { work: { filePath: '旧/工作任务.md' } },
-		archive: { filePath: '旧/归档.md' },
+		aggregate: { filePath: '历史同步/全部任务.md' },
+		viewSyncTargets: { work: { filePath: '旧分文件/工作任务.md' } },
+		archive: { filePath: '旧分文件/归档任务.md' },
 	});
 
-	assert.equal(settings.syncMode, 'aggregate');
-	assert.equal(settings.aggregate.filePath, '看板/全部任务.md');
-	assert.equal(settings.viewSyncTargets.work.filePath, '旧/工作任务.md');
+	assert.equal(settings.syncFolder, '历史同步');
+	assert.equal(settings.viewSyncTargets.work.filePath, '旧分文件/工作任务.md');
+	assert.equal('aggregate' in settings, false);
 });

@@ -23,7 +23,7 @@ const zh = {
 	'view.delete': '删除任务类型',
 	'view.deleteConfirm': '确定删除任务类型“{title}”吗？',
 	'view.deleteData':
-		'其中 {taskCount} 条任务和 {archiveCount} 条归档任务将永久删除；已同步的 Markdown 文件不会删除。',
+		'其中 {taskCount} 条任务和 {archiveCount} 条归档任务将永久删除；对应 Markdown 会移入恢复目录。',
 
 	// 列标题
 	'column.periodic': '🔄 周期任务',
@@ -94,20 +94,10 @@ const zh = {
 	'settings.clear.success': '所有任务数据已清除',
 
 	'settings.sync': '笔记同步',
-	'settings.sync.mode.name': '同步方式',
-	'settings.sync.mode.desc': '选择使用一个汇总笔记，或继续按任务类型分别同步',
-	'settings.sync.mode.aggregate': '单一汇总笔记（推荐）',
-	'settings.sync.mode.perView': '按任务类型分笔记（兼容）',
-	'settings.sync.aggregatePath.name': '全部任务同步文件',
-	'settings.sync.aggregatePath.desc': '汇总所有任务类型、象限及归档任务的 Markdown 文件路径',
-	'settings.sync.aggregatePath.placeholder': '看板/全部任务.md',
-	'settings.sync.viewPath.suffix': '同步文件',
-	'settings.sync.viewPath.desc': '该任务类型同步到的 Markdown 文件路径',
-	'settings.sync.archivePath.name': '归档同步文件',
-	'settings.sync.archivePath.desc': '归档任务同步到的 Markdown 文件路径（例如：看板/归档任务.md）',
-	'settings.sync.archivePath.placeholder': '看板/归档任务.md',
-	'settings.sync.hint': '配置路径后会自动创建笔记；后续看板变动会持续同步',
-	'settings.sync.duplicateError': '同步文件路径不能重复',
+	'settings.sync.folder.name': '同步文件夹',
+	'settings.sync.folder.desc': '自动创建并管理每个任务类型及归档任务的 Markdown 笔记',
+	'settings.sync.folder.placeholder': 'X-aulyc看板',
+	'settings.sync.hint': '新增、重命名或删除任务类型时，对应笔记会自动创建、改名或移入恢复目录',
 
 	// 保存
 	'save.fail': '看板数据保存失败，请检查磁盘空间或权限',
@@ -116,7 +106,6 @@ const zh = {
 	'sync.updated': '笔记已更新',
 	'sync.exported': '已成功导出到新笔记',
 	'sync.fail': '导出失败',
-	'sync.noTarget': '请先在设置中配置同步文件路径',
 
 	// Markdown 生成
 	'md.syncTime': '最新同步时间',
@@ -153,7 +142,7 @@ const en: Record<I18nKey, string> = {
 	'view.delete': 'Delete task type',
 	'view.deleteConfirm': 'Delete the “{title}” task type?',
 	'view.deleteData':
-		'{taskCount} tasks and {archiveCount} archived tasks will be permanently deleted. Synced Markdown files will not be deleted.',
+		'{taskCount} tasks and {archiveCount} archived tasks will be permanently deleted. Its Markdown note will move to recovery.',
 
 	'column.periodic': '🔄 Periodic',
 	'column.urgentImportant': '🔥 Urgent & Important',
@@ -221,30 +210,18 @@ const en: Record<I18nKey, string> = {
 	'settings.clear.success': 'All task data has been cleared',
 
 	'settings.sync': 'Note synchronization',
-	'settings.sync.mode.name': 'Sync layout',
-	'settings.sync.mode.desc': 'Use one aggregate note or keep separate notes for each task type',
-	'settings.sync.mode.aggregate': 'Single aggregate note (recommended)',
-	'settings.sync.mode.perView': 'Separate task-type notes (compatible)',
-	'settings.sync.aggregatePath.name': 'All tasks sync file',
-	'settings.sync.aggregatePath.desc':
-		'Markdown file containing every task type, quadrant, and archived task',
-	'settings.sync.aggregatePath.placeholder': 'Kanban/All tasks.md',
-	'settings.sync.viewPath.suffix': ' sync file',
-	'settings.sync.viewPath.desc': 'Markdown file path for this task type',
-	'settings.sync.archivePath.name': 'Archive sync file',
-	'settings.sync.archivePath.desc':
-		'Markdown file path to sync archived tasks (e.g. Kanban/Archive.md)',
-	'settings.sync.archivePath.placeholder': 'Kanban/Archive.md',
+	'settings.sync.folder.name': 'Sync folder',
+	'settings.sync.folder.desc':
+		'Automatically create and manage Markdown notes for each task type and archived tasks',
+	'settings.sync.folder.placeholder': 'X-aulycKanban',
 	'settings.sync.hint':
-		'The note is created after a path is configured and kept in sync with board changes',
-	'settings.sync.duplicateError': 'Sync file paths cannot be the same',
+		'Task-type notes are automatically created, renamed, or moved to recovery as task types change',
 
 	'save.fail': 'Failed to save kanban data. Check disk space or permissions.',
 
 	'sync.updated': 'Note updated',
 	'sync.exported': 'Exported to new note successfully',
 	'sync.fail': 'Export failed',
-	'sync.noTarget': 'Please configure sync file path in settings first',
 
 	'md.syncTime': 'Last synced',
 	'md.stats': '📊 Task Statistics',

@@ -55,9 +55,6 @@ export interface SyncTarget {
 	filePath: string;
 }
 
-/** Markdown 同步布局：单一汇总笔记或兼容的按任务类型分文件。 */
-export type SyncMode = 'aggregate' | 'per-view';
-
 /** 插件设置 */
 export interface PluginSettings {
 	currentView: ViewKind;
@@ -66,10 +63,8 @@ export interface PluginSettings {
 	/** 是否正在查看归档 */
 	showArchive: boolean;
 
-	/** Markdown 同步布局 */
-	syncMode: SyncMode;
-	/** 单一汇总笔记路径 */
-	aggregate: SyncTarget;
+	/** 自动管理的 Markdown 同步目录 */
+	syncFolder: string;
 	/** 每个任务类型对应的同步文件 */
 	viewSyncTargets: Record<ViewKind, SyncTarget>;
 	/** 归档同步文件路径 */

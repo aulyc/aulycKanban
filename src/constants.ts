@@ -1,6 +1,7 @@
 import type { Column, PluginSettings, BoardData, TaskView } from './types';
 import { t } from './i18n';
 import type { I18nKey } from './i18n';
+import { DEFAULT_SYNC_FOLDER } from './utils/noteSync';
 
 /** 自定义视图类型标识 */
 export const VIEW_TYPE_KANBAN = 'aulyckanban-view';
@@ -35,7 +36,7 @@ export const COLUMN_DEFINITIONS: ReadonlyArray<{ id: string; titleKey: I18nKey; 
 ];
 
 /** 当前数据 schema 版本 */
-export const CURRENT_SCHEMA_VERSION = 5;
+export const CURRENT_SCHEMA_VERSION = 6;
 
 /** 默认设置 */
 export const DEFAULT_SETTINGS: PluginSettings = {
@@ -43,8 +44,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 	activeColumnId: 'periodic',
 	showArchive: false,
 
-	syncMode: 'aggregate',
-	aggregate: { filePath: '' },
+	syncFolder: DEFAULT_SYNC_FOLDER,
 	viewSyncTargets: {
 		work: { filePath: '' },
 		personal: { filePath: '' },

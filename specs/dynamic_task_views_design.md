@@ -28,32 +28,33 @@ TaskView {
 
 Every view contains columns with identical `id/title/order` definitions, but each column owns a separate `tasks` array. New views clone definitions only.
 
-Settings schema v5 adds two Markdown layouts:
+Settings schema v6 replaces the two Markdown layouts with one managed-note model:
 
-- `syncMode: 'aggregate'` uses `aggregate.filePath` for one generated note containing active and archived tasks across every view and quadrant.
-- `syncMode: 'per-view'` retains the v4 `viewSyncTargets[viewId]` and separate archive target for compatibility.
+- `syncFolder` is the one user-facing location for synchronized Markdown.
+- `viewSyncTargets[viewId]` and the archive target are internal managed paths below that folder.
+- every view note carries a hidden stable view ID; filenames remain human-readable and may follow renamed titles.
 
-Aggregate Markdown renders current view and quadrant titles for people while hidden comments carry stable view, column, and task IDs. Labels can therefore be renamed without becoming storage identities.
+The legacy aggregate target is migration-only and is never deleted automatically.
 
 ## Migration
 
 - v4 data is sanitized and reconciled so all views contain the union of quadrant definitions.
 - fixed `work/personal/workArchive/personalArchive` data migrates to two task views without moving tasks between them.
 - legacy `{ columns }` data becomes the work view; the personal view starts empty with the same quadrants.
-- fixed `settings.work/settings.personal` sync paths migrate to `viewSyncTargets`.
-- settings with any existing per-view or archive path migrate to `syncMode: 'per-view'`; settings without configured paths use the recommended aggregate mode.
-- existing synchronized Markdown files are never moved, renamed, or deleted by the migration.
+- fixed `settings.work/settings.personal` sync paths migrate to internal `viewSyncTargets`.
+- an existing per-view, archive, or aggregate path contributes its parent folder; otherwise the default is `X-aulyc看板`.
+- existing marker-owned per-view notes are adopted and updated; an old aggregate note is preserved unchanged.
 
 ## UI behavior
 
 - Toolbar renders all task views and an add button before archive.
 - Clicking add replaces the button with a text input. Only a non-composing Enter creates the view. Escape or blur cancels.
 - Right-clicking a task view opens rename/delete actions. Rename uses an inline input; deletion requires confirmation and is disabled for the last remaining view.
-- Deleting a task view removes its active tasks, archive data, and sync target. Existing synchronized Markdown files are left untouched.
+- Deleting a task view removes its active tasks, archive data, and sync target. Its marker-owned Markdown is moved to the `已删除任务类型` recovery folder.
 - Quadrant add follows the same Enter-only behavior and no confirmation icon is rendered.
 - New task views immediately contain every shared quadrant with zero tasks.
-- In aggregate mode, adding, renaming, reordering, or deleting a view or quadrant regenerates the one configured note.
-- Configuring a valid sync path schedules synchronization and creates a missing directory or Markdown file.
+- Adding a view creates its note; renaming a view renames its marker-owned note; changing the sync folder moves managed notes.
+- A colliding non-managed note is never overwritten; the managed note receives a numbered filename.
 
 ## Safety and verification
 
@@ -62,4 +63,4 @@ Aggregate Markdown renders current view and quadrant titles for people while hid
 - IDs are generated internally and never derived from user text.
 - Text is rendered with DOM text APIs, not HTML injection.
 - Tests cover legacy migration, 3+ views, shared quadrants, independent tasks, and Enter-only behavior.
-- Tests cover sync-mode migration, aggregate stable IDs, missing-path behavior, automatic file creation, and preservation of per-view compatibility.
+- Tests cover legacy-layout migration, stable IDs, automatic creation and rename, deletion recovery, and collision safety.

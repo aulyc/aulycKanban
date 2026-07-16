@@ -50,9 +50,8 @@ function settings(currentView = 'personal', activeColumnId = 'base') {
 			personal: { filePath: '' },
 		},
 		archive: { filePath: '' },
-		syncMode: 'aggregate',
-		aggregate: { filePath: '' },
-		schemaVersion: 5,
+		syncFolder: 'X-aulyc看板',
+		schemaVersion: 6,
 		saveDebounce: 500,
 		syncDebounce: 2000,
 	};

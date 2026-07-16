@@ -1,11 +1,10 @@
-import { App, Notice, normalizePath, PluginSettingTab, Setting } from 'obsidian';
+import { App, Notice, PluginSettingTab, Setting } from 'obsidian';
 import { t } from '../i18n';
-import type { PluginSettings, SyncMode } from '../types';
 import type KanbanPlugin from '../main';
 import { BackupService } from '../services/backupService';
+import { normalizeSyncFolder } from '../utils/noteSync';
 import { ClearDataModal } from './ClearDataModal';
 import { ConfirmModal } from './ConfirmModal';
-import { FileSuggest } from './FileSuggest';
 
 /**
  * 看板设置页（PluginSettingTab）
@@ -14,7 +13,6 @@ import { FileSuggest } from './FileSuggest';
 export class KanbanSettingTab extends PluginSettingTab {
 	private readonly plugin: KanbanPlugin;
 	private readonly backupService: BackupService;
-	private readonly fileSuggests: FileSuggest[] = [];
 
 	constructor(app: App, plugin: KanbanPlugin) {
 		super(app, plugin);
@@ -25,10 +23,6 @@ export class KanbanSettingTab extends PluginSettingTab {
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
-		for (const suggest of this.fileSuggests) {
-			suggest.close();
-		}
-		this.fileSuggests.length = 0;
 
 		// ==================== 数据管理 ====================
 		new Setting(containerEl).setHeading().setName(t('settings.dataManagement'));
@@ -79,116 +73,19 @@ export class KanbanSettingTab extends PluginSettingTab {
 		new Setting(containerEl).setHeading().setName(t('settings.sync'));
 
 		const settings = this.plugin.store.getSettings();
-		const syncMode = settings.syncMode ?? 'aggregate';
 		new Setting(containerEl)
-			.setName(t('settings.sync.mode.name'))
-			.setDesc(t('settings.sync.mode.desc'))
-			.addDropdown((dropdown) =>
-				dropdown
-					.addOption('aggregate', t('settings.sync.mode.aggregate'))
-					.addOption('per-view', t('settings.sync.mode.perView'))
-					.setValue(syncMode)
-					.onChange(async (value) => {
-						this.plugin.store.dispatch({
-							type: 'UPDATE_SETTINGS',
-							payload: { syncMode: value as SyncMode },
-						});
-						try {
-							await this.plugin.store.saveNow();
-						} catch {
-							return;
-						}
-						this.display();
-						this.plugin.syncService.scheduleSyncAllViews();
-					}),
-			);
-
-		if (syncMode === 'aggregate') {
-			this.buildSyncPathSetting(containerEl, {
-				name: t('settings.sync.aggregatePath.name'),
-				desc: t('settings.sync.aggregatePath.desc'),
-				placeholder: t('settings.sync.aggregatePath.placeholder'),
-				currentPath: settings.aggregate?.filePath ?? '',
-				otherPaths: [
-					...Object.values(settings.viewSyncTargets).map((target) => target.filePath),
-					settings.archive?.filePath ?? '',
-				],
-				payload: (filePath) => ({ aggregate: { filePath } }),
-				scheduleSync: () => this.plugin.syncService.scheduleSyncAllViews(),
-			});
-		} else {
-			for (const view of this.plugin.store.getTaskViews()) {
-				const currentPath = settings.viewSyncTargets[view.id]?.filePath ?? '';
-				const otherPaths = [
-					...Object.entries(settings.viewSyncTargets)
-						.filter(([id]) => id !== view.id)
-						.map(([, target]) => target.filePath),
-					settings.archive?.filePath ?? '',
-					settings.aggregate?.filePath ?? '',
-				];
-				this.buildSyncPathSetting(containerEl, {
-					name: `${view.title}${t('settings.sync.viewPath.suffix')}`,
-					desc: t('settings.sync.viewPath.desc'),
-					placeholder: `${view.title}.md`,
-					currentPath,
-					otherPaths,
-					payload: (filePath) => ({ viewSyncTargets: { [view.id]: { filePath } } }),
-					scheduleSync: () => this.plugin.syncService.scheduleSyncView(view.id),
-				});
-			}
-
-			this.buildSyncPathSetting(containerEl, {
-				name: t('settings.sync.archivePath.name'),
-				desc: t('settings.sync.archivePath.desc'),
-				placeholder: t('settings.sync.archivePath.placeholder'),
-				currentPath: settings.archive?.filePath ?? '',
-				otherPaths: [
-					...Object.values(settings.viewSyncTargets).map((target) => target.filePath),
-					settings.aggregate?.filePath ?? '',
-				],
-				payload: (filePath) => ({ archive: { filePath } }),
-				scheduleSync: () => this.plugin.syncService.scheduleSyncArchive(),
-			});
-		}
-
-		const hintEl = containerEl.createDiv({
-			cls: 'setting-item-description aulyckanban-settings-hint',
-		});
-		hintEl.setText(`💡 ${t('settings.sync.hint')}`);
-	}
-
-	private buildSyncPathSetting(
-		containerEl: HTMLElement,
-		opts: {
-			name: string;
-			desc: string;
-			placeholder: string;
-			currentPath: string;
-			otherPaths: string[];
-			payload: (filePath: string) => Partial<PluginSettings>;
-			scheduleSync: () => void;
-		},
-	): void {
-		new Setting(containerEl)
-			.setName(opts.name)
-			.setDesc(opts.desc)
+			.setName(t('settings.sync.folder.name'))
+			.setDesc(t('settings.sync.folder.desc'))
 			.addText((text) => {
-				let latestPath = opts.currentPath;
+				let latestFolder = settings.syncFolder;
 				text
-					.setPlaceholder(opts.placeholder)
-					.setValue(opts.currentPath)
+					.setPlaceholder(t('settings.sync.folder.placeholder'))
+					.setValue(settings.syncFolder)
 					.onChange(async (value) => {
-						const normalized = value.trim() ? normalizePath(value.trim()) : '';
-						const isDuplicate =
-							normalized && opts.otherPaths.some((p) => p && normalized === normalizePath(p));
-						if (isDuplicate) {
-							new Notice(t('settings.sync.duplicateError'));
-							return;
-						}
-						latestPath = normalized;
+						latestFolder = normalizeSyncFolder(value);
 						this.plugin.store.dispatch({
 							type: 'UPDATE_SETTINGS',
-							payload: opts.payload(normalized),
+							payload: { syncFolder: latestFolder },
 						});
 						try {
 							await this.plugin.store.saveNow();
@@ -197,15 +94,14 @@ export class KanbanSettingTab extends PluginSettingTab {
 						}
 					});
 				text.inputEl.addEventListener('change', () => {
-					if (latestPath) opts.scheduleSync();
+					if (latestFolder) this.plugin.syncService.scheduleSyncAllViews();
 				});
-				this.attachFileSuggest(text.inputEl);
 			});
-	}
 
-	private attachFileSuggest(inputEl: HTMLInputElement): void {
-		const suggest = new FileSuggest(this.app, inputEl);
-		this.fileSuggests.push(suggest);
+		const hintEl = containerEl.createDiv({
+			cls: 'setting-item-description aulyckanban-settings-hint',
+		});
+		hintEl.setText(`💡 ${t('settings.sync.hint')}`);
 	}
 
 	private async clearAllDataAndSave(): Promise<void> {

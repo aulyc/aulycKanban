@@ -53,28 +53,21 @@ function fixtures() {
 	return { views, archives };
 }
 
-test('aggregate Markdown groups active and archived tasks by current labels', async () => {
-	const { generateAggregateMarkdown } = await loadMarkdown();
-	const { views, archives } = fixtures();
-	const markdown = generateAggregateMarkdown(views, archives);
+test('task-type Markdown renders current task and quadrant labels', async () => {
+	const { generateMarkdown } = await loadMarkdown();
+	const { views } = fixtures();
+	const markdown = generateMarkdown(views[0]);
 
-	assert.match(markdown, /## 进行中/);
-	assert.match(markdown, /### 💼 工作任务/);
-	assert.match(markdown, /#### ⭐ 重要不紧急/);
+	assert.match(markdown, /## ⭐ 重要不紧急/);
 	assert.match(markdown, /- \[ \] 整理方案/);
-	assert.match(markdown, /## 已归档/);
-	assert.match(markdown, /- \[x\] 旧任务/);
 });
 
-test('aggregate Markdown carries hidden stable identities instead of mutable label identities', async () => {
-	const { generateAggregateMarkdown } = await loadMarkdown();
-	const { views, archives } = fixtures();
+test('task-type Markdown carries a hidden stable identity instead of its mutable label', async () => {
+	const { generateMarkdown } = await loadMarkdown();
+	const { views } = fixtures();
 	views[0].title = '客户项目';
-	views[0].columns[0].title = '稍后处理';
-	const markdown = generateAggregateMarkdown(views, archives);
+	const markdown = generateMarkdown(views[0]);
 
-	assert.match(markdown, /### 客户项目 <!-- aulyckanban:view=work -->/);
-	assert.match(markdown, /#### 稍后处理 <!-- aulyckanban:column=important%2Dnot%2Durgent -->/);
-	assert.match(markdown, /<!-- aulyckanban:task=task%2Dactive -->/);
+	assert.match(markdown, /<!-- aulyckanban:view=work -->/);
 	assert.doesNotMatch(markdown, /aulyckanban:view=客户项目/);
 });

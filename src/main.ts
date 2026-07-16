@@ -27,6 +27,11 @@ export default class KanbanPlugin extends Plugin {
 
 		// 初始化同步服务
 		this.syncService = new VaultSyncService(this.app.vault, this.store);
+		try {
+			await this.syncService.initialize(true);
+		} catch (error) {
+			console.error('[aulycKanban] Failed to initialize managed notes:', error);
+		}
 
 		// 只在数据真正变更时才同步 md（切换视图等 UI 操作不触发）
 		this.unsubscribeSync = this.store.subscribe(() => {

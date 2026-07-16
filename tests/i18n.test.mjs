@@ -23,11 +23,14 @@ test('simplified Chinese settings use localized section headings and clear-data 
 
 	assert.equal(t('settings.dataManagement'), '数据管理');
 	assert.equal(t('settings.sync'), '笔记同步');
-	assert.equal(t('settings.sync.mode.aggregate'), '单一汇总笔记（推荐）');
-	assert.equal(t('settings.sync.mode.perView'), '按任务类型分笔记（兼容）');
-	assert.equal(t('settings.sync.aggregatePath.name'), '全部任务同步文件');
+	assert.equal(t('settings.sync.folder.name'), '同步文件夹');
+	assert.equal(
+		t('settings.sync.folder.desc'),
+		'自动创建并管理每个任务类型及归档任务的 Markdown 笔记',
+	);
 	assert.equal(t('settings.clear.button'), '清除');
 	assert.equal(t('settings.clear.desc'), '无法撤销的删除全部数据。');
+	assert.match(t('view.deleteData'), /对应 Markdown 会移入恢复目录/);
 });
 
 test('English settings retain their localized copy', async () => {
@@ -36,6 +39,6 @@ test('English settings retain their localized copy', async () => {
 
 	assert.equal(t('settings.dataManagement'), 'Data management');
 	assert.equal(t('settings.sync'), 'Note synchronization');
-	assert.equal(t('settings.sync.mode.aggregate'), 'Single aggregate note (recommended)');
+	assert.equal(t('settings.sync.folder.name'), 'Sync folder');
 	assert.equal(t('settings.clear.button'), 'Clear data');
 });
