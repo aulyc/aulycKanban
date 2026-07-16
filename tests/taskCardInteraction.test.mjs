@@ -95,12 +95,19 @@ function createHarness() {
 		createElement: () => new MockElement(documentRef),
 	};
 	const inlineInputs = [];
+	const icons = [];
 	const module = { exports: {} };
 	const context = {
 		module,
 		exports: module.exports,
 		document: documentRef,
 		require: (id) => {
+			if (id === 'obsidian')
+				return {
+					setIcon: (element, name) => {
+						icons.push({ element, name });
+					},
+				};
 			if (id === '../i18n') return { t: (key) => key };
 			if (id === '../utils/datetime') return { formatDateTimeMinute: () => '2026/07/13 12:00' };
 			if (id === '../utils/dom')
@@ -139,8 +146,19 @@ function createHarness() {
 		},
 		'工作任务',
 	).getEl();
-	return { actions, card, documentRef, inlineInputs };
+	return { actions, card, documentRef, icons, inlineInputs };
 }
+
+test('task archive action reuses the toolbar archive folder icon', () => {
+	const { card, icons } = createHarness();
+	const archiveButton = descendants(card).find((element) =>
+		element.classList.contains('aulyckanban-task-archive'),
+	);
+
+	assert.equal(icons.length, 1);
+	assert.equal(icons[0].element, archiveButton);
+	assert.equal(icons[0].name, 'archive');
+});
 
 test('first mouse click selects a task and the second click edits it', () => {
 	const { card, documentRef, inlineInputs } = createHarness();

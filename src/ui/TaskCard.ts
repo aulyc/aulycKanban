@@ -1,3 +1,4 @@
+import { setIcon } from 'obsidian';
 import type { App } from 'obsidian';
 import type { Task } from '../types';
 import type { KanbanStore } from '../store';
@@ -88,9 +89,9 @@ export class TaskCard {
 		const actionsEl = metaRowEl.createDiv({ cls: 'aulyckanban-task-actions' });
 
 		const archiveBtn = actionsEl.createSpan({
-			text: '⤓',
 			cls: 'aulyckanban-task-archive',
 		});
+		setIcon(archiveBtn, 'archive');
 		archiveBtn.addEventListener('click', (e: MouseEvent) => {
 			e.stopPropagation();
 			new ConfirmModal(this.app, {

@@ -50,7 +50,9 @@ function settings(currentView = 'personal', activeColumnId = 'base') {
 			personal: { filePath: '' },
 		},
 		archive: { filePath: '' },
-		schemaVersion: 4,
+		syncMode: 'aggregate',
+		aggregate: { filePath: '' },
+		schemaVersion: 5,
 		saveDebounce: 500,
 		syncDebounce: 2000,
 	};
@@ -132,6 +134,7 @@ test('adding a third task type copies every quadrant with independent task array
 	assert.notEqual(views[0].columns[0].tasks, project.columns[0].tasks);
 	assert.equal(store.getCurrentView(), project.id);
 	assert.equal(store.getBoardData().archives[project.id].tasks.length, 0);
+	assert.equal(store.getSettings().viewSyncTargets[project.id].filePath, '');
 	store.destroy();
 });
 

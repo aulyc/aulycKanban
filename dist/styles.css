@@ -153,25 +153,9 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	width: 30px;
 	height: 30px;
 	padding: 0;
-	border: 1px dashed var(--background-modifier-border);
-	background: transparent;
-	color: var(--text-muted);
-	box-shadow: none;
 	font-size: 18px;
 	line-height: 1;
 	text-align: center;
-}
-
-.aulyckanban-view-add-btn:hover {
-	background: var(--background-modifier-hover);
-	color: var(--interactive-accent);
-	border-color: var(--text-muted);
-}
-
-.aulyckanban-view-add-btn:focus,
-.aulyckanban-view-add-btn:focus-visible {
-	background: var(--interactive-accent);
-	color: var(--text-on-accent);
 }
 
 /* 新增控件接管工具栏的视觉选中，避免与当前任务类型同时呈紫色。 */
@@ -410,28 +394,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	width: 100%;
 	height: 32px;
 	padding: 0;
-	border: 1px dashed var(--background-modifier-border);
-	border-radius: 6px;
-	background: transparent;
-	color: var(--text-muted);
-	box-shadow: none;
-	cursor: pointer;
 	transition: none;
-}
-
-.aulyckanban-task-add-btn:hover {
-	border-color: var(--text-muted);
-	background: var(--background-modifier-hover);
-	color: var(--interactive-accent);
-}
-
-.aulyckanban-task-add-btn:focus,
-.aulyckanban-task-add-btn:focus-visible {
-	border: 1px solid var(--aulyckanban-selection-border);
-	background: var(--interactive-accent);
-	color: var(--text-on-accent);
-	outline: none;
-	box-shadow: none;
 }
 
 .aulyckanban-task-add-icon {
@@ -470,7 +433,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 .aulyckanban-kanban-container .aulyckanban-task-create-input {
 	flex: 1 0 100%;
 	width: 100%;
-	min-height: 58px;
+	min-height: 38px;
 	box-sizing: border-box;
 	padding: 8px 10px;
 	border: 1px solid var(--interactive-accent);
@@ -615,27 +578,44 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	justify-content: center;
 	padding: 8px;
 	margin-top: 8px;
-	border: 1px dashed var(--background-modifier-border);
-	border-radius: 6px;
-	cursor: pointer;
-	color: var(--text-muted);
 	font-size: 18px;
 	transition: none;
 	user-select: none;
 }
 
-.aulyckanban-nav-add-btn:hover {
-	background: var(--background-modifier-hover);
-	color: var(--interactive-accent);
-	border-color: var(--text-muted);
+/* 三处新增入口共享象限新增按钮的完整视觉状态，仅保留各自布局尺寸差异。 */
+.aulyckanban-kanban-container .aulyckanban-view-add-btn,
+.aulyckanban-kanban-container .aulyckanban-task-add-btn,
+.aulyckanban-kanban-container .aulyckanban-nav-add-btn {
+	appearance: none;
+	border: 1px dashed var(--background-modifier-border);
+	border-radius: 6px;
+	background: transparent;
+	background-image: none;
+	color: var(--text-muted);
+	box-shadow: none;
+	cursor: pointer;
+	transition: none;
 }
 
-.aulyckanban-nav-add-btn:focus,
-.aulyckanban-nav-add-btn:focus-visible {
-	outline: none;
+.aulyckanban-kanban-container .aulyckanban-view-add-btn:hover,
+.aulyckanban-kanban-container .aulyckanban-task-add-btn:hover,
+.aulyckanban-kanban-container .aulyckanban-nav-add-btn:hover {
+	border-color: var(--text-muted);
+	background: var(--background-modifier-hover);
+	color: var(--interactive-accent);
+}
+
+.aulyckanban-kanban-container .aulyckanban-view-add-btn:focus,
+.aulyckanban-kanban-container .aulyckanban-view-add-btn:focus-visible,
+.aulyckanban-kanban-container .aulyckanban-task-add-btn:focus,
+.aulyckanban-kanban-container .aulyckanban-task-add-btn:focus-visible,
+.aulyckanban-kanban-container .aulyckanban-nav-add-btn:focus,
+.aulyckanban-kanban-container .aulyckanban-nav-add-btn:focus-visible {
+	border: 1px solid var(--aulyckanban-selection-border);
 	background: var(--interactive-accent);
 	color: var(--text-on-accent);
-	border: 1px solid var(--aulyckanban-selection-border);
+	outline: none;
 	box-shadow: none;
 }
 
@@ -810,8 +790,13 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	visibility: visible;
 }
 
+.aulyckanban-task-archive svg {
+	width: 16px;
+	height: 16px;
+}
+
 .aulyckanban-task-archive:hover {
-	color: var(--text-error);
+	color: var(--color-orange);
 	transform: scale(1.15);
 }
 

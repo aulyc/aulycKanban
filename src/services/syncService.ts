@@ -1,8 +1,8 @@
 import { Notice, normalizePath, TFile, Vault } from 'obsidian';
 import type { KanbanStore } from '../store';
-import type { Task, TaskView, ViewKind } from '../types';
+import type { ArchiveData, Task, TaskView, ViewKind } from '../types';
 import { t } from '../i18n';
-import { generateMarkdown } from '../utils/markdown';
+import { generateAggregateMarkdown, generateMarkdown } from '../utils/markdown';
 import { formatDateTime, formatDateTimeMinute } from '../utils/datetime';
 import { getArchivedAtIso, getArchivedAtTime } from '../utils/task';
 import { ARCHIVE_UNCATEGORIZED_ID, PERFORMANCE } from '../constants';
@@ -13,6 +13,7 @@ const SYNC_END = '<!-- XAULYC_KANBAN:END -->';
 export class VaultSyncService {
 	private syncTimeout: ReturnType<typeof setTimeout> | null = null;
 	private pendingAllViews = false;
+	private pendingArchive = false;
 	private readonly pendingViewIds = new Set<ViewKind>();
 
 	constructor(
@@ -25,10 +26,16 @@ export class VaultSyncService {
 	}
 	scheduleSyncView(viewId: ViewKind): void {
 		this.pendingViewIds.add(viewId);
+		this.pendingArchive = true;
 		this.scheduleSync();
 	}
 	scheduleSyncAllViews(): void {
 		this.pendingAllViews = true;
+		this.pendingArchive = true;
+		this.scheduleSync();
+	}
+	scheduleSyncArchive(): void {
+		this.pendingArchive = true;
 		this.scheduleSync();
 	}
 
@@ -36,18 +43,36 @@ export class VaultSyncService {
 		if (this.syncTimeout) clearTimeout(this.syncTimeout);
 		this.syncTimeout = setTimeout(() => {
 			const syncAll = this.pendingAllViews;
+			const syncArchive = this.pendingArchive;
 			const viewIds = [...this.pendingViewIds];
 			this.pendingAllViews = false;
+			this.pendingArchive = false;
 			this.pendingViewIds.clear();
-			if (syncAll) void this.syncAllViews(true);
-			else void this.syncViews(viewIds, true);
-			void this.syncArchive(true);
+			if (this.isAggregateMode()) {
+				void this.syncAggregate(true);
+			} else {
+				if (syncAll) void this.syncAllViews(true);
+				else void this.syncViews(viewIds, true);
+				if (syncArchive) void this.syncArchive(true);
+			}
 			this.syncTimeout = null;
 		}, this.store.getSettings().syncDebounce ?? PERFORMANCE.SYNC_DEBOUNCE);
 	}
 
 	async syncCurrentView(silent = false): Promise<void> {
+		if (this.isAggregateMode()) {
+			await this.syncAggregate(silent);
+			return;
+		}
 		await this.syncView(this.store.getCurrentView(), silent);
+	}
+
+	async syncConfiguredTargets(silent = false): Promise<void> {
+		if (this.isAggregateMode()) {
+			await this.syncAggregate(silent);
+			return;
+		}
+		await Promise.all([this.syncAllViews(silent), this.syncArchive(silent)]);
 	}
 
 	private async syncAllViews(silent: boolean): Promise<void> {
@@ -70,6 +95,28 @@ export class VaultSyncService {
 			await this.writeToFile(
 				normalizePath(target.filePath),
 				generateMarkdown([...view.columns].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))),
+				silent,
+			);
+		} catch (error) {
+			if (!silent)
+				new Notice(`${t('sync.fail')}：${error instanceof Error ? error.message : String(error)}`);
+		}
+	}
+
+	private async syncAggregate(silent: boolean): Promise<void> {
+		const path = this.store.getSettings().aggregate?.filePath;
+		if (!path) {
+			if (!silent) new Notice(t('sync.noTarget'));
+			return;
+		}
+		const views = this.store.getTaskViews();
+		const archives: Record<ViewKind, ArchiveData> = Object.fromEntries(
+			views.map((view) => [view.id, { tasks: this.store.getArchive(view.id) }]),
+		);
+		try {
+			await this.writeToFile(
+				normalizePath(path),
+				generateAggregateMarkdown(views, archives),
 				silent,
 			);
 		} catch (error) {
@@ -155,14 +202,24 @@ export class VaultSyncService {
 	flush(): void {
 		const pending = this.syncTimeout !== null;
 		const allViews = this.pendingAllViews;
+		const archive = this.pendingArchive;
 		const viewIds = [...this.pendingViewIds];
 		if (this.syncTimeout) clearTimeout(this.syncTimeout);
 		this.syncTimeout = null;
 		this.pendingAllViews = false;
+		this.pendingArchive = false;
 		this.pendingViewIds.clear();
 		if (!pending) return;
-		if (allViews) void this.syncAllViews(true);
-		else void this.syncViews(viewIds, true);
-		void this.syncArchive(true);
+		if (this.isAggregateMode()) {
+			void this.syncAggregate(true);
+		} else {
+			if (allViews) void this.syncAllViews(true);
+			else void this.syncViews(viewIds, true);
+			if (archive) void this.syncArchive(true);
+		}
+	}
+
+	private isAggregateMode(): boolean {
+		return this.store.getSettings().syncMode !== 'per-view';
 	}
 }

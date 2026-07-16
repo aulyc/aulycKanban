@@ -35,7 +35,7 @@ export const COLUMN_DEFINITIONS: ReadonlyArray<{ id: string; titleKey: I18nKey; 
 ];
 
 /** 当前数据 schema 版本 */
-export const CURRENT_SCHEMA_VERSION = 4;
+export const CURRENT_SCHEMA_VERSION = 5;
 
 /** 默认设置 */
 export const DEFAULT_SETTINGS: PluginSettings = {
@@ -43,6 +43,8 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 	activeColumnId: 'periodic',
 	showArchive: false,
 
+	syncMode: 'aggregate',
+	aggregate: { filePath: '' },
 	viewSyncTargets: {
 		work: { filePath: '' },
 		personal: { filePath: '' },

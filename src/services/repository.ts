@@ -42,9 +42,34 @@ export class PluginDataRepository {
 					: {};
 			const legacyWork = rawSettings['work'] as { filePath?: string } | undefined;
 			const legacyPersonal = rawSettings['personal'] as { filePath?: string } | undefined;
+			const rawArchive =
+				rawSettings['archive'] && typeof rawSettings['archive'] === 'object'
+					? (rawSettings['archive'] as PluginSettings['archive'])
+					: undefined;
+			const rawAggregate =
+				rawSettings['aggregate'] && typeof rawSettings['aggregate'] === 'object'
+					? (rawSettings['aggregate'] as PluginSettings['aggregate'])
+					: undefined;
+			const hasLegacySyncPath =
+				Object.values(rawTargets).some((target) => Boolean(target?.filePath?.trim())) ||
+				Boolean(legacyWork?.filePath?.trim()) ||
+				Boolean(legacyPersonal?.filePath?.trim()) ||
+				Boolean(rawArchive?.filePath?.trim());
+			const rawSyncMode = rawSettings['syncMode'];
+			const syncMode =
+				rawSyncMode === 'aggregate' || rawSyncMode === 'per-view'
+					? rawSyncMode
+					: hasLegacySyncPath
+						? 'per-view'
+						: 'aggregate';
 			const settings: PluginSettings = {
 				...DEFAULT_SETTINGS,
 				...(rawSettings as Partial<PluginSettings>),
+				syncMode,
+				aggregate: {
+					...DEFAULT_SETTINGS.aggregate,
+					...rawAggregate,
+				},
 				viewSyncTargets: {
 					work: {
 						filePath: legacyWork?.filePath ?? DEFAULT_SETTINGS.viewSyncTargets.work?.filePath ?? '',
@@ -57,7 +82,7 @@ export class PluginDataRepository {
 				},
 				archive: {
 					...DEFAULT_SETTINGS.archive,
-					...(rawSettings['archive'] as PluginSettings['archive'] | undefined),
+					...rawArchive,
 				},
 			};
 

@@ -37,6 +37,8 @@ export class KanbanStore {
 	constructor(settings: PluginSettings, board: BoardData, plugin: KanbanPlugin) {
 		this.settings = {
 			...settings,
+			syncMode: settings.syncMode ?? 'aggregate',
+			aggregate: { ...(settings.aggregate ?? { filePath: '' }) },
 			viewSyncTargets: { ...settings.viewSyncTargets },
 			archive: { ...settings.archive },
 		};
@@ -563,9 +565,12 @@ export class KanbanStore {
 			this.settings.currentView = partial.currentView;
 		if (partial.activeColumnId !== undefined) this.settings.activeColumnId = partial.activeColumnId;
 		if (partial.showArchive !== undefined) this.settings.showArchive = partial.showArchive;
+		if (partial.syncMode !== undefined) this.settings.syncMode = partial.syncMode;
 		if (partial.schemaVersion !== undefined) this.settings.schemaVersion = partial.schemaVersion;
 		if (partial.saveDebounce !== undefined) this.settings.saveDebounce = partial.saveDebounce;
 		if (partial.syncDebounce !== undefined) this.settings.syncDebounce = partial.syncDebounce;
+		if (partial.aggregate)
+			this.settings.aggregate = { ...this.settings.aggregate, ...partial.aggregate };
 		if (partial.viewSyncTargets) {
 			for (const [id, target] of Object.entries(partial.viewSyncTargets)) {
 				this.settings.viewSyncTargets[id] = {

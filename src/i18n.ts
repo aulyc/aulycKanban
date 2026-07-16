@@ -72,7 +72,7 @@ const zh = {
 	'archive.confirm.deleteSelected': '将删除选中的 {count} 条归档任务，此操作不可恢复。确认删除吗？',
 
 	// 设置页
-	'settings.dataManagement': 'Data management',
+	'settings.dataManagement': '数据管理',
 	'settings.backup.name': '备份数据',
 	'settings.backup.desc': '保存JSON格式的看板数据到用户本地',
 	'settings.backup.button': '备份',
@@ -85,21 +85,28 @@ const zh = {
 	'settings.import.fail': '导入失败',
 	'settings.import.invalidFormat': '无效的备份文件格式',
 	'settings.clear.name': '清除所有数据',
-	'settings.clear.desc': '删除所有任务类型中的任务数据（不可恢复）',
-	'settings.clear.button': '清除数据',
+	'settings.clear.desc': '无法撤销的删除全部数据。',
+	'settings.clear.button': '清除',
 	'settings.clear.warning': '此操作将删除所有任务类型中的任务数据，且无法恢复！',
 	'settings.clear.suggestion': '在清除数据前，请先点击"备份数据"按钮，将当前看板数据备份到本地。',
 	'settings.clear.backupFirst': '备份数据',
 	'settings.clear.confirm': '确认清除',
 	'settings.clear.success': '所有任务数据已清除',
 
-	'settings.sync': 'Note synchronization',
+	'settings.sync': '笔记同步',
+	'settings.sync.mode.name': '同步方式',
+	'settings.sync.mode.desc': '选择使用一个汇总笔记，或继续按任务类型分别同步',
+	'settings.sync.mode.aggregate': '单一汇总笔记（推荐）',
+	'settings.sync.mode.perView': '按任务类型分笔记（兼容）',
+	'settings.sync.aggregatePath.name': '全部任务同步文件',
+	'settings.sync.aggregatePath.desc': '汇总所有任务类型、象限及归档任务的 Markdown 文件路径',
+	'settings.sync.aggregatePath.placeholder': '看板/全部任务.md',
 	'settings.sync.viewPath.suffix': '同步文件',
 	'settings.sync.viewPath.desc': '该任务类型同步到的 Markdown 文件路径',
 	'settings.sync.archivePath.name': '归档同步文件',
 	'settings.sync.archivePath.desc': '归档任务同步到的 Markdown 文件路径（例如：看板/归档任务.md）',
 	'settings.sync.archivePath.placeholder': '看板/归档任务.md',
-	'settings.sync.hint': '看板变动会自动同步到对应笔记',
+	'settings.sync.hint': '配置路径后会自动创建笔记；后续看板变动会持续同步',
 	'settings.sync.duplicateError': '同步文件路径不能重复',
 
 	// 保存
@@ -116,6 +123,8 @@ const zh = {
 	'md.stats': '📊 任务统计',
 	'md.totalTasks': '总任务数',
 	'md.noTasks': '暂无任务',
+	'md.activeSection': '进行中',
+	'md.archiveSection': '已归档',
 	'md.archiveStats': '📦 归档统计',
 	'md.archiveTotal': '总归档数',
 
@@ -212,13 +221,22 @@ const en: Record<I18nKey, string> = {
 	'settings.clear.success': 'All task data has been cleared',
 
 	'settings.sync': 'Note synchronization',
+	'settings.sync.mode.name': 'Sync layout',
+	'settings.sync.mode.desc': 'Use one aggregate note or keep separate notes for each task type',
+	'settings.sync.mode.aggregate': 'Single aggregate note (recommended)',
+	'settings.sync.mode.perView': 'Separate task-type notes (compatible)',
+	'settings.sync.aggregatePath.name': 'All tasks sync file',
+	'settings.sync.aggregatePath.desc':
+		'Markdown file containing every task type, quadrant, and archived task',
+	'settings.sync.aggregatePath.placeholder': 'Kanban/All tasks.md',
 	'settings.sync.viewPath.suffix': ' sync file',
 	'settings.sync.viewPath.desc': 'Markdown file path for this task type',
 	'settings.sync.archivePath.name': 'Archive sync file',
 	'settings.sync.archivePath.desc':
 		'Markdown file path to sync archived tasks (e.g. Kanban/Archive.md)',
 	'settings.sync.archivePath.placeholder': 'Kanban/Archive.md',
-	'settings.sync.hint': 'Board changes are automatically synced to the corresponding note',
+	'settings.sync.hint':
+		'The note is created after a path is configured and kept in sync with board changes',
 	'settings.sync.duplicateError': 'Sync file paths cannot be the same',
 
 	'save.fail': 'Failed to save kanban data. Check disk space or permissions.',
@@ -232,6 +250,8 @@ const en: Record<I18nKey, string> = {
 	'md.stats': '📊 Task Statistics',
 	'md.totalTasks': 'Total tasks',
 	'md.noTasks': 'No tasks',
+	'md.activeSection': 'Active tasks',
+	'md.archiveSection': 'Archived tasks',
 	'md.archiveStats': '📦 Archive Statistics',
 	'md.archiveTotal': 'Total archived',
 
