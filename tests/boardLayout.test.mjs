@@ -114,3 +114,8 @@ test('normal and archive task components share one horizontal content edge', () 
 	assert.match(rule('.aulyckanban-archive-controls'), /padding:\s*0/);
 	assert.match(rule('.aulyckanban-archive-list'), /padding:\s*0/);
 });
+
+test('task list is transparent while each task card owns a themed surface', () => {
+	assert.match(rule('.aulyckanban-task-list'), /background:\s*transparent/);
+	assert.match(rule('.aulyckanban-task'), /background:\s*var\(--background-secondary\)/);
+});

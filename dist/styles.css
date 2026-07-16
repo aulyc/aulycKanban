@@ -510,7 +510,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	overflow: hidden;
 	padding: 0;
 	box-sizing: border-box;
-	background: var(--background-primary);
+	background: transparent;
 	border-radius: 8px;
 }
 
@@ -730,7 +730,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 
 /* ==================== 任务卡片 ==================== */
 .aulyckanban-task {
-	background: var(--background-primary);
+	background: var(--background-secondary);
 	border: 1px solid var(--background-modifier-border);
 	border-radius: 8px;
 	padding: 10px 12px;
