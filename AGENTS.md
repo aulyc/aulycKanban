@@ -105,9 +105,16 @@
 - Create or verify release tag: `npm run release:tag`
 - Test release: `npm run release:test -- --vault <test-vault-path>`
 - Formal release: `npm run release:formal -- --vault <vault-path>`
+- Formal GitHub preflight: `npm run formal-git:preflight`
 - Verify candidate files: `npm run artifact:verify`
 - Install an explicit formal artifact: `npm run install:formal -- --zip <zip> --provenance <file> --vault <vault-path>`
 - Post-install live verification: `npm run smoke:obsidian -- --manifest <installed-manifest-path>`
+
+Central GitHub source identity is `aulyc/aulycKanban`, remote `origin`, branch
+`main`. `version:set` runs the central preflight before changing release
+metadata. After exact-tag ZIP verification, installation, and Obsidian smoke,
+`release:formal` atomically pushes the branch and annotated tag, reads both
+remote refs back, and finalizes the GitHub source fields in release provenance.
 
 ### Required release gates
 
@@ -121,7 +128,7 @@
 ### Project-specific adaptations
 
 - Build number: 本项目显式使用独立 `buildNumber`。规范迁移保持 `2.1.19` 和 `buildNumber: 0`，不为历史版本伪造构建号；第一个未来测试或正式发布必须使用正整数，之后跨测试/正式渠道严格递增、不得重复或倒退。
-- Distribution: `local-vault`，没有仓库发布或社区插件渠道上传步骤；以版本化 ZIP、独立 provenance、目标 Vault 安装哈希和实际加载身份作为补偿验证。
+- Distribution: `local-vault`，没有 GitHub Release 附件或社区插件渠道上传步骤；正式发版仍必须把源码分支和 annotated tag 发布到中央绑定的 GitHub 仓库。版本化 ZIP、独立 provenance、目标 Vault 安装哈希和实际加载身份继续作为插件渠道验证。
 - Historical tags: 历史 lightweight 与 annotated tags 均为只读遗留记录；不得移动、删除或重建。新规则从 `2.1.19` 之后的第一个版本开始执行。
 - CI: 当前没有远端 CI 配置；以 `npm run ci` 作为本地等价门禁。
 - macOS trust fields: N/A；本仓库不发布原生 macOS artifact。

@@ -124,7 +124,9 @@ npm run release:test -- --vault <test-vault-path>
 npm run release:formal -- --vault <vault-path>
 ```
 
-两条命令都要求已有精确合规标签，从隔离 tag 重新构建，生成独立产物，安装到目标 Vault 并执行真实加载 smoke。测试 ZIP 不能改名冒充正式 ZIP。本项目 Distribution 为 `local-vault`，流程不上传远端或社区渠道。
+两条命令都要求已有精确合规标签，从隔离 tag 重新构建，生成独立产物，安装到目标 Vault 并执行真实加载 smoke。测试 ZIP 不能改名冒充正式 ZIP。本项目 Distribution 为 `local-vault`，不上传 GitHub Release 附件或社区渠道；但正式发版在 smoke 通过后必须将 `main` 和 annotated tag 原子推送到中央绑定的 `aulyc/aulycKanban`，回读远端两个 ref，并把远端源码身份写入最终 provenance。测试发版不推送。
+
+`npm run version:set` 在改动权威版本源前执行中央 GitHub preflight；认证、仓库访问、remote fetch/push URL、正式分支或工作区状态无法验证时不会修改版本文件。
 
 ## 9. 正式安装与数据保护
 

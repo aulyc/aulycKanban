@@ -34,6 +34,15 @@ const PROVENANCE_KEYS = [
 	'artifact',
 	'files',
 ];
+const REMOTE_PROVENANCE_KEYS = [
+	'sourceRepository',
+	'sourceBranch',
+	'sourceRemoteCommit',
+	'sourceRemoteTagCommit',
+	'sourceRemoteVerifiedAt',
+];
+const GITHUB_REPOSITORY = 'aulyc/aulycKanban';
+const RELEASE_BRANCH = 'main';
 
 function sameNames(actual, expected) {
 	return [...actual].sort().join('\0') === [...expected].sort().join('\0');
@@ -91,7 +100,12 @@ export async function verifyReleaseArtifact({
 		throw new Error('Release provenance must use the *.release-provenance.json suffix');
 	}
 	const provenance = await readJson(provenancePath);
-	assertExactKeys(provenance, PROVENANCE_KEYS, 'release provenance');
+	const hasRemoteProvenance = REMOTE_PROVENANCE_KEYS.some((key) => Object.hasOwn(provenance, key));
+	assertExactKeys(
+		provenance,
+		hasRemoteProvenance ? [...PROVENANCE_KEYS, ...REMOTE_PROVENANCE_KEYS] : PROVENANCE_KEYS,
+		'release provenance',
+	);
 	assertExactKeys(provenance.artifact, ['file', 'sha256'], 'release provenance artifact');
 	if (!Array.isArray(provenance.files))
 		throw new Error('release provenance files must be an array');
@@ -148,6 +162,28 @@ export async function verifyReleaseArtifact({
 	for (const [field, expected] of Object.entries(expectedFields)) {
 		if (provenance[field] !== expected) {
 			throw new Error(`Release provenance mismatch: ${field}`);
+		}
+	}
+	if (hasRemoteProvenance) {
+		if (channel !== 'formal')
+			throw new Error('Test provenance must not claim GitHub source publication');
+		const expectedRemote = {
+			sourceRepository: GITHUB_REPOSITORY,
+			sourceBranch: RELEASE_BRANCH,
+			sourceRemoteCommit: tagInfo.commit,
+			sourceRemoteTagCommit: tagInfo.commit,
+		};
+		for (const [field, expected] of Object.entries(expectedRemote)) {
+			if (provenance[field] !== expected) {
+				throw new Error(`Release provenance mismatch: ${field}`);
+			}
+		}
+		if (
+			typeof provenance.sourceRemoteVerifiedAt !== 'string' ||
+			!provenance.sourceRemoteVerifiedAt.endsWith('Z') ||
+			Number.isNaN(Date.parse(provenance.sourceRemoteVerifiedAt))
+		) {
+			throw new Error('Release provenance has an invalid remote verification time');
 		}
 	}
 	if (manifest.id !== PLUGIN_ID || manifest.version !== releaseVersion.version) {

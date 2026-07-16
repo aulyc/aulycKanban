@@ -23,6 +23,7 @@
 		"release:tag": "node scripts/release-tag.mjs",
 		"release:test": "node scripts/release.mjs test",
 		"release:formal": "node scripts/release.mjs formal",
+		"formal-git:preflight": "node scripts/formal-git.mjs preflight",
 		"install:formal": "node scripts/install-plugin.mjs --channel formal",
 		"smoke:obsidian": "node scripts/obsidian-smoke.mjs"
 	},

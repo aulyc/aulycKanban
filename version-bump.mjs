@@ -2,6 +2,7 @@ import { access, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
+import { runFormalGit } from './scripts/formal-git.mjs';
 
 const VERSION_PATTERN =
 	/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
@@ -230,6 +231,7 @@ async function main() {
 	}
 	if (command === 'set') {
 		const buildNumber = Number(process.argv[4]);
+		runFormalGit({ repoDir: process.cwd(), phase: 'preflight' });
 		const result = await setReleaseVersion({ version: process.argv[3], buildNumber });
 		console.log(`[version] Prepared ${result.version} (build ${result.buildNumber})`);
 		return;

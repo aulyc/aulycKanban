@@ -3,7 +3,7 @@
   "schemaVersion": 1,
   "projectId": "aulyckanban",
   "applicability": "applicable",
-  "coreVersion": "1.0.0",
+  "coreVersion": "2.0.0",
   "artifacts": [
     {
       "id": "aulyckanban-obsidian-plugin",
@@ -90,6 +90,14 @@
       "evidence": [".codex/standards.json"]
     },
     {
+      "ruleId": "REL-014",
+      "evidence": [
+        "AGENTS.md#versioning-and-release-profile",
+        "scripts/formal-git.mjs",
+        "scripts/release.mjs"
+      ]
+    },
+    {
       "ruleId": "OBS-001",
       "evidence": ["AGENTS.md#versioning-and-release-profile"]
     },
@@ -136,19 +144,19 @@
   "trackedFiles": [
     {
       "path": "AGENTS.md",
-      "sha256": "a03a86cc9216d2f2cef425c9e363d82160a163623bde26a4b6622a967489f043"
+      "sha256": "38ec3aec75ec85b81cfcf4b9d425eb1b71bd54ff3f2c866dda491f28178447ad"
     },
     {
       "path": "VERSIONING.md",
-      "sha256": "3d88eea296478f6427579465927421778497d780c9c4aaf26e02a726f3336cc7"
+      "sha256": "b5c6b612c7985ea2edb32cb78c26f5b88937208e3bc4b6c0b8588a2d7f5eb64c"
     },
     {
       "path": "version-bump.mjs",
-      "sha256": "b1e902b252bc6e4f9ec2de5c364a7fdcaf7dbd853035fd97f71fe9cd1c883bf9"
+      "sha256": "edf5083bcf659686536ff66c202344fd24706bc19223e27d92b99fd48910e8e5"
     },
     {
       "path": "scripts/artifact.mjs",
-      "sha256": "1dae9fddf2421e930729c1eb55abbe0eb7c9420224bb0ef1ccc1f7ea0294c330"
+      "sha256": "af59345de36e133761402ba72fdb4c497a39b139a0d24db23a58d51c9ff59fc2"
     },
     {
       "path": "scripts/build-dist.mjs",
@@ -157,6 +165,10 @@
     {
       "path": "scripts/git-release.mjs",
       "sha256": "c1480c5d32b633a0c580ad50930ffb03174188de1130d4fbef7cfb8f20c156e6"
+    },
+    {
+      "path": "scripts/formal-git.mjs",
+      "sha256": "c464f565b188e1b2243528084bbcfe126b7fd1065f003b3adc2458906f358651"
     },
     {
       "path": "scripts/install-plugin.mjs",
@@ -184,7 +196,7 @@
     },
     {
       "path": "scripts/release.mjs",
-      "sha256": "adb5ec595a572a76e2ba29899551902c8601baf72470a373cd4d9c3159f2c81b"
+      "sha256": "025b00a5901e6c7e20e6b4f1243607c373b91713cc57311dc3b6375c23df2f88"
     },
     {
       "path": "scripts/zip.mjs",
@@ -204,6 +216,7 @@
       "scripts/artifact.mjs",
       "scripts/build-dist.mjs",
       "scripts/git-release.mjs",
+      "scripts/formal-git.mjs",
       "scripts/install-plugin.mjs",
       "scripts/obsidian-smoke.mjs",
       "scripts/release-check.mjs",
@@ -215,6 +228,7 @@
     ],
     "ciPaths": [
       "package.json"
+      ,"tests/formalGit.test.mjs"
     ]
   }
 }

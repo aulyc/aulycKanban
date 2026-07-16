@@ -6,6 +6,7 @@ import { assertCleanGit } from './git-release.mjs';
 import { installReleaseArtifact } from './install-plugin.mjs';
 import { runInstalledObsidianSmoke } from './obsidian-smoke.mjs';
 import { buildFromExactTag } from './release-from-tag.mjs';
+import { runFormalGit } from './formal-git.mjs';
 
 function parseArguments(argv) {
 	const [channel, ...rest] = argv;
@@ -43,6 +44,9 @@ export async function runRelease({
 	if (releaseVersion.buildNumber <= 0) {
 		throw new Error('Test and formal releases require a positive buildNumber');
 	}
+	if (channel === 'formal') {
+		runFormalGit({ repoDir, phase: 'preflight' });
+	}
 	const artifact = await buildFromExactTag({
 		repoDir,
 		tag: releaseVersion.version,
@@ -64,6 +68,20 @@ export async function runRelease({
 		cli: env.OBSIDIAN_CLI?.trim() || 'obsidian',
 		vaultName: env.OBSIDIAN_VAULT_NAME?.trim() || '',
 	});
+	if (channel === 'formal') {
+		runFormalGit({
+			repoDir,
+			phase: 'push',
+			tag: releaseVersion.version,
+			provenancePath: artifact.provenancePath,
+		});
+		runFormalGit({
+			repoDir,
+			phase: 'verify',
+			tag: releaseVersion.version,
+			provenancePath: artifact.provenancePath,
+		});
+	}
 	assertCleanGit(repoDir, 'calling worktree after release');
 	return { artifact, installed };
 }
