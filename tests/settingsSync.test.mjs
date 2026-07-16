@@ -5,6 +5,24 @@ import vm from 'node:vm';
 import ts from 'typescript';
 
 const renderedSettings = [];
+const renderedFolderSuggests = [];
+
+class MockAbstractInputSuggest {
+	constructor(app, inputEl) {
+		this.app = app;
+		this.inputEl = inputEl;
+		inputEl.addEventListener('input', () => {
+			this.lastSuggestions = this.getSuggestions(inputEl.value);
+		});
+		renderedFolderSuggests.push(this);
+	}
+	setValue(value) {
+		this.inputEl.value = value;
+	}
+	close() {
+		this.closed = true;
+	}
+}
 
 class MockElement {
 	empty() {}
@@ -75,7 +93,22 @@ class MockSetting {
 		const listeners = new Map();
 		const text = {
 			inputEl: {
+				value: '',
+				ownerDocument: {
+					createEvent: () => ({
+						initEvent(type) {
+							this.type = type;
+						},
+					}),
+				},
 				addEventListener: (name, listener) => listeners.set(name, listener),
+				removeEventListener: (name, listener) => {
+					if (listeners.get(name) === listener) listeners.delete(name);
+				},
+				dispatchEvent: (event) => {
+					listeners.get(event.type)?.(event);
+					return true;
+				},
 			},
 			listeners,
 			setPlaceholder: (value) => {
@@ -84,6 +117,7 @@ class MockSetting {
 			},
 			setValue: (value) => {
 				text.value = value;
+				text.inputEl.value = value;
 				return text;
 			},
 			onChange: (handler) => {
@@ -127,13 +161,24 @@ function createHarness() {
 			},
 		},
 	};
-	const app = { containerEl: new MockElement() };
+	const app = {
+		containerEl: new MockElement(),
+		vault: {
+			getAllFolders: () => [
+				{ path: 'Alpha' },
+				{ path: 'Beta' },
+				{ path: '工作' },
+				{ path: '项目/a计划' },
+			],
+		},
+	};
 	const context = {
 		module,
 		exports: module.exports,
 		require: (id) => {
 			if (id === 'obsidian') {
 				return {
+					AbstractInputSuggest: MockAbstractInputSuggest,
 					Notice: class {},
 					normalizePath: (value) => value,
 					PluginSettingTab: MockPluginSettingTab,
@@ -200,4 +245,39 @@ test('clearing the folder restores the default managed directory', async () => {
 
 	await folder.text.onChangeHandler('   ');
 	assert.equal(settings.syncFolder, 'X-aulyc看板');
+});
+
+test('sync folder input lists every vault folder on focus and filters by typed path', () => {
+	const { tab } = createHarness();
+	const start = renderedSettings.length;
+	const suggestStart = renderedFolderSuggests.length;
+	tab.display();
+	const rendered = renderedSettings.slice(start);
+	const folder = rendered.find((item) => item.name === 'settings.sync.folder.name');
+	const suggest = renderedFolderSuggests[suggestStart];
+
+	folder.text.listeners.get('focus')();
+	assert.deepEqual(
+		new Set(suggest.lastSuggestions),
+		new Set(['Alpha', 'Beta', '工作', '项目/a计划']),
+	);
+
+	folder.text.inputEl.value = 'a';
+	folder.text.inputEl.dispatchEvent({ type: 'input' });
+	assert.deepEqual(new Set(suggest.lastSuggestions), new Set(['Alpha', 'Beta', '项目/a计划']));
+});
+
+test('choosing a suggested vault folder persists it and schedules note synchronization', () => {
+	const { tab, settings, syncCalls } = createHarness();
+	const start = renderedSettings.length;
+	const suggestStart = renderedFolderSuggests.length;
+	tab.display();
+	const rendered = renderedSettings.slice(start);
+	const folder = rendered.find((item) => item.name === 'settings.sync.folder.name');
+	const suggest = renderedFolderSuggests[suggestStart];
+
+	suggest.selectSuggestion('项目/a计划');
+	assert.equal(folder.text.inputEl.value, '项目/a计划');
+	assert.equal(settings.syncFolder, '项目/a计划');
+	assert.equal(syncCalls.all, 1);
 });
