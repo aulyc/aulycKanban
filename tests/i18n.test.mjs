@@ -28,8 +28,9 @@ test('simplified Chinese settings use localized section headings and clear-data 
 		t('settings.sync.folder.desc'),
 		'自动创建并管理每个任务类型及归档任务的 Markdown 笔记',
 	);
+	assert.equal(t('settings.clear.name'), '清除数据');
 	assert.equal(t('settings.clear.button'), '清除');
-	assert.equal(t('settings.clear.desc'), '无法撤销的删除全部数据。');
+	assert.equal(t('settings.clear.desc'), '不可恢复的删除所有数据。');
 	assert.match(t('view.deleteData'), /对应 Markdown 会移入恢复目录/);
 });
 

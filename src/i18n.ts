@@ -84,8 +84,8 @@ const zh = {
 	'settings.import.success': '数据导入成功',
 	'settings.import.fail': '导入失败',
 	'settings.import.invalidFormat': '无效的备份文件格式',
-	'settings.clear.name': '清除所有数据',
-	'settings.clear.desc': '无法撤销的删除全部数据。',
+	'settings.clear.name': '清除数据',
+	'settings.clear.desc': '不可恢复的删除所有数据。',
 	'settings.clear.button': '清除',
 	'settings.clear.warning': '此操作将删除所有任务类型中的任务数据，且无法恢复！',
 	'settings.clear.suggestion': '在清除数据前，请先点击"备份数据"按钮，将当前看板数据备份到本地。',
@@ -97,7 +97,6 @@ const zh = {
 	'settings.sync.folder.name': '同步文件夹',
 	'settings.sync.folder.desc': '自动创建并管理每个任务类型及归档任务的 Markdown 笔记',
 	'settings.sync.folder.placeholder': 'X-aulyc看板',
-	'settings.sync.hint': '新增、重命名或删除任务类型时，对应笔记会自动创建、改名或移入恢复目录',
 
 	// 保存
 	'save.fail': '看板数据保存失败，请检查磁盘空间或权限',
@@ -214,8 +213,6 @@ const en: Record<I18nKey, string> = {
 	'settings.sync.folder.desc':
 		'Automatically create and manage Markdown notes for each task type and archived tasks',
 	'settings.sync.folder.placeholder': 'X-aulycKanban',
-	'settings.sync.hint':
-		'Task-type notes are automatically created, renamed, or moved to recovery as task types change',
 
 	'save.fail': 'Failed to save kanban data. Check disk space or permissions.',
 

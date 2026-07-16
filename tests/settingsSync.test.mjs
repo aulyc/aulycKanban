@@ -168,6 +168,7 @@ function createHarness() {
 				{ path: 'Alpha' },
 				{ path: 'Beta' },
 				{ path: '工作' },
+				{ path: '项目' },
 				{ path: '项目/a计划' },
 			],
 		},
@@ -247,7 +248,7 @@ test('clearing the folder restores the default managed directory', async () => {
 	assert.equal(settings.syncFolder, 'X-aulyc看板');
 });
 
-test('sync folder input lists every vault folder on focus and filters by typed path', () => {
+test('sync folder input lists only top-level vault folders and filters Chinese or Latin input', () => {
 	const { tab } = createHarness();
 	const start = renderedSettings.length;
 	const suggestStart = renderedFolderSuggests.length;
@@ -257,14 +258,15 @@ test('sync folder input lists every vault folder on focus and filters by typed p
 	const suggest = renderedFolderSuggests[suggestStart];
 
 	folder.text.listeners.get('focus')();
-	assert.deepEqual(
-		new Set(suggest.lastSuggestions),
-		new Set(['Alpha', 'Beta', '工作', '项目/a计划']),
-	);
+	assert.deepEqual(new Set(suggest.lastSuggestions), new Set(['Alpha', 'Beta', '工作', '项目']));
 
 	folder.text.inputEl.value = 'a';
 	folder.text.inputEl.dispatchEvent({ type: 'input' });
-	assert.deepEqual(new Set(suggest.lastSuggestions), new Set(['Alpha', 'Beta', '项目/a计划']));
+	assert.deepEqual(new Set(suggest.lastSuggestions), new Set(['Alpha', 'Beta']));
+
+	folder.text.inputEl.value = '项';
+	folder.text.inputEl.dispatchEvent({ type: 'input' });
+	assert.deepEqual(suggest.lastSuggestions, ['项目']);
 });
 
 test('choosing a suggested vault folder persists it and schedules note synchronization', () => {
@@ -276,8 +278,8 @@ test('choosing a suggested vault folder persists it and schedules note synchroni
 	const folder = rendered.find((item) => item.name === 'settings.sync.folder.name');
 	const suggest = renderedFolderSuggests[suggestStart];
 
-	suggest.selectSuggestion('项目/a计划');
-	assert.equal(folder.text.inputEl.value, '项目/a计划');
-	assert.equal(settings.syncFolder, '项目/a计划');
+	suggest.selectSuggestion('项目');
+	assert.equal(folder.text.inputEl.value, '项目');
+	assert.equal(settings.syncFolder, '项目');
 	assert.equal(syncCalls.all, 1);
 });

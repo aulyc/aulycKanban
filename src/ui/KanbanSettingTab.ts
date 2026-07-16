@@ -11,7 +11,12 @@ export function filterVaultFolders(app: App, query: string): string[] {
 	return app.vault
 		.getAllFolders()
 		.map((folder) => folder.path)
-		.filter((path) => path.length > 0 && path.toLocaleLowerCase().includes(normalizedQuery))
+		.filter(
+			(path) =>
+				path.length > 0 &&
+				!path.includes('/') &&
+				path.toLocaleLowerCase().includes(normalizedQuery),
+		)
 		.sort((left, right) => left.localeCompare(right));
 }
 
@@ -155,11 +160,6 @@ export class KanbanSettingTab extends PluginSettingTab {
 					this.plugin.syncService.scheduleSyncAllViews();
 				});
 			});
-
-		const hintEl = containerEl.createDiv({
-			cls: 'setting-item-description aulyckanban-settings-hint',
-		});
-		hintEl.setText(`💡 ${t('settings.sync.hint')}`);
 	}
 
 	hide(): void {
