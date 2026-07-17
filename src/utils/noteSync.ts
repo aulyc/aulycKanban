@@ -3,6 +3,7 @@ import type { ViewKind } from '../types';
 export const DEFAULT_SYNC_FOLDER = 'X-aulyc看板';
 export const ARCHIVE_NOTE_TITLE = '归档任务';
 export const DELETED_SYNC_FOLDER = '已删除任务类型';
+export const PRESERVED_SYNC_FOLDER = '历史同步内容';
 
 /** 将用户输入收敛为 Vault 内的相对文件夹路径。 */
 export function normalizeSyncFolder(rawFolder: string): string {

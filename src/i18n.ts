@@ -97,6 +97,14 @@ const zh = {
 	'settings.sync.folder.name': '同步文件夹',
 	'settings.sync.folder.desc': '自动创建并管理每个任务类型及归档任务的 Markdown 笔记',
 	'settings.sync.folder.placeholder': 'X-aulyc看板',
+	'settings.sync.force.name': '强制刷新同步',
+	'settings.sync.force.desc': '以当前看板数据重新生成所有任务类型和归档笔记',
+	'settings.sync.force.button': '立即同步',
+	'settings.sync.force.running': '正在同步…',
+	'settings.sync.force.confirm':
+		'将以当前看板数据覆盖全部自动同步笔记。旧版残留内容会移入“历史同步内容”，是否继续？',
+	'settings.sync.force.success': '已强制刷新 {count} 个同步笔记',
+	'settings.sync.force.fail': '强制刷新失败',
 
 	// 保存
 	'save.fail': '看板数据保存失败，请检查磁盘空间或权限',
@@ -213,6 +221,15 @@ const en: Record<I18nKey, string> = {
 	'settings.sync.folder.desc':
 		'Automatically create and manage Markdown notes for each task type and archived tasks',
 	'settings.sync.folder.placeholder': 'X-aulycKanban',
+	'settings.sync.force.name': 'Force refresh synchronization',
+	'settings.sync.force.desc':
+		'Regenerate every task-type and archive note from the current kanban data',
+	'settings.sync.force.button': 'Sync now',
+	'settings.sync.force.running': 'Synchronizing…',
+	'settings.sync.force.confirm':
+		'This will overwrite every managed synchronization note with the current kanban data. Legacy content will be moved to “Historical synchronization content”. Continue?',
+	'settings.sync.force.success': 'Force-refreshed {count} synchronization notes',
+	'settings.sync.force.fail': 'Force refresh failed',
 
 	'save.fail': 'Failed to save kanban data. Check disk space or permissions.',
 

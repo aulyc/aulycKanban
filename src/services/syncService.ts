@@ -12,6 +12,7 @@ import {
 	DELETED_SYNC_FOLDER,
 	managedNoteTitle,
 	normalizeSyncFolder,
+	PRESERVED_SYNC_FOLDER,
 } from '../utils/noteSync';
 import { ARCHIVE_UNCATEGORIZED_ID, PERFORMANCE } from '../constants';
 
@@ -20,6 +21,11 @@ const SYNC_END = '<!-- XAULYC_KANBAN:END -->';
 
 type ManagedOwner = { kind: 'view'; id: ViewKind } | { kind: 'archive' };
 type KnownView = { title: string; path: string };
+
+export interface ForceSyncResult {
+	syncedCount: number;
+	totalCount: number;
+}
 
 export class VaultSyncService {
 	private syncTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -107,12 +113,77 @@ export class VaultSyncService {
 		await this.initialize(silent);
 	}
 
+	/** 以当前已保存的看板数据严格重建全部受管笔记，并把失败传播给调用方。 */
+	async forceSyncAll(): Promise<ForceSyncResult> {
+		await this.store.saveNow();
+		this.discardPendingSchedule();
+		return this.enqueueStrictSync(async () => {
+			await this.reconcileManagedNotes();
+			const settings = this.store.getSettings();
+			const jobs: Array<{ path: string; run: () => Promise<void> }> = [];
+			for (const view of this.store.getTaskViews()) {
+				const path = settings.viewSyncTargets[view.id]?.filePath;
+				if (!path) throw new Error(`Missing managed note path for ${view.title}`);
+				jobs.push({
+					path,
+					run: () => this.writeToFile(normalizePath(path), generateMarkdown(view), true),
+				});
+			}
+			const archivePath = settings.archive?.filePath;
+			if (!archivePath) throw new Error('Missing managed archive note path');
+			jobs.push({
+				path: archivePath,
+				run: () =>
+					this.writeToFile(
+						normalizePath(archivePath),
+						`${syncMetadata('archive')}\n${this.generateArchiveMarkdown()}`,
+						true,
+					),
+			});
+
+			let syncedCount = 0;
+			const failures: string[] = [];
+			await Promise.all(
+				jobs.map(async (job) => {
+					try {
+						await job.run();
+						syncedCount += 1;
+					} catch (error) {
+						const detail = error instanceof Error ? error.message : String(error);
+						failures.push(`${job.path}: ${detail}`);
+					}
+				}),
+			);
+			if (failures.length > 0) throw new Error(failures.join('；'));
+			return { syncedCount, totalCount: jobs.length };
+		});
+	}
+
 	private async enqueueSync(work: () => Promise<void>): Promise<void> {
 		const next = this.syncChain.then(work);
 		this.syncChain = next.catch((error) => {
 			console.error('[aulycKanban] Managed note synchronization failed:', error);
 		});
 		await this.syncChain;
+	}
+
+	private async enqueueStrictSync<T>(work: () => Promise<T>): Promise<T> {
+		const next = this.syncChain.then(work);
+		this.syncChain = next.then(
+			() => undefined,
+			(error) => {
+				console.error('[aulycKanban] Managed note synchronization failed:', error);
+			},
+		);
+		return next;
+	}
+
+	private discardPendingSchedule(): void {
+		if (this.syncTimeout) clearTimeout(this.syncTimeout);
+		this.syncTimeout = null;
+		this.pendingAllViews = false;
+		this.pendingArchive = false;
+		this.pendingViewIds.clear();
 	}
 
 	private async reconcileManagedNotes(): Promise<void> {
@@ -370,13 +441,12 @@ export class VaultSyncService {
 		const wrapped = `${SYNC_START}\n${markdown}\n${SYNC_END}`;
 		const existing = this.vault.getAbstractFileByPath(filePath);
 		if (existing instanceof TFile) {
-			await this.vault.process(existing, (data) => {
-				const start = data.indexOf(SYNC_START);
-				const end = data.indexOf(SYNC_END);
-				return start >= 0 && end >= 0
-					? data.substring(0, start) + wrapped + data.substring(end + SYNC_END.length)
-					: `${data}\n\n${wrapped}`;
-			});
+			const content = await this.vault.cachedRead(existing);
+			if (this.hasContentOutsideManagedBlock(content)) {
+				await this.replaceLegacyNoteWithExactMirror(existing, filePath, wrapped);
+			} else {
+				await this.vault.process(existing, () => wrapped);
+			}
 			if (!silent) new Notice(t('sync.updated'));
 			return;
 		}
@@ -384,6 +454,61 @@ export class VaultSyncService {
 		await this.ensureParentFolder(filePath);
 		await this.vault.create(filePath, wrapped);
 		if (!silent) new Notice(t('sync.exported'));
+	}
+
+	private hasContentOutsideManagedBlock(content: string): boolean {
+		const start = content.indexOf(SYNC_START);
+		const end = content.indexOf(SYNC_END, start + SYNC_START.length);
+		if (start < 0 || end < 0) return content.trim().length > 0;
+		return `${content.slice(0, start)}${content.slice(end + SYNC_END.length)}`.trim().length > 0;
+	}
+
+	private async replaceLegacyNoteWithExactMirror(
+		file: TFile,
+		originalPath: string,
+		wrapped: string,
+	): Promise<void> {
+		const historyPath = await this.buildPreservedHistoryPath(file.path);
+		await this.ensureParentFolder(historyPath);
+		await this.vault.rename(file, historyPath);
+		try {
+			await this.vault.create(originalPath, wrapped);
+		} catch (error) {
+			if (!this.vault.getAbstractFileByPath(originalPath)) {
+				try {
+					await this.vault.rename(file, originalPath);
+				} catch (rollbackError) {
+					console.error(
+						`[aulycKanban] Failed to restore ${originalPath} after mirror creation failed:`,
+						rollbackError,
+					);
+				}
+			}
+			throw error;
+		}
+	}
+
+	private async buildPreservedHistoryPath(filePath: string): Promise<string> {
+		const now = new Date();
+		const stamp = [
+			now.getFullYear(),
+			String(now.getMonth() + 1).padStart(2, '0'),
+			String(now.getDate()).padStart(2, '0'),
+			'-',
+			String(now.getHours()).padStart(2, '0'),
+			String(now.getMinutes()).padStart(2, '0'),
+			String(now.getSeconds()).padStart(2, '0'),
+		].join('');
+		const fileName = filePath.slice(filePath.lastIndexOf('/') + 1);
+		const folder = normalizeSyncFolder(this.store.getSettings().syncFolder);
+		const basePath = normalizePath(
+			`${folder}/${PRESERVED_SYNC_FOLDER}/${managedNoteTitle(fileName)}-${stamp}.md`,
+		);
+		for (let ordinal = 1; ordinal <= 999; ordinal += 1) {
+			const candidate = buildUniqueManagedNotePath(basePath, ordinal);
+			if (!this.vault.getAbstractFileByPath(candidate)) return candidate;
+		}
+		throw new Error(`Unable to reserve preserved history path for ${filePath}`);
 	}
 
 	private async ensureParentFolder(filePath: string): Promise<void> {

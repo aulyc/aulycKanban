@@ -114,6 +114,7 @@ function createStore(overrides = {}) {
 			createView('personal', '👤 个人任务', '个人内容'),
 		],
 		archives: { work: [], personal: [] },
+		saveCalls: 0,
 		...overrides.state,
 	};
 	return {
@@ -124,6 +125,9 @@ function createStore(overrides = {}) {
 		getTaskViews: () => state.views,
 		getView: (id) => state.views.find((view) => view.id === id),
 		getArchive: (id) => state.archives[id] ?? [],
+		async saveNow() {
+			state.saveCalls += 1;
+		},
 		dispatch(action) {
 			if (action.type !== 'UPDATE_SETTINGS') return;
 			if (action.payload.syncFolder !== undefined) settings.syncFolder = action.payload.syncFolder;
@@ -160,7 +164,7 @@ test('initialization automatically creates one owned note per task type plus arc
 	assert.equal(notices.length, 0);
 });
 
-test('initialization adopts an existing legacy sync note without removing user content', async () => {
+test('initialization moves legacy mixed content to history and creates an exact managed mirror', async () => {
 	const notices = [];
 	const VaultSyncService = await loadSyncService(notices);
 	const vault = createVault({
@@ -173,9 +177,97 @@ test('initialization adopts an existing legacy sync note without removing user c
 	await service.initialize();
 
 	const content = vault.files.get('X-aulyc看板/工作任务.md').content;
-	assert.match(content, /^用户前言/);
+	assert.doesNotMatch(content, /用户前言|旧内容/);
+	assert.match(content, /^<!-- XAULYC_KANBAN:START -->/);
 	assert.match(content, /工作内容/);
 	assert.match(content, /aulyckanban:view=work/);
+	const preserved = [...vault.files.entries()].find(([path]) =>
+		path.startsWith('X-aulyc看板/历史同步内容/工作任务-'),
+	);
+	assert.ok(preserved);
+	assert.match(preserved[1].content, /^用户前言/);
+	assert.match(preserved[1].content, /旧内容/);
+});
+
+test('force refresh saves the current board and rebuilds every managed note', async () => {
+	const notices = [];
+	const VaultSyncService = await loadSyncService(notices);
+	const vault = createVault();
+	const store = createStore();
+	const service = new VaultSyncService(vault, store);
+	await service.initialize();
+
+	store.state.views[0].columns[0].tasks[0].content = '强制刷新后的工作内容';
+	const workFile = vault.files.get('X-aulyc看板/工作任务.md');
+	workFile.content = `旧版残留内容\n\n${workFile.content}`;
+
+	const result = await service.forceSyncAll();
+
+	assert.equal(store.state.saveCalls, 1);
+	assert.equal(result.syncedCount, 3);
+	assert.equal(result.totalCount, 3);
+	assert.match(vault.files.get('X-aulyc看板/工作任务.md').content, /^<!-- XAULYC_KANBAN:START -->/);
+	assert.match(vault.files.get('X-aulyc看板/工作任务.md').content, /强制刷新后的工作内容/);
+	assert.doesNotMatch(vault.files.get('X-aulyc看板/工作任务.md').content, /旧版残留内容/);
+	assert.equal(
+		[...vault.files.keys()].some((path) => path.startsWith('X-aulyc看板/历史同步内容/工作任务-')),
+		true,
+	);
+});
+
+test('force refresh reports write failures and keeps the synchronization queue usable', async () => {
+	const notices = [];
+	const errors = [];
+	const VaultSyncService = await loadSyncService(notices, errors);
+	const vault = createVault();
+	const store = createStore();
+	const service = new VaultSyncService(vault, store);
+	await service.initialize();
+
+	const process = vault.process.bind(vault);
+	let shouldFail = true;
+	vault.process = async (file, transform) => {
+		if (shouldFail && file.path === 'X-aulyc看板/工作任务.md') {
+			shouldFail = false;
+			throw new Error('simulated force refresh failure');
+		}
+		await process(file, transform);
+	};
+
+	await assert.rejects(service.forceSyncAll(), /工作任务.*simulated force refresh failure/);
+	assert.equal(errors.length, 1);
+	const retry = await service.forceSyncAll();
+	assert.equal(retry.syncedCount, 3);
+	assert.equal(store.state.saveCalls, 2);
+});
+
+test('legacy content is restored to its original path if exact mirror creation fails', async () => {
+	const notices = [];
+	const errors = [];
+	const VaultSyncService = await loadSyncService(notices, errors);
+	const originalContent =
+		'用户前言\n\n<!-- XAULYC_KANBAN:START -->\n旧内容\n<!-- XAULYC_KANBAN:END -->';
+	const vault = createVault({ 'X-aulyc看板/工作任务.md': originalContent });
+	const create = vault.create.bind(vault);
+	let failMirrorCreation = true;
+	vault.create = async (path, content) => {
+		if (path === 'X-aulyc看板/工作任务.md' && failMirrorCreation) {
+			failMirrorCreation = false;
+			throw new Error('simulated mirror creation failure');
+		}
+		return create(path, content);
+	};
+	const service = new VaultSyncService(vault, createStore());
+
+	await service.initialize();
+
+	assert.equal(vault.files.get('X-aulyc看板/工作任务.md').content, originalContent);
+	assert.equal(
+		[...vault.files.keys()].some((path) => path.startsWith('X-aulyc看板/历史同步内容/')),
+		false,
+	);
+	assert.equal(failMirrorCreation, false);
+	assert.equal(errors.length, 0);
 });
 
 test('renaming a task type renames its owned note and updates the stored target', async () => {

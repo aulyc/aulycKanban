@@ -32,6 +32,11 @@ class VaultFolderSuggest extends AbstractInputSuggest<string> {
 		this.inputEl.addEventListener('focus', this.handleFocus);
 	}
 
+	open(): void {
+		this.syncWidthToInput();
+		super.open();
+	}
+
 	protected getSuggestions(query: string): string[] {
 		const effectiveQuery = this.showAllOnNextQuery ? '' : query;
 		this.showAllOnNextQuery = false;
@@ -59,6 +64,15 @@ class VaultFolderSuggest extends AbstractInputSuggest<string> {
 		inputEvent.initEvent('input', true, false);
 		this.inputEl.dispatchEvent(inputEvent);
 	};
+
+	private syncWidthToInput(): void {
+		const width = this.inputEl.getBoundingClientRect().width;
+		if (width <= 0) return;
+		const suggestEl = (this as unknown as { suggestEl?: HTMLElement }).suggestEl;
+		if (!suggestEl) return;
+		suggestEl.classList.add('aulyckanban-folder-suggest');
+		suggestEl.style.setProperty('--aulyckanban-folder-suggest-width', `${width}px`);
+	}
 }
 
 /**
@@ -158,6 +172,36 @@ export class KanbanSettingTab extends PluginSettingTab {
 				this.folderSuggest = new VaultFolderSuggest(this.app, text.inputEl, (folder) => {
 					void persistFolder(folder);
 					this.plugin.syncService.scheduleSyncAllViews();
+				});
+			});
+
+		new Setting(containerEl)
+			.setName(t('settings.sync.force.name'))
+			.setDesc(t('settings.sync.force.desc'))
+			.addButton((btn) => {
+				const idleText = t('settings.sync.force.button');
+				const runForceSync = async (): Promise<void> => {
+					btn.setDisabled(true).setButtonText(t('settings.sync.force.running'));
+					try {
+						const result = await this.plugin.syncService.forceSyncAll();
+						new Notice(
+							t('settings.sync.force.success').replace('{count}', String(result.syncedCount)),
+						);
+					} catch (error) {
+						const detail = error instanceof Error ? error.message : String(error);
+						new Notice(`${t('settings.sync.force.fail')}：${detail}`);
+					} finally {
+						btn.setDisabled(false).setButtonText(idleText);
+					}
+				};
+				btn.setButtonText(idleText).onClick(() => {
+					new ConfirmModal(this.app, {
+						message: t('settings.sync.force.confirm'),
+						confirmText: idleText,
+						onConfirm: () => {
+							void runForceSync();
+						},
+					}).open();
 				});
 			});
 	}

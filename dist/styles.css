@@ -12,12 +12,9 @@
 	padding: 0 !important;
 }
 
-/* Obsidian 没有公开分栏宽度 API；此类由 KanbanView 标记到实际 resize 宿主。 */
+/* 保留 Obsidian 原生分栏拖动，只约束看板可缩小到的最小宽度。 */
 body:not(.is-mobile) .aulyckanban-resize-host {
-	flex: 0 0 600px !important;
-	width: 600px !important;
-	min-width: 600px !important;
-	max-width: 600px !important;
+	min-width: 450px !important;
 }
 
 /* 容器 */
@@ -282,6 +279,13 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 .aulyckanban-settings-hint {
 	margin-top: 8px;
 	padding-left: 16px;
+}
+
+.suggestion-container.aulyckanban-folder-suggest {
+	box-sizing: border-box;
+	width: var(--aulyckanban-folder-suggest-width) !important;
+	min-width: var(--aulyckanban-folder-suggest-width) !important;
+	max-width: var(--aulyckanban-folder-suggest-width) !important;
 }
 
 /* ==================== 搜索与新增任务 ==================== */

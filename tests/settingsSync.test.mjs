@@ -6,15 +6,27 @@ import ts from 'typescript';
 
 const renderedSettings = [];
 const renderedFolderSuggests = [];
+const renderedConfirmModals = [];
+const renderedNotices = [];
+const styles = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
 
 class MockAbstractInputSuggest {
 	constructor(app, inputEl) {
 		this.app = app;
 		this.inputEl = inputEl;
+		this.suggestClasses = new Set();
+		this.suggestStyles = new Map();
+		this.suggestEl = {
+			classList: { add: (value) => this.suggestClasses.add(value) },
+			style: { setProperty: (name, value) => this.suggestStyles.set(name, value) },
+		};
 		inputEl.addEventListener('input', () => {
 			this.lastSuggestions = this.getSuggestions(inputEl.value);
 		});
 		renderedFolderSuggests.push(this);
+	}
+	open() {
+		this.opened = true;
 	}
 	setValue(value) {
 		this.inputEl.value = value;
@@ -58,7 +70,14 @@ class MockSetting {
 	}
 	addButton(callback) {
 		const button = {
-			setButtonText: () => button,
+			setButtonText: (value) => {
+				button.text = value;
+				return button;
+			},
+			setDisabled: (value) => {
+				button.disabled = value;
+				return button;
+			},
 			setWarning: () => button,
 			onClick: (handler) => {
 				button.onClickHandler = handler;
@@ -94,6 +113,7 @@ class MockSetting {
 		const text = {
 			inputEl: {
 				value: '',
+				getBoundingClientRect: () => ({ width: 248 }),
 				ownerDocument: {
 					createEvent: () => ({
 						initEvent(type) {
@@ -131,6 +151,17 @@ class MockSetting {
 	}
 }
 
+class MockConfirmModal {
+	constructor(app, options) {
+		this.app = app;
+		this.options = options;
+		renderedConfirmModals.push(this);
+	}
+	open() {
+		this.opened = true;
+	}
+}
+
 const source = readFileSync(new URL('../src/ui/KanbanSettingTab.ts', import.meta.url), 'utf8');
 const output = ts.transpileModule(source, {
 	compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
@@ -143,7 +174,7 @@ function createHarness() {
 		viewSyncTargets: { work: { filePath: '旧/工作.md' } },
 		archive: { filePath: '旧/归档.md' },
 	};
-	const syncCalls = { all: 0 };
+	const syncCalls = { all: 0, force: 0 };
 	const store = {
 		getSettings: () => settings,
 		getTaskViews: () => [{ id: 'work', title: '工作任务' }],
@@ -158,6 +189,10 @@ function createHarness() {
 		syncService: {
 			scheduleSyncAllViews: () => {
 				syncCalls.all += 1;
+			},
+			forceSyncAll: async () => {
+				syncCalls.force += 1;
+				return { syncedCount: 3, totalCount: 3 };
 			},
 		},
 	};
@@ -180,13 +215,21 @@ function createHarness() {
 			if (id === 'obsidian') {
 				return {
 					AbstractInputSuggest: MockAbstractInputSuggest,
-					Notice: class {},
+					Notice: class {
+						constructor(message) {
+							renderedNotices.push(message);
+						}
+					},
 					normalizePath: (value) => value,
 					PluginSettingTab: MockPluginSettingTab,
 					Setting: MockSetting,
 				};
 			}
-			if (id === '../i18n') return { t: (key) => key };
+			if (id === '../i18n') {
+				return {
+					t: (key) => (key === 'settings.sync.force.success' ? 'sync success {count}' : key),
+				};
+			}
 			if (id === '../services/backupService') return { BackupService: class {} };
 			if (id === '../utils/noteSync')
 				return {
@@ -198,8 +241,8 @@ function createHarness() {
 						return folder || 'X-aulyc看板';
 					},
 				};
-			if (id === './ClearDataModal' || id === './ConfirmModal')
-				return { ClearDataModal: class {}, ConfirmModal: class {} };
+			if (id === './ClearDataModal') return { ClearDataModal: class {} };
+			if (id === './ConfirmModal') return { ConfirmModal: MockConfirmModal };
 			throw new Error(`Unexpected import: ${id}`);
 		},
 	};
@@ -282,4 +325,51 @@ test('choosing a suggested vault folder persists it and schedules note synchroni
 	assert.equal(folder.text.inputEl.value, '项目');
 	assert.equal(settings.syncFolder, '项目');
 	assert.equal(syncCalls.all, 1);
+});
+
+test('sync folder suggestion popover matches the input width', () => {
+	const { tab } = createHarness();
+	const suggestStart = renderedFolderSuggests.length;
+	tab.display();
+	const suggest = renderedFolderSuggests[suggestStart];
+
+	suggest.open();
+
+	assert.equal(suggest.opened, true);
+	assert.equal(suggest.suggestClasses.has('aulyckanban-folder-suggest'), true);
+	assert.equal(suggest.suggestStyles.get('--aulyckanban-folder-suggest-width'), '248px');
+	const rule =
+		styles.match(/\.suggestion-container\.aulyckanban-folder-suggest\s*\{([^}]*)\}/)?.[1] ?? '';
+	assert.match(rule, /width:\s*var\(--aulyckanban-folder-suggest-width\) !important/);
+	assert.match(rule, /min-width:\s*var\(--aulyckanban-folder-suggest-width\) !important/);
+	assert.match(rule, /max-width:\s*var\(--aulyckanban-folder-suggest-width\) !important/);
+});
+
+test('force refresh requires confirmation and reports the rebuilt note count', async () => {
+	const { tab, syncCalls } = createHarness();
+	const settingStart = renderedSettings.length;
+	const modalStart = renderedConfirmModals.length;
+	const noticeStart = renderedNotices.length;
+	tab.display();
+	const forceSetting = renderedSettings
+		.slice(settingStart)
+		.find((item) => item.name === 'settings.sync.force.name');
+
+	assert.ok(forceSetting);
+	assert.equal(forceSetting.desc, 'settings.sync.force.desc');
+	assert.equal(forceSetting.controls[0].text, 'settings.sync.force.button');
+	forceSetting.controls[0].onClickHandler();
+
+	const modal = renderedConfirmModals[modalStart];
+	assert.ok(modal);
+	assert.equal(modal.opened, true);
+	assert.equal(modal.options.message, 'settings.sync.force.confirm');
+	assert.equal(modal.options.confirmText, 'settings.sync.force.button');
+	modal.options.onConfirm();
+	await new Promise((resolve) => setImmediate(resolve));
+
+	assert.equal(syncCalls.force, 1);
+	assert.equal(forceSetting.controls[0].disabled, false);
+	assert.equal(forceSetting.controls[0].text, 'settings.sync.force.button');
+	assert.deepEqual(renderedNotices.slice(noticeStart), ['sync success 3']);
 });
