@@ -33,7 +33,7 @@ test('simplified Chinese settings use localized section headings and clear-data 
 	assert.match(t('settings.sync.force.confirm'), /覆盖全部自动同步笔记/);
 	assert.equal(t('settings.clear.name'), '清除数据');
 	assert.equal(t('settings.clear.button'), '清除');
-	assert.equal(t('settings.clear.desc'), '不可恢复的删除所有数据。');
+	assert.equal(t('settings.clear.desc'), '不可恢复的删除所有数据');
 	assert.match(t('view.deleteData'), /对应 Markdown 会移入恢复目录/);
 });
 

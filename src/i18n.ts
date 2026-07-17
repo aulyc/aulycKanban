@@ -85,7 +85,7 @@ const zh = {
 	'settings.import.fail': '导入失败',
 	'settings.import.invalidFormat': '无效的备份文件格式',
 	'settings.clear.name': '清除数据',
-	'settings.clear.desc': '不可恢复的删除所有数据。',
+	'settings.clear.desc': '不可恢复的删除所有数据',
 	'settings.clear.button': '清除',
 	'settings.clear.warning': '此操作将删除所有任务类型中的任务数据，且无法恢复！',
 	'settings.clear.suggestion': '在清除数据前，请先点击"备份数据"按钮，将当前看板数据备份到本地。',
