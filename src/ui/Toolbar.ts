@@ -8,7 +8,7 @@ import { appendAccessibleLabel } from '../utils/dom';
 import { Menu, setIcon } from 'obsidian';
 import type { App } from 'obsidian';
 
-/** 顶部工具栏：固定全部任务 + 动态任务类型 + 新增任务类型 + 统一归档 */
+/** 顶部工具栏：固定全部任务 + 可滚动任务类型 + 固定新增入口 + 统一归档 */
 export class Toolbar {
 	private readonly el: HTMLElement;
 	private readonly app: App;
@@ -70,9 +70,10 @@ export class Toolbar {
 			if (isActive) selectedViewButton = button;
 		}
 
-		if (this.isAdding) this.renderAddInput(viewStripEl);
+		const addSlotEl = leftEl.createDiv({ cls: 'aulyckanban-view-add-slot' });
+		if (this.isAdding) this.renderAddInput(addSlotEl);
 		else {
-			const addBtn = viewStripEl.createEl('button', {
+			const addBtn = addSlotEl.createEl('button', {
 				cls: 'aulyckanban-tab aulyckanban-view-add-btn',
 				attr: { type: 'button', tabindex: '-1' },
 			});

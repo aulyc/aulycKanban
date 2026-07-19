@@ -188,6 +188,20 @@ test('all tasks is a fixed accessible control before the scrollable task type st
 	assert.equal(store.actions.at(-1).type, 'SHOW_ALL_TASKS');
 });
 
+test('task type add control stays fixed outside the scrollable task type strip', () => {
+	const { parent } = createToolbarHarness();
+	const viewStrip = descendants(parent).find((element) =>
+		element.classList.contains('aulyckanban-view-strip'),
+	);
+	const addButton = descendants(parent).find((element) =>
+		element.classList.contains('aulyckanban-view-add-btn'),
+	);
+	assert.ok(viewStrip);
+	assert.ok(addButton);
+	assert.equal(addButton.parentElement.classList.contains('aulyckanban-view-add-slot'), true);
+	assert.notEqual(addButton.parentElement, viewStrip);
+});
+
 test('clicking the retained task type exits all-task scope even when its id did not change', () => {
 	const { parent, store, toolbar } = createToolbarHarness();
 	store.taskScope = 'all';

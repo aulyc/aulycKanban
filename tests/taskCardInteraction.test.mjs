@@ -201,3 +201,25 @@ test('aggregate cards display their source and dispatch edits to that exact task
 	assert.equal(actions.at(-1).payload.viewId, 'work');
 	assert.equal(actions.at(-1).payload.columnId, 'column');
 });
+
+test('task metadata places time above the left-aligned source label', () => {
+	const { card } = createHarness();
+	const metaRow = descendants(card).find((element) =>
+		element.classList.contains('aulyckanban-task-meta-row'),
+	);
+	const metaDetails = descendants(card).find((element) =>
+		element.classList.contains('aulyckanban-task-meta-details'),
+	);
+	const actions = descendants(card).find((element) =>
+		element.classList.contains('aulyckanban-task-actions'),
+	);
+
+	assert.ok(metaRow);
+	assert.ok(metaDetails);
+	assert.equal(metaRow.children[0], metaDetails);
+	assert.equal(metaRow.children[1], actions);
+	assert.equal(metaDetails.children[0].classList.contains('aulyckanban-task-time'), true);
+	assert.equal(metaDetails.children[0].textContent, '2026/07/13 12:00');
+	assert.equal(metaDetails.children[1].classList.contains('aulyckanban-task-source'), true);
+	assert.equal(metaDetails.children[1].textContent, '工作任务');
+});

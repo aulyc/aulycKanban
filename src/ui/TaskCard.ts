@@ -78,13 +78,14 @@ export class TaskCard {
 			this.enterEditMode(contentEl);
 		});
 
-		// 底部信息行：时间（左） + 操作图标（右）
+		// 底部信息：左侧时间与来源分行显示，操作图标固定在右侧
 		const metaRowEl = middleEl.createDiv({ cls: 'aulyckanban-task-meta-row' });
-		if (this.sourceLabel) {
-			metaRowEl.createDiv({ cls: 'aulyckanban-task-source', text: this.sourceLabel });
-		}
-		const timeEl = metaRowEl.createDiv({ cls: 'aulyckanban-task-time' });
+		const metaDetailsEl = metaRowEl.createDiv({ cls: 'aulyckanban-task-meta-details' });
+		const timeEl = metaDetailsEl.createDiv({ cls: 'aulyckanban-task-time' });
 		timeEl.setText(formatDateTimeMinute(task.updatedAt ?? task.createdAt));
+		if (this.sourceLabel) {
+			metaDetailsEl.createDiv({ cls: 'aulyckanban-task-source', text: this.sourceLabel });
+		}
 
 		const actionsEl = metaRowEl.createDiv({ cls: 'aulyckanban-task-actions' });
 
