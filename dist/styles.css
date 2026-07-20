@@ -518,6 +518,11 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	padding-bottom: 1px;
 }
 
+.aulyckanban-nav-all-btn {
+	flex: none;
+	margin-bottom: 4px;
+}
+
 .aulyckanban-nav-item {
 	display: flex;
 	align-items: center;
@@ -974,6 +979,10 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	min-width: 0;
 }
 
+.aulyckanban-archive-toolbar-browse {
+	justify-content: flex-end;
+}
+
 .aulyckanban-archive-sort-btn,
 .aulyckanban-archive-select-mode-btn,
 .aulyckanban-archive-selection-btn {
@@ -987,7 +996,8 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	cursor: pointer;
 }
 
-.aulyckanban-archive-sort-btn {
+.aulyckanban-archive-sort-btn,
+.aulyckanban-archive-select-mode-btn {
 	display: grid;
 	place-items: center;
 	flex: 0 0 auto;
@@ -996,13 +1006,19 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	box-shadow: none;
 }
 
-.aulyckanban-archive-sort-btn svg {
+.aulyckanban-archive-sort-btn svg,
+.aulyckanban-archive-select-mode-btn svg,
+.aulyckanban-archive-delete-selected-btn svg {
 	width: 15px;
 	height: 15px;
 }
 
 .aulyckanban-archive-sort-btn:focus,
-.aulyckanban-archive-sort-btn:focus-visible {
+.aulyckanban-archive-sort-btn:focus-visible,
+.aulyckanban-archive-select-mode-btn:focus,
+.aulyckanban-archive-select-mode-btn:focus-visible,
+.aulyckanban-archive-delete-selected-btn:focus,
+.aulyckanban-archive-delete-selected-btn:focus-visible {
 	border-color: var(--aulyckanban-selection-border);
 	outline: none;
 	box-shadow: none;
@@ -1063,6 +1079,9 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 }
 
 .aulyckanban-archive-delete-selected-btn {
+	min-width: 30px;
+	width: 30px;
+	padding: 0;
 	border-color: color-mix(in srgb, var(--text-error) 70%, var(--background-modifier-border));
 	background: var(--text-error);
 	color: #fff;

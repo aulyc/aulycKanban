@@ -1,11 +1,14 @@
-import type { TaskScope } from './taskQuery';
+import type { ColumnScope, TaskScope } from './taskQuery';
 
 export type KanbanFocusZone = 'utility' | 'view' | 'tasks' | 'columns';
 export type TaskTypeNavigationTarget =
 	| { kind: 'all' }
 	| { kind: 'view'; id: string }
 	| { kind: 'add' };
-export type ColumnNavigationTarget = { kind: 'column'; id: string } | { kind: 'add' };
+export type ColumnNavigationTarget =
+	| { kind: 'all' }
+	| { kind: 'column'; id: string }
+	| { kind: 'add' };
 
 const FOCUS_ORDER: readonly KanbanFocusZone[] = ['utility', 'view', 'tasks', 'columns'];
 const UTILITY_ZONE_CONTROL_SELECTOR =
@@ -153,10 +156,12 @@ export function getTaskTypeNavigationTarget(
 export function getColumnNavigationTarget(
 	columnIds: readonly string[],
 	activeColumnId: string,
+	columnScope: ColumnScope,
 	offset: number,
 	focusedTarget: ColumnNavigationTarget | null = null,
 ): ColumnNavigationTarget | null {
 	const navigationItems: ColumnNavigationTarget[] = [
+		{ kind: 'all' },
 		...columnIds.map((id) => ({ kind: 'column' as const, id })),
 		{ kind: 'add' },
 	];
@@ -168,7 +173,9 @@ export function getColumnNavigationTarget(
 						focusedTarget.kind !== 'column' ||
 						item.id === focusedTarget.id),
 			)
-		: navigationItems.findIndex((item) => item.kind === 'column' && item.id === activeColumnId);
+		: columnScope === 'all'
+			? 0
+			: navigationItems.findIndex((item) => item.kind === 'column' && item.id === activeColumnId);
 	const targetIndex = getWrappedItemIndex(currentIndex, navigationItems.length, offset);
 	return targetIndex >= 0 ? (navigationItems[targetIndex] ?? null) : null;
 }

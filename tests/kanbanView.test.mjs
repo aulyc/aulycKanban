@@ -680,7 +680,7 @@ test('reverse arrows and shared task controls navigate in the expected direction
 	const columnArrow = keyEvent('ArrowUp', { target: column });
 	dispatchKey(harness.contentEl, columnArrow);
 	assert.equal(columnArrow.defaultPrevented, true);
-	assert.equal(columnNavigationCalls.at(-1)[2], -1);
+	assert.equal(columnNavigationCalls.at(-1)[3], -1);
 	assert.deepEqual(harness.store.state.actions.at(-1), {
 		type: 'SELECT_COLUMN',
 		payload: { columnId: 'later' },
@@ -823,10 +823,11 @@ test('view navigation recognizes the retained add control and avoids redundant s
 	assert.equal(harness.store.state.taskScope, 'current');
 });
 
-test('column navigation recognizes the retained add control and avoids redundant selections', async () => {
+test('column navigation includes all quadrants, existing quadrants, and the retained add control', async () => {
 	const harness = createHarness();
 	await harness.view.onOpen();
 	const columnNav = child(harness.contentEl, 'aulyckanban-category-nav');
+	const allColumns = child(columnNav, 'aulyckanban-nav-item aulyckanban-nav-all-btn');
 	const column = child(columnNav, 'aulyckanban-nav-item aulyckanban-nav-item-active', {
 		columnId: 'base',
 	});
@@ -835,11 +836,19 @@ test('column navigation recognizes the retained add control and avoids redundant
 	addColumn.focus();
 	nextColumnNavigationTarget = { kind: 'column', id: 'base' };
 	dispatchKey(harness.contentEl, keyEvent('ArrowDown', { target: addColumn }));
-	assert.deepEqual(columnNavigationCalls.at(-1)[3], { kind: 'add' });
+	assert.deepEqual(columnNavigationCalls.at(-1)[4], { kind: 'add' });
 	harness.flushAnimationFrames();
 	assert.equal(harness.documentRef.activeElement, column);
 
 	column.focus();
+	nextColumnNavigationTarget = { kind: 'all' };
+	dispatchKey(harness.contentEl, keyEvent('ArrowUp', { target: column }));
+	assert.equal(harness.store.state.actions.at(-1).type, 'SHOW_ALL_COLUMNS');
+	harness.flushAnimationFrames();
+	assert.equal(harness.documentRef.activeElement, allColumns);
+
+	column.focus();
+	harness.store.state.columnScope = 'current';
 	let actionCount = harness.store.state.actions.length;
 	nextColumnNavigationTarget = null;
 	dispatchKey(harness.contentEl, keyEvent('ArrowDown', { target: column }));

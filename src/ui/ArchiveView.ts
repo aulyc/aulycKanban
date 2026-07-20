@@ -67,27 +67,28 @@ export class ArchiveView {
 		const toolbarEl = controlsEl.createDiv({
 			cls: 'aulyckanban-archive-toolbar aulyckanban-archive-toolbar-browse',
 		});
+		const selectBtn = toolbarEl.createEl('button', {
+			cls: 'aulyckanban-archive-select-mode-btn',
+			attr: { type: 'button' },
+		});
+		setIcon(selectBtn, 'list-checks');
+		appendAccessibleLabel(selectBtn, t('archive.delete.mode'));
+		selectBtn.disabled = filteredItems.length === 0;
+		selectBtn.addEventListener('click', () => {
+			this.deleteMode = true;
+			this.render();
+		});
+
 		const sortBtn = toolbarEl.createEl('button', {
 			cls: 'aulyckanban-archive-sort-btn',
 			attr: { type: 'button' },
 		});
 		const sortLabel =
 			this.sortOrder === 'desc' ? t('archive.sort.newest') : t('archive.sort.oldest');
-		setIcon(sortBtn, this.sortOrder === 'desc' ? 'arrow-down' : 'arrow-up');
+		setIcon(sortBtn, 'arrow-up-down');
 		appendAccessibleLabel(sortBtn, sortLabel);
 		sortBtn.addEventListener('click', () => {
 			this.sortOrder = this.sortOrder === 'desc' ? 'asc' : 'desc';
-			this.render();
-		});
-
-		const selectBtn = toolbarEl.createEl('button', {
-			cls: 'aulyckanban-archive-select-mode-btn',
-			text: t('archive.delete.mode'),
-			attr: { type: 'button' },
-		});
-		selectBtn.disabled = filteredItems.length === 0;
-		selectBtn.addEventListener('click', () => {
-			this.deleteMode = true;
 			this.render();
 		});
 	}
@@ -139,9 +140,10 @@ export class ArchiveView {
 
 		const deleteSelectedBtn = actionsEl.createEl('button', {
 			cls: 'aulyckanban-archive-selection-btn aulyckanban-archive-delete-selected-btn',
-			text: t('archive.delete.selected'),
 			attr: { type: 'button' },
 		});
+		setIcon(deleteSelectedBtn, 'trash-2');
+		appendAccessibleLabel(deleteSelectedBtn, t('archive.delete.selected'));
 		deleteSelectedBtn.disabled = selectedCount === 0;
 		deleteSelectedBtn.addEventListener('click', () => {
 			this.confirmDeleteSelected(Array.from(this.selectedTaskKeys));

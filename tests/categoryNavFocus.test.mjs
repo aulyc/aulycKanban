@@ -76,7 +76,8 @@ const { CategoryNav } = await loadSourceModule(
 		mocks: {
 			obsidian: { Menu: class {} },
 			'../i18n': {
-				t: (key) => (key === 'column.addPrompt' ? '输入新象限名称' : key),
+				t: (key) =>
+					({ 'column.all': '全部象限', 'column.addPrompt': '输入新象限名称' })[key] ?? key,
 			},
 			'./ConfirmModal': { ConfirmModal: class {} },
 			'./InlineInput': {
@@ -116,8 +117,8 @@ function createCategoryNavHarness(overrides = {}) {
 	return { categoryNav, parent, store };
 }
 
-test('quadrant navigation contains only existing quadrants and the retained add control', () => {
-	const { parent } = createCategoryNavHarness();
+test('all quadrants is a fixed first navigation control with the aggregate count', () => {
+	const { parent, store } = createCategoryNavHarness();
 	const nav = parent.children[0];
 	const allButton = descendants(nav).find((element) =>
 		element.classList.contains('aulyckanban-nav-all-btn'),
@@ -126,20 +127,31 @@ test('quadrant navigation contains only existing quadrants and the retained add 
 	const addButton = descendants(nav).find((element) =>
 		element.classList.contains('aulyckanban-nav-add-btn'),
 	);
-	assert.equal(allButton, undefined);
+	assert.ok(allButton);
+	assert.equal(nav.children[0], allButton);
+	assert.equal(allButton.children[0].textContent, '全部象限');
+	assert.equal(allButton.children[1].textContent, '2');
 	assert.ok(quadrant);
 	assert.ok(addButton);
 	assert.equal(quadrant.children[1].textContent, '2');
+
+	allButton.listeners.get('click')[0]({ preventDefault() {}, stopPropagation() {} });
+	assert.equal(store.actions.at(-1).type, 'SHOW_ALL_COLUMNS');
 });
 
-test('the selected existing quadrant owns the business-active state', () => {
-	const { parent } = createCategoryNavHarness();
+test('all quadrants remains available and owns the active state in archive aggregate scope', () => {
+	const { parent } = createCategoryNavHarness({
+		isShowingArchive: () => true,
+		isShowingAllColumns: () => true,
+		getVisibleTaskCount: () => 5,
+	});
 	const nav = parent.children[0];
 	const activeItems = descendants(nav).filter((element) =>
 		element.classList.contains('aulyckanban-nav-item-active'),
 	);
 	assert.equal(activeItems.length, 1);
-	assert.equal(activeItems[0].dataset.columnId, 'last');
+	assert.equal(activeItems[0].classList.contains('aulyckanban-nav-all-btn'), true);
+	assert.equal(activeItems[0].children[1].textContent, '5');
 });
 
 test('renaming an existing quadrant replaces only that item with an inline editor', () => {

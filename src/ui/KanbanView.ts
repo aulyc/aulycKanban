@@ -306,6 +306,9 @@ export class KanbanView extends ItemView {
 			case 'tasks':
 				return getTaskZoneFocusTarget(this.contentEl);
 			case 'columns':
+				if (this.plugin.store.isShowingAllColumns()) {
+					return this.contentEl.querySelector<HTMLElement>('.aulyckanban-nav-all-btn');
+				}
 				return (
 					this.contentEl.querySelector<HTMLElement>('.aulyckanban-nav-item-active') ??
 					this.contentEl.querySelector<HTMLElement>('.aulyckanban-nav-item')
@@ -360,7 +363,8 @@ export class KanbanView extends ItemView {
 		const store = this.plugin.store;
 		const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 		let focusedTarget: ColumnNavigationTarget | null = null;
-		if (active?.closest('.aulyckanban-nav-add-btn')) focusedTarget = { kind: 'add' };
+		if (active?.closest('.aulyckanban-nav-all-btn')) focusedTarget = { kind: 'all' };
+		else if (active?.closest('.aulyckanban-nav-add-btn')) focusedTarget = { kind: 'add' };
 		else {
 			const columnId = active?.closest<HTMLElement>('.aulyckanban-nav-item')?.dataset['columnId'];
 			if (columnId) focusedTarget = { kind: 'column', id: columnId };
@@ -368,10 +372,16 @@ export class KanbanView extends ItemView {
 		const target = getColumnNavigationTarget(
 			store.getCurrentColumns().map((column) => column.id),
 			store.getActiveColumnId(),
+			store.getColumnScope(),
 			offset,
 			focusedTarget,
 		);
 		if (!target) return;
+		if (target.kind === 'all') {
+			if (!store.isShowingAllColumns()) store.dispatch({ type: 'SHOW_ALL_COLUMNS' });
+			this.focusZoneAfterRender('columns');
+			return;
+		}
 		if (target.kind === 'add') {
 			const addButton = this.contentEl.querySelector<HTMLElement>('.aulyckanban-nav-add-btn');
 			addButton?.focus({ preventScroll: true });

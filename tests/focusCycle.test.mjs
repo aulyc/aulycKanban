@@ -188,12 +188,13 @@ test('task type navigation contains all tasks, existing task types, and the reta
 	assert.equal(beforeFirstView?.kind, 'all');
 });
 
-test('quadrant navigation contains existing quadrants and the retained add control', () => {
-	assert.equal(getColumnNavigationTarget(['base', 'later'], 'base', 1)?.id, 'later');
-	assert.equal(getColumnNavigationTarget(['base', 'later'], 'later', 1)?.kind, 'add');
-	assert.equal(getColumnNavigationTarget(['base', 'later'], 'base', -1)?.kind, 'add');
+test('quadrant navigation keeps all quadrants first and the retained add control last', () => {
+	assert.equal(getColumnNavigationTarget(['base', 'later'], 'base', 'all', 1)?.id, 'base');
+	assert.equal(getColumnNavigationTarget(['base', 'later'], 'later', 'current', 1)?.kind, 'add');
+	assert.equal(getColumnNavigationTarget(['base', 'later'], 'base', 'current', -1)?.kind, 'all');
+	assert.equal(getColumnNavigationTarget(['base', 'later'], 'base', 'all', -1)?.kind, 'add');
 	assert.equal(
-		getColumnNavigationTarget(['base', 'later'], 'later', 1, { kind: 'add' })?.id,
-		'base',
+		getColumnNavigationTarget(['base', 'later'], 'later', 'current', 1, { kind: 'add' })?.kind,
+		'all',
 	);
 });
