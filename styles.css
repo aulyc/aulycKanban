@@ -614,9 +614,9 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 .aulyckanban-kanban-container .aulyckanban-task-add-btn:focus-visible,
 .aulyckanban-kanban-container .aulyckanban-nav-add-btn:focus,
 .aulyckanban-kanban-container .aulyckanban-nav-add-btn:focus-visible {
-	border: 1px solid var(--aulyckanban-selection-border);
-	background: var(--interactive-accent);
-	color: var(--text-on-accent);
+	border: 1px dashed var(--text-muted);
+	background: var(--background-modifier-hover);
+	color: var(--interactive-accent);
 	outline: none;
 	box-shadow: none;
 }

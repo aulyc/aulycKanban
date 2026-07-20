@@ -105,7 +105,7 @@ test('task type add glyph is optically centered', () => {
 	assert.match(addButton, /text-align:\s*center/);
 });
 
-test('task type and task list add controls share quadrant add visual states', () => {
+test('task type and task list add controls share quadrant hover styling for keyboard focus', () => {
 	const addSelectors = [
 		'.aulyckanban-kanban-container .aulyckanban-view-add-btn',
 		'.aulyckanban-kanban-container .aulyckanban-task-add-btn',
@@ -136,12 +136,9 @@ test('task type and task list add controls share quadrant add visual states', ()
 	]);
 	const focusState = combinedRule(focusSelectors);
 	assert.notEqual(focusState, '');
-	assert.equal(
-		declarationValue(focusState, 'border'),
-		'1px solid var(--aulyckanban-selection-border)',
-	);
-	assert.equal(declarationValue(focusState, 'background'), 'var(--interactive-accent)');
-	assert.equal(declarationValue(focusState, 'color'), 'var(--text-on-accent)');
+	assert.equal(declarationValue(focusState, 'border'), '1px dashed var(--text-muted)');
+	assert.equal(declarationValue(focusState, 'background'), 'var(--background-modifier-hover)');
+	assert.equal(declarationValue(focusState, 'color'), 'var(--interactive-accent)');
 	assert.equal(declarationValue(focusState, 'outline'), 'none');
 	assert.equal(declarationValue(focusState, 'box-shadow'), 'none');
 });
@@ -153,7 +150,7 @@ test('new task textarea starts at one line while remaining content-sized', () =>
 	assert.equal(declarationValue(declarations, 'overflow'), 'hidden');
 });
 
-test('add buttons and editors use their own real focus for the white border', () => {
+test('add buttons use hover-like focus while editors keep the white selection border', () => {
 	const sharedFocusRule = combinedRule(
 		['.aulyckanban-view-add-btn', '.aulyckanban-task-add-btn', '.aulyckanban-nav-add-btn'].flatMap(
 			(selector) => [
@@ -162,7 +159,8 @@ test('add buttons and editors use their own real focus for the white border', ()
 			],
 		),
 	);
-	assert.match(sharedFocusRule, /var\(--aulyckanban-selection-border\)/);
+	assert.doesNotMatch(sharedFocusRule, /var\(--aulyckanban-selection-border\)/);
+	assert.match(sharedFocusRule, /1px dashed var\(--text-muted\)/);
 
 	for (const selector of [
 		'.aulyckanban-kanban-container .aulyckanban-view-inline-input:focus',
