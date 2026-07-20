@@ -1,25 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import vm from 'node:vm';
-import { build } from 'esbuild';
+import markdownModule from '../src/utils/markdown.ts';
 
-async function loadMarkdown() {
-	const bundle = await build({
-		entryPoints: [new URL('../src/utils/markdown.ts', import.meta.url).pathname],
-		bundle: true,
-		format: 'cjs',
-		platform: 'node',
-		write: false,
-		logLevel: 'silent',
-	});
-	const module = { exports: {} };
-	vm.runInNewContext(bundle.outputFiles[0].text, {
-		module,
-		exports: module.exports,
-		Date,
-	});
-	return module.exports;
-}
+const { generateMarkdown } = markdownModule;
 
 function task(id, content, archivedAt) {
 	return {
@@ -54,7 +37,6 @@ function fixtures() {
 }
 
 test('task-type Markdown renders current task and quadrant labels', async () => {
-	const { generateMarkdown } = await loadMarkdown();
 	const { views } = fixtures();
 	const markdown = generateMarkdown(views[0]);
 
@@ -63,7 +45,6 @@ test('task-type Markdown renders current task and quadrant labels', async () => 
 });
 
 test('task-type Markdown carries a hidden stable identity instead of its mutable label', async () => {
-	const { generateMarkdown } = await loadMarkdown();
 	const { views } = fixtures();
 	views[0].title = '客户项目';
 	const markdown = generateMarkdown(views[0]);

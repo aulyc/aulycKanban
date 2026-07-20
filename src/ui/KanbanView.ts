@@ -10,6 +10,8 @@ import {
 	getTaskZoneFocusTarget,
 	getTaskZoneNavigationItems,
 	getTaskTypeNavigationTarget,
+	getUtilityZoneFocusTarget,
+	getUtilityZoneNavigationItems,
 	getWrappedItemIndex,
 	revealTaskTypeItem,
 	shouldUseTabFocusFallback,
@@ -69,7 +71,7 @@ export class KanbanView extends ItemView {
 			this.requestRender();
 		});
 
-		// Tab 在任务类型、任务内容、象限间循环；全部任务/归档分别固定在顶部两端。
+		// Tab 在工具、任务类型、任务内容、象限四区间循环。
 		this.tabHandler = (e: KeyboardEvent) => {
 			const active = this.getActiveElement();
 			if (e.key === 'Tab') {
@@ -78,19 +80,23 @@ export class KanbanView extends ItemView {
 			}
 
 			const isEmptyTaskInputArrow =
+				!e.isComposing &&
 				active instanceof HTMLTextAreaElement &&
 				active.matches('.aulyckanban-task-create-input') &&
 				active.value.trim().length === 0 &&
 				(e.key === 'ArrowUp' || e.key === 'ArrowDown');
 			const isTaskControlNavigationArrow =
-				active?.matches(
-					'.aulyckanban-task-search-input, .aulyckanban-task-search-tag, ' +
-						'.aulyckanban-task-add-btn, .aulyckanban-task-create-target',
-				) &&
+				!e.isComposing &&
+				active?.matches('.aulyckanban-task-add-btn, .aulyckanban-task-create-target') &&
+				(e.key === 'ArrowUp' || e.key === 'ArrowDown');
+			const isUtilityControlNavigationArrow =
+				!e.isComposing &&
+				active?.matches('.aulyckanban-task-search-input, .aulyckanban-task-search-tag') &&
 				(e.key === 'ArrowUp' || e.key === 'ArrowDown');
 			if (
 				!isEmptyTaskInputArrow &&
 				!isTaskControlNavigationArrow &&
+				!isUtilityControlNavigationArrow &&
 				active?.matches(
 					'.aulyckanban-view-inline-input, .aulyckanban-nav-inline-input, ' +
 						'.aulyckanban-task-search-input, .aulyckanban-task-create-target, ' +
@@ -99,7 +105,11 @@ export class KanbanView extends ItemView {
 			)
 				return;
 			const zone = this.getFocusZone(active);
-			if (zone === 'view' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+			if (zone === 'utility' && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+				e.preventDefault();
+				e.stopPropagation();
+				this.selectAdjacentUtilityItem(e.key === 'ArrowUp' ? -1 : 1);
+			} else if (zone === 'view' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
 				e.preventDefault();
 				e.stopPropagation();
 				this.selectAdjacentView(e.key === 'ArrowLeft' ? -1 : 1);
@@ -236,6 +246,7 @@ export class KanbanView extends ItemView {
 
 	private getFocusZone(element: HTMLElement | null): KanbanFocusZone | null {
 		if (!element || !this.contentEl.contains(element)) return null;
+		if (element.closest('.aulyckanban-utility-bar')) return 'utility';
 		if (element.closest('.aulyckanban-toolbar')) return 'view';
 		if (element.closest('.aulyckanban-task-pane')) return 'tasks';
 		if (element.closest('.aulyckanban-category-nav')) return 'columns';
@@ -244,24 +255,16 @@ export class KanbanView extends ItemView {
 
 	private getFocusTarget(zone: KanbanFocusZone): HTMLElement | null {
 		switch (zone) {
-			case 'view':
+			case 'utility':
 				if (this.plugin.store.isShowingArchive()) {
 					return this.contentEl.querySelector<HTMLElement>('.aulyckanban-archive-btn');
 				}
-				if (this.plugin.store.isShowingAllTasks()) {
-					return this.contentEl.querySelector<HTMLElement>('.aulyckanban-all-tasks-btn');
-				}
-				return (
-					this.contentEl.querySelector<HTMLElement>(
-						'.aulyckanban-view-tab.aulyckanban-tab-active',
-					) ?? this.contentEl.querySelector<HTMLElement>('.aulyckanban-view-tab')
-				);
+				return getUtilityZoneFocusTarget(this.contentEl);
+			case 'view':
+				return this.getCurrentTaskTypeButton();
 			case 'tasks':
 				return getTaskZoneFocusTarget(this.contentEl);
 			case 'columns':
-				if (this.plugin.store.isShowingAllColumns()) {
-					return this.contentEl.querySelector<HTMLElement>('.aulyckanban-nav-all-btn');
-				}
 				return (
 					this.contentEl.querySelector<HTMLElement>('.aulyckanban-nav-item-active') ??
 					this.contentEl.querySelector<HTMLElement>('.aulyckanban-nav-item')
@@ -276,21 +279,14 @@ export class KanbanView extends ItemView {
 		const target = getTaskTypeNavigationTarget(
 			views.map((view) => view.id),
 			store.getCurrentView(),
-			store.getTaskScope(),
 			offset,
 			focusedTarget,
 		);
 		if (!target) return;
-		if (target.kind === 'all') {
-			if (!store.isShowingAllTasks()) store.dispatch({ type: 'SHOW_ALL_TASKS' });
-			this.focusZoneAfterRender('view');
-		} else if (target.kind === 'add') {
+		if (target.kind === 'add') {
 			const addButton = this.contentEl.querySelector<HTMLElement>('.aulyckanban-view-add-btn');
 			addButton?.focus({ preventScroll: true });
 			if (addButton) revealTaskTypeItem(addButton);
-		} else if (target.kind === 'archive') {
-			if (!store.isShowingArchive()) store.dispatch({ type: 'TOGGLE_ARCHIVE_VIEW' });
-			this.focusZoneAfterRender('view');
 		} else {
 			if (
 				store.isShowingArchive() ||
@@ -306,9 +302,7 @@ export class KanbanView extends ItemView {
 	private getFocusedTaskTypeTarget(): TaskTypeNavigationTarget | null {
 		const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 		if (!active || !this.contentEl.contains(active)) return null;
-		if (active.closest('.aulyckanban-all-tasks-btn')) return { kind: 'all' };
 		if (active.closest('.aulyckanban-view-add-btn')) return { kind: 'add' };
-		if (active.closest('.aulyckanban-archive-btn')) return { kind: 'archive' };
 		const viewTab = active.closest<HTMLElement>('.aulyckanban-view-tab');
 		const viewId = viewTab?.dataset['viewId'];
 		return viewId ? { kind: 'view', id: viewId } : null;
@@ -318,8 +312,7 @@ export class KanbanView extends ItemView {
 		const store = this.plugin.store;
 		const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 		let focusedTarget: ColumnNavigationTarget | null = null;
-		if (active?.closest('.aulyckanban-nav-all-btn')) focusedTarget = { kind: 'all' };
-		else if (active?.closest('.aulyckanban-nav-add-btn')) focusedTarget = { kind: 'add' };
+		if (active?.closest('.aulyckanban-nav-add-btn')) focusedTarget = { kind: 'add' };
 		else {
 			const columnId = active?.closest<HTMLElement>('.aulyckanban-nav-item')?.dataset['columnId'];
 			if (columnId) focusedTarget = { kind: 'column', id: columnId };
@@ -327,16 +320,10 @@ export class KanbanView extends ItemView {
 		const target = getColumnNavigationTarget(
 			store.getCurrentColumns().map((column) => column.id),
 			store.getActiveColumnId(),
-			store.getColumnScope(),
 			offset,
 			focusedTarget,
 		);
 		if (!target) return;
-		if (target.kind === 'all') {
-			if (!store.isShowingAllColumns()) store.dispatch({ type: 'SHOW_ALL_COLUMNS' });
-			this.focusZoneAfterRender('columns');
-			return;
-		}
 		if (target.kind === 'add') {
 			const addButton = this.contentEl.querySelector<HTMLElement>('.aulyckanban-nav-add-btn');
 			addButton?.focus({ preventScroll: true });
@@ -355,6 +342,23 @@ export class KanbanView extends ItemView {
 		const target = items[getWrappedItemIndex(currentIndex, items.length, offset)];
 		target?.focus({ preventScroll: true });
 		target?.scrollIntoView({ block: 'nearest' });
+	}
+
+	private selectAdjacentUtilityItem(offset: number): void {
+		const items = getUtilityZoneNavigationItems(this.contentEl);
+		const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+		const currentIndex = active ? items.indexOf(active) : -1;
+		const target = items[getWrappedItemIndex(currentIndex, items.length, offset)];
+		target?.focus({ preventScroll: true });
+	}
+
+	private getCurrentTaskTypeButton(): HTMLElement | null {
+		const currentViewId = this.plugin.store.getCurrentView();
+		return (
+			Array.from(this.contentEl.querySelectorAll<HTMLElement>('.aulyckanban-view-tab')).find(
+				(item) => item.dataset['viewId'] === currentViewId,
+			) ?? this.contentEl.querySelector<HTMLElement>('.aulyckanban-view-tab')
+		);
 	}
 
 	private focusZoneAfterRender(zone: KanbanFocusZone): void {

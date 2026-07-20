@@ -6,7 +6,7 @@
  * 将含换行的文本插入元素，\n 转为 <br>
  */
 export function setTextWithLineBreaks(el: HTMLElement, text: string): void {
-	const lines = text.split('\n');
+	const lines = String(text ?? '').split('\n');
 	for (let i = 0; i < lines.length; i++) {
 		const line = lines[i];
 		if (line !== undefined) {

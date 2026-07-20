@@ -1,22 +1,14 @@
-import type { ColumnScope, TaskScope } from './taskQuery';
+export type KanbanFocusZone = 'utility' | 'view' | 'tasks' | 'columns';
+export type TaskTypeNavigationTarget = { kind: 'view'; id: string } | { kind: 'add' };
+export type ColumnNavigationTarget = { kind: 'column'; id: string } | { kind: 'add' };
 
-export type KanbanFocusZone = 'view' | 'tasks' | 'columns';
-export type TaskTypeNavigationTarget =
-	| { kind: 'all' }
-	| { kind: 'view'; id: string }
-	| { kind: 'add' }
-	| { kind: 'archive' };
-export type ColumnNavigationTarget =
-	| { kind: 'all' }
-	| { kind: 'column'; id: string }
-	| { kind: 'add' };
-
-const FOCUS_ORDER: readonly KanbanFocusZone[] = ['view', 'tasks', 'columns'];
+const FOCUS_ORDER: readonly KanbanFocusZone[] = ['utility', 'view', 'tasks', 'columns'];
+const UTILITY_ZONE_CONTROL_SELECTOR =
+	'.aulyckanban-task-search-input, .aulyckanban-task-search-tag, .aulyckanban-archive-btn';
 const TASK_ZONE_RESULT_SELECTOR =
 	'.aulyckanban-task-pane:not(.aulyckanban-mode-archive) .aulyckanban-task-list .aulyckanban-task, ' +
 	'.aulyckanban-task-pane.aulyckanban-mode-archive .aulyckanban-archive-container .aulyckanban-archive-task';
 const TASK_ZONE_CONTROL_SELECTOR =
-	'.aulyckanban-task-search-input, .aulyckanban-task-search-tag, ' +
 	'.aulyckanban-task-add-btn, .aulyckanban-task-create-target, .aulyckanban-task-create-input';
 
 export interface TabFocusFallbackContext {
@@ -33,10 +25,21 @@ export function getNextFocusZone(
 	current: KanbanFocusZone | null,
 	reverse = false,
 ): KanbanFocusZone {
-	if (current === null) return reverse ? (FOCUS_ORDER[FOCUS_ORDER.length - 1] ?? 'view') : 'view';
+	if (current === null)
+		return reverse ? (FOCUS_ORDER[FOCUS_ORDER.length - 1] ?? 'utility') : 'utility';
 	const index = FOCUS_ORDER.indexOf(current);
 	const offset = reverse ? -1 : 1;
-	return FOCUS_ORDER[(index + offset + FOCUS_ORDER.length) % FOCUS_ORDER.length] ?? 'view';
+	return FOCUS_ORDER[(index + offset + FOCUS_ORDER.length) % FOCUS_ORDER.length] ?? 'utility';
+}
+
+/** 获取工具区进入焦点循环时的默认目标。 */
+export function getUtilityZoneFocusTarget(root: ParentNode): HTMLElement | null {
+	return root.querySelector<HTMLElement>(UTILITY_ZONE_CONTROL_SELECTOR);
+}
+
+/** 获取工具区中可用方向键切换的搜索与归档控件。 */
+export function getUtilityZoneNavigationItems(root: ParentNode): HTMLElement[] {
+	return Array.from(root.querySelectorAll<HTMLElement>(UTILITY_ZONE_CONTROL_SELECTOR));
 }
 
 /**
@@ -58,6 +61,9 @@ export function getTaskZoneFocusTarget(root: ParentNode): HTMLElement | null {
 	return (
 		root.querySelector<HTMLElement>(TASK_ZONE_RESULT_SELECTOR) ??
 		root.querySelector<HTMLElement>(TASK_ZONE_CONTROL_SELECTOR) ??
+		root.querySelector<HTMLElement>(
+			'.aulyckanban-task-pane.aulyckanban-mode-archive .aulyckanban-archive-container',
+		) ??
 		root.querySelector<HTMLElement>('.aulyckanban-task-pane')
 	);
 }
@@ -110,19 +116,16 @@ export function revealTaskTypeItem(item: HTMLElement): void {
 	);
 }
 
-/** 普通任务类型按显示顺序排列，新增按钮和归档依次作为最后两个可选择项。 */
+/** 普通任务类型按显示顺序排列，新增按钮固定为最后一个可选择项。 */
 export function getTaskTypeNavigationTarget(
 	viewIds: readonly string[],
 	currentViewId: string,
-	taskScope: TaskScope,
 	offset: number,
 	focusedTarget: TaskTypeNavigationTarget | null = null,
 ): TaskTypeNavigationTarget | null {
 	const navigationItems: TaskTypeNavigationTarget[] = [
-		{ kind: 'all' },
 		...viewIds.map((id) => ({ kind: 'view' as const, id })),
 		{ kind: 'add' },
-		{ kind: 'archive' },
 	];
 	const currentIndex = focusedTarget
 		? navigationItems.findIndex(
@@ -130,11 +133,7 @@ export function getTaskTypeNavigationTarget(
 					item.kind === focusedTarget.kind &&
 					(item.kind !== 'view' || focusedTarget.kind !== 'view' || item.id === focusedTarget.id),
 			)
-		: taskScope === 'archive'
-			? navigationItems.length - 1
-			: taskScope === 'all'
-				? 0
-				: navigationItems.findIndex((item) => item.kind === 'view' && item.id === currentViewId);
+		: navigationItems.findIndex((item) => item.kind === 'view' && item.id === currentViewId);
 	const targetIndex = getWrappedItemIndex(currentIndex, navigationItems.length, offset);
 	return targetIndex >= 0 ? (navigationItems[targetIndex] ?? null) : null;
 }
@@ -142,12 +141,10 @@ export function getTaskTypeNavigationTarget(
 export function getColumnNavigationTarget(
 	columnIds: readonly string[],
 	activeColumnId: string,
-	columnScope: ColumnScope,
 	offset: number,
 	focusedTarget: ColumnNavigationTarget | null = null,
 ): ColumnNavigationTarget | null {
 	const navigationItems: ColumnNavigationTarget[] = [
-		{ kind: 'all' },
 		...columnIds.map((id) => ({ kind: 'column' as const, id })),
 		{ kind: 'add' },
 	];
@@ -159,9 +156,7 @@ export function getColumnNavigationTarget(
 						focusedTarget.kind !== 'column' ||
 						item.id === focusedTarget.id),
 			)
-		: columnScope === 'all'
-			? 0
-			: navigationItems.findIndex((item) => item.kind === 'column' && item.id === activeColumnId);
+		: navigationItems.findIndex((item) => item.kind === 'column' && item.id === activeColumnId);
 	const targetIndex = getWrappedItemIndex(currentIndex, navigationItems.length, offset);
 	return targetIndex >= 0 ? (navigationItems[targetIndex] ?? null) : null;
 }

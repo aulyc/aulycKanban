@@ -1,22 +1,39 @@
+import { existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 
-export const CENTRAL_FORMAL_GIT =
-	'/Users/crp/Projects/Codex 开发规范/scripts/formal_release_git.py';
+export const DEFAULT_STANDARDS_ROOT = '/Users/crp/Projects/Codex 开发规范';
+
+export function resolveCentralFormalGit(env = process.env) {
+	const standardsRoot = env.AULYC_STANDARDS_ROOT?.trim() || DEFAULT_STANDARDS_ROOT;
+	return path.resolve(standardsRoot, 'scripts', 'formal_release_git.py');
+}
+
+export const CENTRAL_FORMAL_GIT = resolveCentralFormalGit({});
 
 export function runFormalGit({
 	repoDir = process.cwd(),
 	phase,
 	tag,
 	provenancePath,
+	env = process.env,
 	runner = spawnSync,
+	fileExists = existsSync,
+	skipExistenceCheck = false,
 } = {}) {
 	if (!['preflight', 'push', 'verify'].includes(phase)) {
 		throw new Error('Formal GitHub phase must be preflight, push, or verify');
 	}
-	const args = [CENTRAL_FORMAL_GIT, phase, '--path', path.resolve(repoDir)];
+	const centralFormalGit = resolveCentralFormalGit(env);
+	if (!skipExistenceCheck && !fileExists(centralFormalGit)) {
+		throw new Error(
+			`Central formal GitHub gate not found: ${centralFormalGit}. ` +
+				'Set AULYC_STANDARDS_ROOT to the Codex engineering standards repository root.',
+		);
+	}
+	const args = [centralFormalGit, phase, '--path', path.resolve(repoDir)];
 	if (tag) args.push('--tag', tag);
 	if (provenancePath) args.push('--provenance', path.resolve(provenancePath));
 	const result = runner('python3', args, {

@@ -128,6 +128,8 @@ npm run release:formal -- --vault <vault-path>
 
 `npm run version:set` 在改动权威版本源前执行中央 GitHub preflight；认证、仓库访问、remote fetch/push URL、正式分支或工作区状态无法验证时不会修改版本文件。
 
+中央受控发版脚本所在仓库通过 `AULYC_STANDARDS_ROOT` 配置；当前主机默认 `/Users/crp/Projects/Codex 开发规范`。在其他主机或全新克隆环境执行 `version:set`、`formal-git:preflight` 或 `release:formal` 前，必须先交付中央规范仓库并设置该变量。路径缺失时流程 fail closed，不允许以分步 push 替代原子发布与远端回读。
+
 ## 9. 正式安装与数据保护
 
 正式安装器不接受当前工作区 `dist/`，也没有静默 fallback。必须显式提供版本化 ZIP 和对应 provenance：

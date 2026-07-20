@@ -1,32 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import vm from 'node:vm';
-import { build } from 'esbuild';
+import boardMigrationModule from '../src/services/boardMigration.ts';
+import storeModule from '../src/store.ts';
 
-async function loadBundle(entryPoint) {
-	const bundle = await build({
-		entryPoints: [new URL(entryPoint, import.meta.url).pathname],
-		bundle: true,
-		format: 'cjs',
-		platform: 'node',
-		write: false,
-		logLevel: 'silent',
-	});
-	const module = { exports: {} };
-	vm.runInNewContext(bundle.outputFiles[0].text, {
-		module,
-		exports: module.exports,
-		console,
-		setTimeout,
-		clearTimeout,
-		Date,
-		Math,
-	});
-	return module.exports;
-}
-
-const { KanbanStore } = await loadBundle('../src/store.ts');
-const { migrateBoardData } = await loadBundle('../src/services/boardMigration.ts');
+const { migrateBoardData } = boardMigrationModule;
+const { KanbanStore } = storeModule;
 
 function task(id, content = id) {
 	return { id, content, completed: false, createdAt: '2026-01-01T00:00:00.000Z' };

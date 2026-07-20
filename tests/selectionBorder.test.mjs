@@ -41,7 +41,7 @@ test('business selection keeps its fill but never owns the white focus border', 
 	}
 });
 
-test('each of the three keyboard zones draws white only from actual focus', () => {
+test('each of the four keyboard zones draws white only from actual focus', () => {
 	const focusRules = [
 		combinedRule(['.aulyckanban-tab:focus', '.aulyckanban-tab:focus-visible']),
 		combinedRule(['.aulyckanban-nav-item:focus', '.aulyckanban-nav-item:focus-visible']),
@@ -70,15 +70,13 @@ test('keyboard navigation targets update instantly without visual trails', () =>
 	assert.match(rule('.aulyckanban-task:focus'), /box-shadow:\s*none/);
 });
 
-test('archive control has no separator and keeps selection separate from focus', () => {
-	const slot = rule('.aulyckanban-archive-slot');
-	assert.match(slot, /padding-left:\s*0/);
-	assert.match(slot, /border-left:\s*0/);
-
+test('archive control keeps selection separate from focus in the utility row', () => {
 	const button = rule('.aulyckanban-kanban-container .aulyckanban-tab.aulyckanban-archive-btn');
 	assert.match(button, /background:\s*color-mix\([^;]*var\(--color-orange\)/);
 	assert.match(button, /border-color:\s*color-mix\([^;]*var\(--color-orange\)/);
 	assert.match(button, /color:\s*var\(--color-orange\)/);
+	assert.match(button, /width:\s*38px/);
+	assert.match(button, /height:\s*38px/);
 
 	const active = rule(
 		'.aulyckanban-kanban-container ' +
@@ -97,16 +95,6 @@ test('task archive hover adopts the toolbar archive semantic color', () => {
 	const icon = rule('.aulyckanban-task-archive svg');
 	assert.match(icon, /width:\s*16px/);
 	assert.match(icon, /height:\s*16px/);
-});
-
-test('all tasks icon keeps a visible content box inside the compact button', () => {
-	const button = rule('.aulyckanban-kanban-container .aulyckanban-tab.aulyckanban-all-tasks-btn');
-	assert.match(button, /width:\s*30px/);
-	assert.match(button, /padding:\s*6px/);
-
-	const icon = rule('.aulyckanban-all-tasks-btn svg');
-	assert.match(icon, /flex:\s*none/);
-	assert.match(icon, /width:\s*16px/);
 });
 
 test('task type add glyph is optically centered', () => {
@@ -163,21 +151,6 @@ test('new task textarea starts at one line while remaining content-sized', () =>
 	assert.equal(declarationValue(declarations, 'min-height'), '38px');
 	assert.equal(declarationValue(declarations, 'resize'), 'none');
 	assert.equal(declarationValue(declarations, 'overflow'), 'hidden');
-});
-
-test('add focus demotes active archive to its inactive semantic color', () => {
-	const declarations = combinedRule([
-		'.aulyckanban-toolbar:has(.aulyckanban-view-add-btn:focus) ' +
-			'.aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active',
-		'.aulyckanban-toolbar:has(.aulyckanban-view-add-btn:focus-visible) ' +
-			'.aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active',
-		'.aulyckanban-toolbar:has(.aulyckanban-view-inline-input:focus) ' +
-			'.aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active',
-	]);
-
-	assert.match(declarations, /background:\s*color-mix\([^;]*var\(--color-orange\) 16%/);
-	assert.match(declarations, /border-color:\s*color-mix\([^;]*var\(--color-orange\) 38%/);
-	assert.match(declarations, /color:\s*var\(--color-orange\)/);
 });
 
 test('add buttons and editors use their own real focus for the white border', () => {

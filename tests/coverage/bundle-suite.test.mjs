@@ -1,0 +1,14 @@
+import '../archiveView.test.mjs';
+import '../boardLayout.test.mjs';
+import '../backupService.test.mjs';
+import '../categoryNavFocus.test.mjs';
+import '../datetime.test.mjs';
+import '../kanbanView.test.mjs';
+import '../modalBehavior.test.mjs';
+import '../settingsSync.test.mjs';
+import '../syncService.test.mjs';
+import '../taskCardInteraction.test.mjs';
+import '../taskControls.test.mjs';
+import '../taskList.test.mjs';
+import '../toolbarFocus.test.mjs';
+import '../utilityBar.test.mjs';

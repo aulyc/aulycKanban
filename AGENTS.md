@@ -28,7 +28,7 @@
 ## Product naming and compatibility identities
 
 - Product/display name: `aulycKanban`。
-- Repository folder: `/Users/crp/Projects/aulycKanban`。
+- Repository folder on the current host: `/Users/crp/Projects/aulyc/aulycKanban`；自动化必须用仓库根目录发现，不得依赖该绝对路径。
 - Plugin ID、npm package name 和安装目录保留 `aulyckanban`；安装目录固定为 `.obsidian/plugins/aulyckanban/`。
 - Obsidian view type `aulyckanban-view`、`aulyckanban-*` CSS/DOM 前缀、`data.json` 结构和内部存储键均为兼容身份，不随品牌大小写改名。
 - 新 ZIP 和 release provenance 使用 `aulycKanban-<version>` 前缀；验证器仅为 `2.3.5` 及以前的历史产物兼容旧前缀 `aulyckanban-<version>`。
@@ -43,10 +43,18 @@
 - Lint gate: `npm run lint`
 - Language gate: `npm run typecheck`
 - Shared development gate: `npm run check`
+- Source coverage gate: `npm run test:coverage`
 - Full CI-equivalent gate: `npm run ci`
 - Local development installation: N/A；正式安装只接受已验证发布 ZIP 和 provenance
 
 除非用户明确要求，不得安装、发版、创建标签或执行 `release:test`、`release:formal`。本仓库当前没有远端 CI 配置；`npm run ci` 是本地 CI-equivalent 门禁，不得自行添加远端发布服务。
+
+### Coverage architecture
+
+- `npm run test:coverage` 分别采集直接导入 TypeScript 源码的测试，以及通过 `test-bundles/` 注入 Obsidian mock 的 source-map 测试，再合并 Istanbul coverage map；不得用只统计 `tests/coverage/core.test.ts` 的结果代表全仓覆盖率。
+- 全量门槛为 statements 82%、branches 76%、functions 83%、lines 82%；`scripts/coverage.mjs#COVERAGE_THRESHOLDS` 同时维护核心数据/服务、全部 UI 源文件和 noteSync 的逐文件防倒退门槛。
+- `tests/coverage/source-suite.test.mjs` 只汇总可直接导入源码的测试，`tests/coverage/bundle-suite.test.mjs` 汇总需要 mock bundle 的服务与 UI 测试；新增测试必须进入正确通道，确保最终报告归集到原始 `src/**/*.ts`。
+- `coverage/`、`test-bundles/` 是可删除的测试产物；覆盖率脚本负责清理中间报告和 bundle，最终仅保留被忽略的合并报告。
 
 ## Quality gates by change scope
 
@@ -62,7 +70,8 @@
 - Authoritative version source: `release-version.json`
 - Derived tracked version files: `package.json`、`package-lock.json`、`manifest.json`、`versions.json`、`dist/manifest.json`；禁止手工多点改版本。
 - Generated release directory: `dist/main.js`、`dist/manifest.json`、`dist/styles.css`，由 `npm run build:production` 生成并由 `npm run artifact:verify` 复核。
-- Never commit: `node_modules/`、根 `main.js`、`release-artifacts/`、`data.json`、Vault 数据、临时 worktree、ZIP、release provenance、缓存和凭据。
+- Tracked generated files: `dist/manifest.json`、`dist/styles.css`；ignored generated files: 根 `main.js`、`dist/main.js`、`coverage/`、`test-bundles/`、`.cache/`。
+- Never commit: `node_modules/`、根 `main.js`、`dist/main.js`、`coverage/`、`test-bundles/`、`release-artifacts/`、`data.json`、Vault 数据、临时 worktree、ZIP、release provenance、缓存和凭据。
 
 ## Data, credentials, and sensitive information
 
@@ -95,11 +104,13 @@
 
 ### Release command mapping
 
-- Non-blocking standards check: `python3 "/Users/crp/Projects/Codex 开发规范/scripts/standards_check.py" project --path "/Users/crp/Projects/aulycKanban"`
-- Strict standards release gate: `python3 "/Users/crp/Projects/Codex 开发规范/scripts/standards_check.py" project --path "/Users/crp/Projects/aulycKanban" --strict`
+- Central standards root: `AULYC_STANDARDS_ROOT`；当前主机默认 `/Users/crp/Projects/Codex 开发规范`，其他主机必须显式设置。
+- Non-blocking standards check: `python3 "${AULYC_STANDARDS_ROOT:-/Users/crp/Projects/Codex 开发规范}/scripts/standards_check.py" project --path "$(git rev-parse --show-toplevel)"`
+- Strict standards release gate: `python3 "${AULYC_STANDARDS_ROOT:-/Users/crp/Projects/Codex 开发规范}/scripts/standards_check.py" project --path "$(git rev-parse --show-toplevel)" --strict`
 - Local development build: `npm run build:production`
 - Local development installation: N/A
 - Version consistency check: `npm run version:check`
+- Source coverage gate: `npm run test:coverage`
 - Version logic tests: `npm run version:test`
 - Pre-tag production candidate gate: `npm run release:check`
 - Create or verify release tag: `npm run release:tag`
@@ -115,6 +126,7 @@ Central GitHub source identity is `aulyc/aulycKanban`, remote `origin`, branch
 metadata. After exact-tag ZIP verification, installation, and Obsidian smoke,
 `release:formal` atomically pushes the branch and annotated tag, reads both
 remote refs back, and finalizes the GitHub source fields in release provenance.
+正式 Git 包装器通过 `AULYC_STANDARDS_ROOT` 定位中央受控脚本；中央仓库未交付或路径无效时 fail closed，不得降级为非原子手工 push。
 
 ### Required release gates
 
@@ -140,7 +152,7 @@ remote refs back, and finalizes the GitHub source fields in release provenance.
 - CI signals: `package.json`；仓库当前没有远端 CI workflow。
 - Tracked drift evidence: `AGENTS.md`、`VERSIONING.md`、`version-bump.mjs` 和稳定发布控制脚本；复核后的 SHA-256 记录在 `.codex/standards.json`。
 - Active exceptions: none。
-- Release-process feedback classification: `project-only`；本次只补齐项目采用映射和中央登记，不修改公共核心或 `obsidian-plugin` Profile。
+- Release-process feedback classification: `project-only`；项目采用 core `2.0.1` 并配置中央仓库路径解析，不修改公共核心或 `obsidian-plugin` Profile。
 
 ### Release documentation and invariants
 

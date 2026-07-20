@@ -9,9 +9,9 @@ import { PluginDataRepository } from './services/repository';
 import { getMutationSyncTarget } from './utils/syncTarget';
 
 export default class KanbanPlugin extends Plugin {
-	store: KanbanStore;
-	syncService: VaultSyncService;
-	private repository: PluginDataRepository;
+	store!: KanbanStore;
+	syncService!: VaultSyncService;
+	private repository!: PluginDataRepository;
 	private unsubscribeSync: (() => void) | null = null;
 
 	async onload(): Promise<void> {

@@ -1,8 +1,6 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import vm from 'node:vm';
-import ts from 'typescript';
+import { loadSourceModule } from './helpers/load-source-module.mjs';
 
 class MockElement {
 	constructor(options = {}) {
@@ -38,10 +36,31 @@ class MockElement {
 	}
 }
 
-const source = readFileSync(new URL('../src/ui/TaskList.ts', import.meta.url), 'utf8');
-const output = ts.transpileModule(source, {
-	compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
-}).outputText;
+let activeCards = [];
+const { TaskList } = await loadSourceModule(new URL('../src/ui/TaskList.ts', import.meta.url), {
+	label: 'task-list',
+	mocks: {
+		'../utils/taskQuery': {
+			getTaskRefKey: (ref) => `${ref.viewId}:${ref.columnId}:${ref.task.id}`,
+		},
+		'./TaskCard': {
+			TaskCard: class {
+				constructor(_app, _store, viewId, columnId, task, sourceLabel) {
+					this.el = new MockElement({ cls: 'aulyckanban-task' });
+					this.el.dataset.viewId = viewId;
+					this.el.dataset.columnId = columnId;
+					this.el.dataset.taskId = task.id;
+					activeCards.push({ viewId, columnId, sourceLabel });
+				}
+				getEl() {
+					return this.el;
+				}
+			},
+		},
+		'./InlineInput': { createInlineInput: () => ({}) },
+		'../i18n': { t: (key) => key },
+	},
+});
 
 function taskRef(viewId, viewTitle, columnId, columnTitle, content) {
 	return {
@@ -55,36 +74,8 @@ function taskRef(viewId, viewTitle, columnId, columnTitle, content) {
 
 test('aggregate list renders duplicate task ids with their explicit source labels', () => {
 	const cards = [];
-	const module = { exports: {} };
-	vm.runInNewContext(output, {
-		module,
-		exports: module.exports,
-		document: { activeElement: null },
-		require: (id) => {
-			if (id === '../utils/taskQuery') {
-				return { getTaskRefKey: (ref) => `${ref.viewId}:${ref.columnId}:${ref.task.id}` };
-			}
-			if (id === './TaskCard') {
-				return {
-					TaskCard: class {
-						constructor(_app, _store, viewId, columnId, task, sourceLabel) {
-							this.el = new MockElement({ cls: 'aulyckanban-task' });
-							this.el.dataset.viewId = viewId;
-							this.el.dataset.columnId = columnId;
-							this.el.dataset.taskId = task.id;
-							cards.push({ viewId, columnId, sourceLabel });
-						}
-						getEl() {
-							return this.el;
-						}
-					},
-				};
-			}
-			if (id === './InlineInput') return { createInlineInput: () => ({}) };
-			if (id === '../i18n') return { t: (key) => key };
-			throw new Error(`Unexpected import: ${id}`);
-		},
-	});
+	activeCards = cards;
+	globalThis.document = { activeElement: null };
 
 	const refs = [
 		taskRef('work', '工作任务', 'base', '基础', '工作内容'),
@@ -99,7 +90,7 @@ test('aggregate list renders duplicate task ids with their explicit source label
 		getSearchKeyword: () => '',
 	};
 	const parent = new MockElement();
-	const list = new module.exports.TaskList(parent, {}, store);
+	const list = new TaskList(parent, {}, store);
 	list.render();
 	list.render();
 

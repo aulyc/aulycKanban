@@ -2,7 +2,7 @@ import { Notice } from 'obsidian';
 import type { BoardData } from '../types';
 import type { KanbanStore } from '../store';
 import { t } from '../i18n';
-import { isMigratableBoardData, migrateBoardData } from './boardMigration';
+import { migrateImportedBoardData } from './boardMigration';
 import { BACKUP_VERSION } from '../constants';
 
 /**
@@ -62,22 +62,20 @@ export class BackupService {
 
 			try {
 				const text = await file.text();
-				const importedData = JSON.parse(text) as Record<string, unknown>;
+				const importedData: unknown = JSON.parse(text);
 
-				// 校验格式
+				// 整份备份先完成深层校验，避免部分坏数据覆盖当前看板。
 				const validBoard = this.validateAndMigrate(importedData);
 				if (!validBoard) {
 					new Notice(t('settings.import.invalidFormat'));
 					return;
 				}
 
-				// 更新 store
 				this.store.dispatch({
 					type: 'SET_BOARD_DATA',
 					payload: { board: validBoard },
 				});
 
-				// 立即保存
 				await this.store.saveNow();
 
 				new Notice(t('settings.import.success'));
@@ -91,11 +89,9 @@ export class BackupService {
 	}
 
 	/**
-	 * 校验并迁移导入数据
-	 * 支持动态任务类型格式和旧格式
+	 * 校验并迁移导入数据；支持动态任务类型格式和旧格式。
 	 */
-	private validateAndMigrate(data: Record<string, unknown>): BoardData | null {
-		if (!isMigratableBoardData(data)) return null;
-		return migrateBoardData(data);
+	private validateAndMigrate(data: unknown): BoardData | null {
+		return migrateImportedBoardData(data);
 	}
 }

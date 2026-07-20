@@ -5,10 +5,10 @@ import { createInlineInput } from './InlineInput';
 import { ConfirmModal } from './ConfirmModal';
 import { revealTaskTypeItem } from '../utils/focusCycle';
 import { appendAccessibleLabel } from '../utils/dom';
-import { Menu, setIcon } from 'obsidian';
+import { Menu } from 'obsidian';
 import type { App } from 'obsidian';
 
-/** 顶部工具栏：固定全部任务 + 可滚动任务类型 + 固定新增入口 + 统一归档 */
+/** 任务类型栏：可滚动任务类型 + 固定新增入口。 */
 export class Toolbar {
 	private readonly el: HTMLElement;
 	private readonly app: App;
@@ -30,33 +30,12 @@ export class Toolbar {
 		const restoreSelectedFocus =
 			!!focusedEl &&
 			this.el.contains(focusedEl) &&
-			(focusedEl.classList.contains('aulyckanban-view-tab') ||
-				focusedEl.classList.contains('aulyckanban-all-tasks-btn') ||
-				focusedEl.classList.contains('aulyckanban-archive-btn'));
+			focusedEl.classList.contains('aulyckanban-view-tab');
 
 		this.el.empty();
 		const currentView = this.store.getCurrentView();
 		const isArchive = this.store.isShowingArchive();
-		const isAllTasks = this.store.isShowingAllTasks();
 		const leftEl = this.el.createDiv({ cls: 'aulyckanban-toolbar-left' });
-		const allSlotEl = leftEl.createDiv({ cls: 'aulyckanban-all-tasks-slot' });
-		const allBtn = allSlotEl.createEl('button', {
-			cls: isAllTasks
-				? 'aulyckanban-tab aulyckanban-all-tasks-btn aulyckanban-tab-active'
-				: 'aulyckanban-tab aulyckanban-all-tasks-btn',
-			attr: {
-				type: 'button',
-				tabindex: '-1',
-				'aria-selected': String(isAllTasks),
-			},
-		});
-		setIcon(allBtn, 'list-todo');
-		appendAccessibleLabel(allBtn, t('view.all'));
-		allBtn.addEventListener('click', (event: MouseEvent) => {
-			event.preventDefault();
-			event.stopPropagation();
-			if (!this.store.isShowingAllTasks()) this.store.dispatch({ type: 'SHOW_ALL_TASKS' });
-		});
 		const viewStripEl = leftEl.createDiv({ cls: 'aulyckanban-view-strip' });
 		let selectedViewButton: HTMLButtonElement | null = null;
 
@@ -65,7 +44,7 @@ export class Toolbar {
 				this.renderRenameInput(viewStripEl, view.id, view.title);
 				continue;
 			}
-			const isActive = currentView === view.id && !isArchive && !isAllTasks;
+			const isActive = currentView === view.id && !isArchive;
 			const button = this.createTab(viewStripEl, view.id, view.title, isActive);
 			if (isActive) selectedViewButton = button;
 		}
@@ -90,29 +69,8 @@ export class Toolbar {
 			});
 		}
 
-		const archiveSlotEl = leftEl.createDiv({ cls: 'aulyckanban-archive-slot' });
-		const archiveBtn = archiveSlotEl.createEl('button', {
-			cls: isArchive
-				? 'aulyckanban-tab aulyckanban-archive-btn aulyckanban-tab-active'
-				: 'aulyckanban-tab aulyckanban-archive-btn',
-			attr: {
-				type: 'button',
-				tabindex: '-1',
-				'aria-selected': String(isArchive),
-			},
-		});
-		setIcon(archiveBtn, 'archive');
-		appendAccessibleLabel(archiveBtn, t('archive.open'));
-		archiveBtn.addEventListener('click', (event: MouseEvent) => {
-			event.preventDefault();
-			event.stopPropagation();
-			if (!this.store.isShowingArchive()) {
-				this.store.dispatch({ type: 'TOGGLE_ARCHIVE_VIEW' });
-			}
-		});
-
 		if (restoreSelectedFocus) {
-			const target = isArchive ? archiveBtn : isAllTasks ? allBtn : selectedViewButton;
+			const target = selectedViewButton;
 			target?.focus({ preventScroll: true });
 			if (target) revealTaskTypeItem(target);
 		}

@@ -1,24 +1,10 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import vm from 'node:vm';
-import ts from 'typescript';
+import inlineCommitModule from '../src/utils/inlineCommit.ts';
+import keyboardModule from '../src/utils/keyboard.ts';
 
-function loadTypeScriptModule(relativePath) {
-	const source = readFileSync(new URL(relativePath, import.meta.url), 'utf8');
-	const output = ts.transpileModule(source, {
-		compilerOptions: {
-			module: ts.ModuleKind.CommonJS,
-			target: ts.ScriptTarget.ES2020,
-		},
-	}).outputText;
-	const module = { exports: {} };
-	vm.runInNewContext(output, { module, exports: module.exports });
-	return module.exports;
-}
-
-const { shouldCommitInlineInput } = loadTypeScriptModule('../src/utils/keyboard.ts');
-const { createInlineCommitController } = loadTypeScriptModule('../src/utils/inlineCommit.ts');
+const { createInlineCommitController } = inlineCommitModule;
+const { shouldCommitInlineInput } = keyboardModule;
 
 test('normal Enter commits an inline input', () => {
 	assert.equal(shouldCommitInlineInput({ key: 'Enter', isComposing: false }, false), true);

@@ -1,15 +1,6 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import vm from 'node:vm';
-import ts from 'typescript';
-
-const source = readFileSync(new URL('../src/utils/focusCycle.ts', import.meta.url), 'utf8');
-const output = ts.transpileModule(source, {
-	compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
-}).outputText;
-const module = { exports: {} };
-vm.runInNewContext(output, { module, exports: module.exports });
+import focusCycleModule from '../src/utils/focusCycle.ts';
 
 const {
 	getHorizontalRevealScrollLeft,
@@ -18,60 +9,103 @@ const {
 	getTaskZoneFocusTarget,
 	getTaskZoneNavigationItems,
 	getTaskTypeNavigationTarget,
+	getUtilityZoneFocusTarget,
+	getUtilityZoneNavigationItems,
 	getWrappedItemIndex,
 	shouldUseTabFocusFallback,
-} = module.exports;
+} = focusCycleModule;
 
-test('empty task zones ignore hidden results and focus the shared search control', () => {
-	const visibleInput = { id: 'task-search' };
+test('empty task zones ignore hidden results and focus the task add control', () => {
+	const addButton = { id: 'task-add' };
 	const selectors = [];
 	const root = {
 		querySelector(selector) {
 			selectors.push(selector);
-			if (selector.includes('.aulyckanban-task-search-input')) return visibleInput;
+			if (selector.includes('.aulyckanban-task-add-btn')) return addButton;
 			return null;
 		},
 	};
 
-	assert.equal(getTaskZoneFocusTarget(root), visibleInput);
+	assert.equal(getTaskZoneFocusTarget(root), addButton);
 	assert.equal(
 		selectors[0].includes('.aulyckanban-task-pane:not(.aulyckanban-mode-archive)'),
 		true,
 	);
-	assert.equal(selectors[1].includes('.aulyckan-task-search-input'), false);
-	assert.equal(selectors[1].includes('.aulyckanban-task-search-input'), true);
+	assert.equal(selectors[1].includes('.aulyckanban-task-search-input'), false);
+	assert.equal(selectors[1].includes('.aulyckanban-task-add-btn'), true);
 });
 
-test('task arrow navigation includes shared controls and only the visible result mode', () => {
-	const visibleInput = { id: 'task-search' };
+test('an empty archive task zone focuses its visible archive container', () => {
+	const archiveContainer = { id: 'archive-container' };
+	const root = {
+		querySelector(selector) {
+			if (selector.includes('.aulyckanban-archive-container')) return archiveContainer;
+			return null;
+		},
+	};
+	assert.equal(getTaskZoneFocusTarget(root), archiveContainer);
+});
+
+test('utility focus and arrow navigation contain search plus archive only', () => {
+	const search = { id: 'search' };
+	const archive = { id: 'archive' };
+	const selectors = [];
+	const root = {
+		querySelector(selector) {
+			selectors.push(selector);
+			return search;
+		},
+		querySelectorAll(selector) {
+			selectors.push(selector);
+			return [search, archive];
+		},
+	};
+
+	assert.equal(getUtilityZoneFocusTarget(root), search);
+	assert.deepEqual(getUtilityZoneNavigationItems(root), [search, archive]);
+	assert.equal(
+		selectors.every((selector) => selector.includes('.aulyckanban-archive-btn')),
+		true,
+	);
+	assert.equal(
+		selectors.every((selector) => selector.includes('.aulyckanban-task-add-btn')),
+		false,
+	);
+});
+
+test('task arrow navigation includes add controls and only the visible result mode', () => {
+	const addButton = { id: 'task-add' };
 	const selectors = [];
 	const root = {
 		querySelectorAll(selector) {
 			selectors.push(selector);
-			return [visibleInput];
+			return [addButton];
 		},
 	};
 
 	const items = getTaskZoneNavigationItems(root);
 	assert.equal(items.length, 1);
-	assert.equal(items[0], visibleInput);
+	assert.equal(items[0], addButton);
 	assert.equal(selectors[0].includes('.aulyckanban-task-create-target'), true);
 	assert.equal(selectors[0].includes('.aulyckanban-task-create-input'), true);
 	assert.equal(selectors[0].includes('.aulyckanban-mode-archive'), true);
+	assert.equal(selectors[0].includes('.aulyckanban-task-search-input'), false);
 });
 
-test('Tab cycles view, tasks, columns, then view', () => {
-	assert.equal(getNextFocusZone(null), 'view');
+test('Tab cycles utility, view, tasks, columns, then utility', () => {
+	assert.equal(getNextFocusZone(null), 'utility');
+	assert.equal(getNextFocusZone('utility'), 'view');
 	assert.equal(getNextFocusZone('view'), 'tasks');
 	assert.equal(getNextFocusZone('tasks'), 'columns');
-	assert.equal(getNextFocusZone('columns'), 'view');
+	assert.equal(getNextFocusZone('columns'), 'utility');
 });
 
 test('Shift+Tab cycles in reverse order', () => {
 	assert.equal(getNextFocusZone(null, true), 'columns');
 	assert.equal(getNextFocusZone('columns', true), 'tasks');
 	assert.equal(getNextFocusZone('tasks', true), 'view');
-	assert.equal(getNextFocusZone('view', true), 'columns');
+	assert.equal(getNextFocusZone('view', true), 'utility');
+	assert.equal(getNextFocusZone('utility', true), 'columns');
 });
 
 test('orphaned Tab uses the fallback only for the active kanban view', () => {
@@ -133,43 +167,30 @@ test('horizontal task type navigation reveals clipped items without a visible sc
 	assert.equal(getHorizontalRevealScrollLeft(10, 20, 220, -50, 20), 0);
 });
 
-test('all tasks is fixed first while add and archive remain the last task type navigation items', () => {
-	const afterAll = getTaskTypeNavigationTarget(['work', 'personal'], 'work', 'all', 1);
-	assert.equal(afterAll?.kind, 'view');
-	assert.equal(afterAll?.id, 'work');
+test('task type navigation contains existing task types and the retained add control', () => {
+	const afterFirstView = getTaskTypeNavigationTarget(['work', 'personal'], 'work', 1);
+	assert.equal(afterFirstView?.kind, 'view');
+	assert.equal(afterFirstView?.id, 'personal');
 
-	const afterLastView = getTaskTypeNavigationTarget(['work', 'personal'], 'personal', 'current', 1);
+	const afterLastView = getTaskTypeNavigationTarget(['work', 'personal'], 'personal', 1);
 	assert.equal(afterLastView?.kind, 'add');
 
-	const afterAdd = getTaskTypeNavigationTarget(['work', 'personal'], 'personal', 'current', 1, {
+	const afterAdd = getTaskTypeNavigationTarget(['work', 'personal'], 'personal', 1, {
 		kind: 'add',
 	});
-	assert.equal(afterAdd?.kind, 'archive');
+	assert.equal(afterAdd?.kind, 'view');
+	assert.equal(afterAdd?.id, 'work');
 
-	const afterArchive = getTaskTypeNavigationTarget(['work', 'personal'], 'work', 'archive', 1);
-	assert.equal(afterArchive?.kind, 'all');
-
-	const beforeFirstView = getTaskTypeNavigationTarget(['work', 'personal'], 'work', 'current', -1);
-	assert.equal(beforeFirstView?.kind, 'all');
-
-	const beforeAll = getTaskTypeNavigationTarget(['work', 'personal'], 'work', 'all', -1);
-	assert.equal(beforeAll?.kind, 'archive');
-
-	const beforeArchive = getTaskTypeNavigationTarget(
-		['work', 'personal'],
-		'personal',
-		'archive',
-		-1,
-		{
-			kind: 'archive',
-		},
-	);
-	assert.equal(beforeArchive?.kind, 'add');
+	const beforeFirstView = getTaskTypeNavigationTarget(['work', 'personal'], 'work', -1);
+	assert.equal(beforeFirstView?.kind, 'add');
 });
 
-test('all quadrants is fixed first and the add quadrant control remains last', () => {
-	assert.equal(getColumnNavigationTarget(['base', 'later'], 'base', 'all', 1)?.id, 'base');
-	assert.equal(getColumnNavigationTarget(['base', 'later'], 'later', 'current', 1)?.kind, 'add');
-	assert.equal(getColumnNavigationTarget(['base', 'later'], 'base', 'current', -1)?.kind, 'all');
-	assert.equal(getColumnNavigationTarget(['base', 'later'], 'base', 'all', -1)?.kind, 'add');
+test('quadrant navigation contains existing quadrants and the retained add control', () => {
+	assert.equal(getColumnNavigationTarget(['base', 'later'], 'base', 1)?.id, 'later');
+	assert.equal(getColumnNavigationTarget(['base', 'later'], 'later', 1)?.kind, 'add');
+	assert.equal(getColumnNavigationTarget(['base', 'later'], 'base', -1)?.kind, 'add');
+	assert.equal(
+		getColumnNavigationTarget(['base', 'later'], 'later', 1, { kind: 'add' })?.id,
+		'base',
+	);
 });

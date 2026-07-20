@@ -1,18 +1,11 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
-import vm from 'node:vm';
-import ts from 'typescript';
 import { readFileSync } from 'node:fs';
+import test from 'node:test';
+import resizeHostModule from '../src/utils/resizeHost.ts';
 
-const source = readFileSync(new URL('../src/utils/resizeHost.ts', import.meta.url), 'utf8');
+const { clearResizeHost, findResizeHost, updateResizeHost } = resizeHostModule;
+
 const styles = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
-const output = ts.transpileModule(source, {
-	compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
-}).outputText;
-const module = { exports: {} };
-vm.runInNewContext(output, { module, exports: module.exports });
-
-const { findResizeHost, updateResizeHost, clearResizeHost } = module.exports;
 
 function element(name) {
 	const classes = new Set();

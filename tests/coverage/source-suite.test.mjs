@@ -1,0 +1,14 @@
+import '../auditRegression.test.mjs';
+import '../dom.test.mjs';
+import '../domRobustness.test.mjs';
+import '../focusCycle.test.mjs';
+import '../i18n.test.mjs';
+import '../inlineInputFocus.test.mjs';
+import '../keyboard.test.mjs';
+import '../markdown.test.mjs';
+import '../noteSync.test.mjs';
+import '../repository.test.mjs';
+import '../resizeHost.test.mjs';
+import '../store.test.mjs';
+import '../syncTarget.test.mjs';
+import '../taskQuery.test.mjs';

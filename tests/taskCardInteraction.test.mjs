@@ -1,8 +1,6 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import vm from 'node:vm';
-import ts from 'typescript';
+import { loadSourceModule } from './helpers/load-source-module.mjs';
 
 class MockElement {
 	constructor(documentRef, options = {}) {
@@ -81,13 +79,36 @@ function descendants(element) {
 	return element.children.flatMap((child) => [child, ...descendants(child)]);
 }
 
-const source = readFileSync(new URL('../src/ui/TaskCard.ts', import.meta.url), 'utf8');
-const output = ts.transpileModule(source, {
-	compilerOptions: {
-		module: ts.ModuleKind.CommonJS,
-		target: ts.ScriptTarget.ES2020,
+let activeIcons = [];
+let activeInlineInputs = [];
+const { TaskCard } = await loadSourceModule(new URL('../src/ui/TaskCard.ts', import.meta.url), {
+	label: 'task-card',
+	mocks: {
+		obsidian: {
+			setIcon: (element, name) => {
+				activeIcons.push({ element, name });
+			},
+		},
+		'../i18n': { t: (key) => key },
+		'../utils/datetime': {
+			formatDateTimeMinuteParts: () => ({ date: '2026/07/13', time: '12:00' }),
+		},
+		'../utils/dom': {
+			setTextWithLineBreaks: (element, value) => {
+				element.textContent = value;
+			},
+		},
+		'./ConfirmModal': { ConfirmModal: class {} },
+		'./InlineInput': {
+			createInlineInput: (parent, options) => {
+				activeInlineInputs.push(options);
+				const input = parent.createDiv({ cls: options.cls });
+				if (options.focusOnMount) input.focus();
+				return input;
+			},
+		},
 	},
-}).outputText;
+});
 
 function createHarness() {
 	const documentRef = {
@@ -96,44 +117,12 @@ function createHarness() {
 	};
 	const inlineInputs = [];
 	const icons = [];
-	const module = { exports: {} };
-	const context = {
-		module,
-		exports: module.exports,
-		document: documentRef,
-		require: (id) => {
-			if (id === 'obsidian')
-				return {
-					setIcon: (element, name) => {
-						icons.push({ element, name });
-					},
-				};
-			if (id === '../i18n') return { t: (key) => key };
-			if (id === '../utils/datetime') return { formatDateTimeMinute: () => '2026/07/13 12:00' };
-			if (id === '../utils/dom')
-				return {
-					setTextWithLineBreaks: (el, value) => {
-						el.textContent = value;
-					},
-				};
-			if (id === './ConfirmModal') return { ConfirmModal: class {} };
-			if (id === './InlineInput') {
-				return {
-					createInlineInput: (parent, options) => {
-						inlineInputs.push(options);
-						const input = parent.createDiv({ cls: options.cls });
-						if (options.focusOnMount) input.focus();
-						return input;
-					},
-				};
-			}
-			throw new Error(`Unexpected import: ${id}`);
-		},
-	};
-	vm.runInNewContext(output, context);
+	activeInlineInputs = inlineInputs;
+	activeIcons = icons;
+	globalThis.document = documentRef;
 
 	const actions = [];
-	const card = new context.module.exports.TaskCard(
+	const card = new TaskCard(
 		{},
 		{ dispatch: (action) => actions.push(action) },
 		'work',
@@ -202,7 +191,7 @@ test('aggregate cards display their source and dispatch edits to that exact task
 	assert.equal(actions.at(-1).payload.columnId, 'column');
 });
 
-test('task metadata places time above the left-aligned source label', () => {
+test('task metadata renders date and time as separate lines below the source label', () => {
 	const { card } = createHarness();
 	const metaRow = descendants(card).find((element) =>
 		element.classList.contains('aulyckanban-task-meta-row'),
@@ -218,8 +207,18 @@ test('task metadata places time above the left-aligned source label', () => {
 	assert.ok(metaDetails);
 	assert.equal(metaRow.children[0], metaDetails);
 	assert.equal(metaRow.children[1], actions);
-	assert.equal(metaDetails.children[0].classList.contains('aulyckanban-task-time'), true);
-	assert.equal(metaDetails.children[0].textContent, '2026/07/13 12:00');
-	assert.equal(metaDetails.children[1].classList.contains('aulyckanban-task-source'), true);
-	assert.equal(metaDetails.children[1].textContent, '工作任务');
+	assert.equal(metaDetails.children[0].classList.contains('aulyckanban-task-source'), true);
+	assert.equal(metaDetails.children[0].textContent, '工作任务');
+	assert.equal(metaDetails.children[1].classList.contains('aulyckanban-task-time'), true);
+	assert.equal(metaDetails.children[1].children.length, 2);
+	assert.equal(metaDetails.children[1].children[0].textContent, '2026/07/13');
+	assert.equal(metaDetails.children[1].children[1].textContent, '12:00');
+	assert.equal(
+		metaDetails.children[1].children[0].classList.contains('aulyckanban-task-date'),
+		true,
+	);
+	assert.equal(
+		metaDetails.children[1].children[1].classList.contains('aulyckanban-task-clock'),
+		true,
+	);
 });

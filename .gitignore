@@ -1,9 +1,14 @@
 # 依赖
 node_modules/
 
-# 构建产物
-main.js
-release-artifacts/
+# 构建与测试产物
+/main.js
+/dist/main.js
+/coverage/
+/audit-output/
+/release-artifacts/
+/.cache/
+/test-bundles/
 
 # 插件运行时数据
 data.json

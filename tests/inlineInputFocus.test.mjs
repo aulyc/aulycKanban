@@ -1,16 +1,8 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import vm from 'node:vm';
-import ts from 'typescript';
+import inlineInputModule from '../src/ui/InlineInput.ts';
 
-const source = readFileSync(new URL('../src/ui/InlineInput.ts', import.meta.url), 'utf8');
-const output = ts.transpileModule(source, {
-	compilerOptions: {
-		module: ts.ModuleKind.CommonJS,
-		target: ts.ScriptTarget.ES2020,
-	},
-}).outputText;
+const { createInlineInput } = inlineInputModule;
 
 test('focusOnMount focuses synchronously without exposing an old focus frame', () => {
 	const events = [];
@@ -21,22 +13,9 @@ test('focusOnMount focuses synchronously without exposing an old focus frame', (
 		setSelectionRange: (start, end) => events.push(`selection:${start}:${end}`),
 	};
 	const parent = { createEl: () => input };
-	const module = { exports: {} };
-	const context = {
-		module,
-		exports: module.exports,
-		HTMLTextAreaElement: class {},
-		requestAnimationFrame: () => events.push('animation-frame'),
-		require: (id) => {
-			if (id === '../utils/dom') return { autoResizeTextarea: () => {} };
-			if (id === '../utils/inlineCommit') return { createInlineCommitController: () => null };
-			if (id === '../utils/keyboard') return { shouldCommitInlineInput: () => false };
-			throw new Error(`Unexpected import: ${id}`);
-		},
-	};
-	vm.runInNewContext(output, context);
+	globalThis.HTMLTextAreaElement = class {};
 
-	context.module.exports.createInlineInput(parent, {
+	createInlineInput(parent, {
 		cls: 'test-input',
 		persistent: true,
 		focusOnMount: true,

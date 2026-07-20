@@ -1,17 +1,8 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import vm from 'node:vm';
-import ts from 'typescript';
+import taskQueryModule from '../src/utils/taskQuery.ts';
 
-const source = readFileSync(new URL('../src/utils/taskQuery.ts', import.meta.url), 'utf8');
-const output = ts.transpileModule(source, {
-	compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
-}).outputText;
-const module = { exports: {} };
-vm.runInNewContext(output, { module, exports: module.exports });
-
-const { getTaskRefKey, queryTaskRefs } = module.exports;
+const { getTaskRefKey, queryTaskRefs } = taskQueryModule;
 
 function task(id, content = id) {
 	return { id, content, completed: false, createdAt: '2026-01-01T00:00:00.000Z' };

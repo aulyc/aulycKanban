@@ -31,27 +31,34 @@ export function formatDateTime(isoStr: string | Date): string {
 }
 
 /**
- * 格式化到分钟级（YYYY/MM/DD HH:mm）
+ * 分别格式化分钟级日期与时间，供需要固定分行的界面使用。
  */
-export function formatDateTimeMinute(isoStr: string): string {
+export function formatDateTimeMinuteParts(isoStr: string): { date: string; time: string } {
 	try {
 		const date = new Date(isoStr);
-		if (Number.isNaN(date.getTime())) return '';
+		if (Number.isNaN(date.getTime())) return { date: '', time: '' };
 		const locale = getLocale();
-		return (
-			date.toLocaleDateString(locale, {
+		return {
+			date: date.toLocaleDateString(locale, {
 				year: 'numeric',
 				month: '2-digit',
 				day: '2-digit',
-			}) +
-			' ' +
-			date.toLocaleTimeString(locale, {
+			}),
+			time: date.toLocaleTimeString(locale, {
 				hour: '2-digit',
 				minute: '2-digit',
 				hour12: false,
-			})
-		);
+			}),
+		};
 	} catch {
-		return '';
+		return { date: '', time: '' };
 	}
+}
+
+/**
+ * 格式化到分钟级（YYYY/MM/DD HH:mm）
+ */
+export function formatDateTimeMinute(isoStr: string): string {
+	const parts = formatDateTimeMinuteParts(isoStr);
+	return parts.date && parts.time ? `${parts.date} ${parts.time}` : '';
 }

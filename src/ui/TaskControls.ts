@@ -1,4 +1,4 @@
-import { Notice, setIcon } from 'obsidian';
+import { Notice } from 'obsidian';
 import type { App } from 'obsidian';
 import { t } from '../i18n';
 import type { KanbanStore } from '../store';
@@ -6,7 +6,7 @@ import { appendAccessibleLabel } from '../utils/dom';
 import { normalizeTaskSearchText } from '../utils/taskQuery';
 import { createInlineInput } from './InlineInput';
 
-/** 任务区固定控件：统一搜索标签与折叠式新增任务入口。 */
+/** 任务区固定控件：折叠式新增任务入口。 */
 export class TaskControls {
 	private readonly el: HTMLElement;
 	private readonly store: KanbanStore;
@@ -22,54 +22,12 @@ export class TaskControls {
 
 	render(): void {
 		this.el.empty();
-		const shellEl = this.el.createDiv({ cls: 'aulyckanban-task-search-shell' });
-		const keyword = this.store.getSearchKeyword();
-		if (keyword) this.renderSearchTag(shellEl, keyword);
-		else this.renderSearchInput(shellEl);
 		if (this.store.getTaskScope() === 'archive') {
 			this.isAdding = false;
 			return;
 		}
 		if (this.isAdding) this.renderCreateEditor();
 		else this.renderAddButton();
-	}
-
-	private renderSearchInput(parentEl: HTMLElement): void {
-		createInlineInput(parentEl, {
-			cls: 'aulyckanban-task-search-input',
-			placeholder: t('task.search.placeholder'),
-			persistent: true,
-			onCommit: (value) => {
-				const keyword = value.trim();
-				if (!keyword) return false;
-				this.store.dispatch({ type: 'SET_SEARCH_QUERY', payload: { keyword } });
-				return true;
-			},
-		});
-	}
-
-	private renderSearchTag(parentEl: HTMLElement, keyword: string): void {
-		const tagEl = parentEl.createDiv({
-			cls: 'aulyckanban-task-search-tag',
-			attr: { tabindex: '-1', role: 'group' },
-		});
-		tagEl.createSpan({ cls: 'aulyckanban-task-search-tag-text', text: keyword });
-		const clearBtn = tagEl.createEl('button', {
-			cls: 'aulyckanban-task-search-clear',
-			attr: { type: 'button', tabindex: '-1' },
-		});
-		setIcon(clearBtn, 'x');
-		appendAccessibleLabel(clearBtn, t('task.search.clear'));
-		const clear = (event: MouseEvent | KeyboardEvent): void => {
-			event.preventDefault();
-			event.stopPropagation();
-			this.store.dispatch({ type: 'SET_SEARCH_QUERY', payload: { keyword: '' } });
-		};
-		clearBtn.addEventListener('click', clear);
-		tagEl.addEventListener('keydown', (event: KeyboardEvent) => {
-			if (event.key === 'Escape' || event.key === 'Backspace' || event.key === 'Delete')
-				clear(event);
-		});
 	}
 
 	private renderAddButton(): void {

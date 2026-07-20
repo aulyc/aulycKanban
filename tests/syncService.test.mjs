@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import vm from 'node:vm';
-import { build } from 'esbuild';
+import { loadSourceModule } from './helpers/load-source-module.mjs';
 
 class MockTFile {
 	constructor(path, content = '') {
@@ -10,38 +9,25 @@ class MockTFile {
 	}
 }
 
-async function loadSyncService(notices, errors = []) {
-	const bundle = await build({
-		entryPoints: [new URL('../src/services/syncService.ts', import.meta.url).pathname],
-		bundle: true,
-		format: 'cjs',
-		platform: 'node',
-		external: ['obsidian'],
-		write: false,
-		logLevel: 'silent',
-	});
-	const module = { exports: {} };
-	vm.runInNewContext(bundle.outputFiles[0].text, {
-		module,
-		exports: module.exports,
-		console: { ...console, error: (...args) => errors.push(args) },
-		Date,
-		setTimeout,
-		clearTimeout,
-		require: (id) => {
-			if (id !== 'obsidian') throw new Error(`Unexpected import: ${id}`);
-			return {
-				Notice: class {
-					constructor(message) {
-						notices.push(message);
-					}
+async function loadSyncService(notices) {
+	const module = await loadSourceModule(
+		new URL('../src/services/syncService.ts', import.meta.url),
+		{
+			label: 'sync-service',
+			mocks: {
+				obsidian: {
+					Notice: class {
+						constructor(message) {
+							notices.push(message);
+						}
+					},
+					normalizePath: (value) => value.replaceAll('//', '/'),
+					TFile: MockTFile,
 				},
-				normalizePath: (value) => value.replaceAll('//', '/'),
-				TFile: MockTFile,
-			};
+			},
 		},
-	});
-	return module.exports.VaultSyncService;
+	);
+	return module.VaultSyncService;
 }
 
 function createVault(initialFiles = {}) {
@@ -144,6 +130,16 @@ function delay(ms) {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+async function captureConsoleErrors(errors, operation) {
+	const originalError = console.error;
+	console.error = (...args) => errors.push(args);
+	try {
+		return await operation();
+	} finally {
+		console.error = originalError;
+	}
+}
+
 test('initialization automatically creates one owned note per task type plus archive', async () => {
 	const notices = [];
 	const VaultSyncService = await loadSyncService(notices);
@@ -218,7 +214,7 @@ test('force refresh saves the current board and rebuilds every managed note', as
 test('force refresh reports write failures and keeps the synchronization queue usable', async () => {
 	const notices = [];
 	const errors = [];
-	const VaultSyncService = await loadSyncService(notices, errors);
+	const VaultSyncService = await loadSyncService(notices);
 	const vault = createVault();
 	const store = createStore();
 	const service = new VaultSyncService(vault, store);
@@ -234,7 +230,9 @@ test('force refresh reports write failures and keeps the synchronization queue u
 		await process(file, transform);
 	};
 
-	await assert.rejects(service.forceSyncAll(), /工作任务.*simulated force refresh failure/);
+	await captureConsoleErrors(errors, () =>
+		assert.rejects(service.forceSyncAll(), /工作任务.*simulated force refresh failure/),
+	);
 	assert.equal(errors.length, 1);
 	const retry = await service.forceSyncAll();
 	assert.equal(retry.syncedCount, 3);
@@ -345,13 +343,13 @@ test('a conflicting user note is preserved and the managed note receives a uniqu
 test('a transient Vault read failure is contained instead of rejecting plugin initialization', async () => {
 	const notices = [];
 	const errors = [];
-	const VaultSyncService = await loadSyncService(notices, errors);
+	const VaultSyncService = await loadSyncService(notices);
 	const vault = createVault({ 'X-aulyc看板/归档任务.md': 'existing' });
 	vault.cachedRead = async () => {
 		throw new Error('temporary read failure');
 	};
 	const service = new VaultSyncService(vault, createStore());
 
-	await assert.doesNotReject(service.initialize());
+	await captureConsoleErrors(errors, () => assert.doesNotReject(service.initialize()));
 	assert.equal(errors.length, 1);
 });

@@ -1,8 +1,6 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import vm from 'node:vm';
-import ts from 'typescript';
+import { loadSourceModule } from './helpers/load-source-module.mjs';
 
 class MockElement {
 	constructor(tagName = 'div', options = {}) {
@@ -68,47 +66,36 @@ function descendants(element) {
 	return element.children.flatMap((child) => [child, ...descendants(child)]);
 }
 
-const source = readFileSync(new URL('../src/ui/TaskControls.ts', import.meta.url), 'utf8');
-const output = ts.transpileModule(source, {
-	compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
-}).outputText;
+const { TaskControls } = await loadSourceModule(
+	new URL('../src/ui/TaskControls.ts', import.meta.url),
+	{
+		label: 'task-controls',
+		mocks: {
+			'../i18n': { t: (key) => key },
+			'../utils/taskQuery': {
+				normalizeTaskSearchText: (value) => value.trim().toLowerCase().replace(/\s+/g, ' '),
+			},
+			'../utils/dom': {
+				appendAccessibleLabel: (element, text) =>
+					element.createSpan({ cls: 'aulyckanban-accessible-label', text }),
+			},
+			'./InlineInput': {
+				createInlineInput: (parent, options) => {
+					const input = parent.createEl(options.multiline ? 'textarea' : 'input', {
+						cls: options.cls,
+					});
+					input.value = options.initialValue ?? '';
+					input.inputOptions = options;
+					return input;
+				},
+			},
+			obsidian: { Notice: class {}, setIcon: () => {} },
+		},
+	},
+);
 
 function createHarness(overrides = {}) {
-	const module = { exports: {} };
-	const context = {
-		module,
-		exports: module.exports,
-		requestAnimationFrame: (callback) => callback(),
-		require: (id) => {
-			if (id === '../i18n') return { t: (key) => key };
-			if (id === '../utils/taskQuery') {
-				return {
-					normalizeTaskSearchText: (value) => value.trim().toLowerCase().replace(/\s+/g, ' '),
-				};
-			}
-			if (id === '../utils/dom') {
-				return {
-					appendAccessibleLabel: (element, text) =>
-						element.createSpan({ cls: 'aulyckanban-accessible-label', text }),
-				};
-			}
-			if (id === './InlineInput') {
-				return {
-					createInlineInput: (parent, options) => {
-						const input = parent.createEl(options.multiline ? 'textarea' : 'input', {
-							cls: options.cls,
-						});
-						input.value = options.initialValue ?? '';
-						input.inputOptions = options;
-						return input;
-					},
-				};
-			}
-			if (id === 'obsidian') return { Notice: class {}, setIcon: () => {} };
-			throw new Error(`Unexpected import: ${id}`);
-		},
-	};
-	vm.runInNewContext(output, context);
+	globalThis.requestAnimationFrame = (callback) => callback();
 
 	const store = {
 		actions: [],
@@ -141,38 +128,9 @@ function createHarness(overrides = {}) {
 		...overrides,
 	};
 	const parent = new MockElement();
-	const controls = new context.module.exports.TaskControls(parent, {}, store);
+	const controls = new TaskControls(parent, {}, store);
 	return { controls, parent, store };
 }
-
-test('search input commits one trimmed filter keyword', () => {
-	const { parent, store } = createHarness();
-	const input = descendants(parent).find((element) =>
-		element.classList.contains('aulyckanban-task-search-input'),
-	);
-	assert.ok(input);
-
-	input.inputOptions.onCommit('  邮箱任务  ');
-	assert.equal(store.actions.at(-1).type, 'SET_SEARCH_QUERY');
-	assert.equal(store.actions.at(-1).payload.keyword, '邮箱任务');
-});
-
-test('committed search is rendered as one removable tag', () => {
-	const { parent, store } = createHarness({ keyword: '邮箱任务' });
-	const tag = descendants(parent).find((element) =>
-		element.classList.contains('aulyckanban-task-search-tag'),
-	);
-	const clearButton = descendants(parent).find((element) =>
-		element.classList.contains('aulyckanban-task-search-clear'),
-	);
-	assert.ok(tag);
-	assert.equal(tag.children[0].textContent, '邮箱任务');
-	assert.ok(clearButton);
-
-	clearButton.listeners.get('click')[0]({ preventDefault() {}, stopPropagation() {} });
-	assert.equal(store.actions.at(-1).type, 'SET_SEARCH_QUERY');
-	assert.equal(store.actions.at(-1).payload.keyword, '');
-});
 
 test('collapsed add control expands and creates a task in the concrete intersection', () => {
 	const { parent, store } = createHarness();

@@ -3,7 +3,7 @@
   "schemaVersion": 1,
   "projectId": "aulyckanban",
   "applicability": "applicable",
-  "coreVersion": "2.0.0",
+  "coreVersion": "2.0.1",
   "artifacts": [
     {
       "id": "aulyckanban-obsidian-plugin",
@@ -15,7 +15,9 @@
   "ruleBindings": [
     {
       "ruleId": "REL-001",
-      "evidence": ["AGENTS.md#versioning-and-release-profile"]
+      "evidence": [
+        "AGENTS.md#versioning-and-release-profile"
+      ]
     },
     {
       "ruleId": "REL-002",
@@ -61,7 +63,9 @@
     },
     {
       "ruleId": "REL-008",
-      "evidence": ["scripts/artifact.mjs"]
+      "evidence": [
+        "scripts/artifact.mjs"
+      ]
     },
     {
       "ruleId": "REL-009",
@@ -79,15 +83,21 @@
     },
     {
       "ruleId": "REL-011",
-      "evidence": ["AGENTS.md#data-credentials-and-sensitive-information"]
+      "evidence": [
+        "AGENTS.md#data-credentials-and-sensitive-information"
+      ]
     },
     {
       "ruleId": "REL-012",
-      "evidence": [".codex/standards.json"]
+      "evidence": [
+        ".codex/standards.json"
+      ]
     },
     {
       "ruleId": "REL-013",
-      "evidence": [".codex/standards.json"]
+      "evidence": [
+        ".codex/standards.json"
+      ]
     },
     {
       "ruleId": "REL-014",
@@ -99,11 +109,15 @@
     },
     {
       "ruleId": "OBS-001",
-      "evidence": ["AGENTS.md#versioning-and-release-profile"]
+      "evidence": [
+        "AGENTS.md#versioning-and-release-profile"
+      ]
     },
     {
       "ruleId": "OBS-002",
-      "evidence": ["version-bump.mjs"]
+      "evidence": [
+        "version-bump.mjs"
+      ]
     },
     {
       "ruleId": "OBS-003",
@@ -130,7 +144,9 @@
     },
     {
       "ruleId": "OBS-006",
-      "evidence": ["scripts/install-plugin.mjs"]
+      "evidence": [
+        "scripts/install-plugin.mjs"
+      ]
     },
     {
       "ruleId": "OBS-007",
@@ -144,11 +160,11 @@
   "trackedFiles": [
     {
       "path": "AGENTS.md",
-      "sha256": "38ec3aec75ec85b81cfcf4b9d425eb1b71bd54ff3f2c866dda491f28178447ad"
+      "sha256": "b815d9bddeeee21468bf9dddbdd32da27c3913cadeee3ae5d0d4674edce4da1c"
     },
     {
       "path": "VERSIONING.md",
-      "sha256": "b5c6b612c7985ea2edb32cb78c26f5b88937208e3bc4b6c0b8588a2d7f5eb64c"
+      "sha256": "85644699f81348484c4344f722f59750da764ce39bcb150b684d2e6e228e9496"
     },
     {
       "path": "version-bump.mjs",
@@ -168,7 +184,7 @@
     },
     {
       "path": "scripts/formal-git.mjs",
-      "sha256": "c464f565b188e1b2243528084bbcfe126b7fd1065f003b3adc2458906f358651"
+      "sha256": "cef6ff5148b0541c2389958ccc3f7d1257c9df5820399b5bb6b50cfb3c351c03"
     },
     {
       "path": "scripts/install-plugin.mjs",
@@ -227,8 +243,13 @@
       "scripts/zip.mjs"
     ],
     "ciPaths": [
-      "package.json"
-      ,"tests/formalGit.test.mjs"
+      "package.json",
+      "scripts/coverage.mjs",
+      "tests/coverage/core.test.ts",
+      "tests/coverage/source-suite.test.mjs",
+      "tests/coverage/bundle-suite.test.mjs",
+      "tests/coverageRunner.test.mjs",
+      "tests/formalGit.test.mjs"
     ]
   }
 }

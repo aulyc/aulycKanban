@@ -10,6 +10,7 @@ test('formal GitHub wrapper delegates only to the central controlled gate', () =
 		phase: 'push',
 		tag: '1.2.3',
 		provenancePath: '/tmp/release provenance.json',
+		skipExistenceCheck: true,
 		runner(command, args, options) {
 			invocation = { command, args, options };
 			return { status: 0 };
@@ -34,6 +35,7 @@ test('formal GitHub wrapper fails closed when the central gate fails', () => {
 		() =>
 			runFormalGit({
 				phase: 'preflight',
+				skipExistenceCheck: true,
 				runner: () => ({ status: 2 }),
 			}),
 		/Central formal GitHub preflight failed/,

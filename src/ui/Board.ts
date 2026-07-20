@@ -5,15 +5,17 @@ import { CategoryNav } from './CategoryNav';
 import { Toolbar } from './Toolbar';
 import { ArchiveView } from './ArchiveView';
 import { TaskControls } from './TaskControls';
+import { UtilityBar } from './UtilityBar';
 
 /**
  * 看板面板组件
- * 布局：Toolbar + (左侧 TaskControls + TaskList + 右侧 CategoryNav)
- * 归档模式：左侧保留共享 TaskControls，将 TaskList 切换为 ArchiveView。
+ * 布局：UtilityBar + Toolbar + (左侧 TaskControls + TaskList + 右侧 CategoryNav)
+ * 归档模式：工具区保留共享搜索，将普通任务列表切换为 ArchiveView。
  */
 export class Board {
 	private readonly containerEl: HTMLElement;
 	private readonly store: KanbanStore;
+	private readonly utilityBar: UtilityBar;
 	private readonly toolbar: Toolbar;
 	private readonly contentAreaEl: HTMLElement;
 	private readonly taskPaneEl: HTMLElement;
@@ -27,7 +29,11 @@ export class Board {
 		this.containerEl = containerEl;
 		this.store = store;
 
-		// 工具栏（始终显示）
+		// 搜索与归档工具区（始终显示）
+		this.utilityBar = new UtilityBar(this.containerEl, this.store);
+		this.utilityBar.getEl();
+
+		// 任务类型栏（始终显示）
 		this.toolbar = new Toolbar(this.containerEl, app, this.store);
 		this.toolbar.getEl();
 
@@ -48,6 +54,7 @@ export class Board {
 	}
 
 	render(): void {
+		this.utilityBar.render();
 		this.toolbar.render();
 		this.taskControls.render();
 

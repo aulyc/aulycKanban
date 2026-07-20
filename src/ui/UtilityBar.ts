@@ -1,0 +1,105 @@
+import { setIcon } from 'obsidian';
+import { t } from '../i18n';
+import type { KanbanStore } from '../store';
+import { appendAccessibleLabel } from '../utils/dom';
+import { createInlineInput } from './InlineInput';
+
+/** 顶部工具区：共享搜索与归档入口。 */
+export class UtilityBar {
+	private readonly el: HTMLElement;
+	private readonly store: KanbanStore;
+
+	constructor(parentEl: HTMLElement, store: KanbanStore) {
+		this.store = store;
+		this.el = parentEl.createDiv({ cls: 'aulyckanban-utility-bar' });
+		this.render();
+	}
+
+	render(): void {
+		const focusedEl = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+		const restoreSearchFocus =
+			!!focusedEl &&
+			this.el.contains(focusedEl) &&
+			(focusedEl.classList.contains('aulyckanban-task-search-input') ||
+				focusedEl.classList.contains('aulyckanban-task-search-tag'));
+		const restoreArchiveFocus =
+			!!focusedEl &&
+			this.el.contains(focusedEl) &&
+			focusedEl.classList.contains('aulyckanban-archive-btn');
+
+		this.el.empty();
+		const searchShellEl = this.el.createDiv({ cls: 'aulyckanban-task-search-shell' });
+		const keyword = this.store.getSearchKeyword();
+		const searchTarget = keyword
+			? this.renderSearchTag(searchShellEl, keyword)
+			: this.renderSearchInput(searchShellEl);
+
+		const isArchive = this.store.isShowingArchive();
+		const archiveBtn = this.el.createEl('button', {
+			cls: isArchive
+				? 'aulyckanban-tab aulyckanban-archive-btn aulyckanban-tab-active'
+				: 'aulyckanban-tab aulyckanban-archive-btn',
+			attr: {
+				type: 'button',
+				tabindex: '-1',
+				'aria-selected': String(isArchive),
+			},
+		});
+		setIcon(archiveBtn, 'archive');
+		appendAccessibleLabel(archiveBtn, t('archive.open'));
+		archiveBtn.addEventListener('click', (event: MouseEvent) => {
+			event.preventDefault();
+			event.stopPropagation();
+			if (!this.store.isShowingArchive()) {
+				this.store.dispatch({ type: 'TOGGLE_ARCHIVE_VIEW' });
+			}
+		});
+
+		if (restoreSearchFocus) searchTarget.focus({ preventScroll: true });
+		else if (restoreArchiveFocus) archiveBtn.focus({ preventScroll: true });
+	}
+
+	private renderSearchInput(parentEl: HTMLElement): HTMLInputElement | HTMLTextAreaElement {
+		return createInlineInput(parentEl, {
+			cls: 'aulyckanban-task-search-input',
+			placeholder: t('task.search.placeholder'),
+			persistent: true,
+			onCommit: (value) => {
+				const keyword = value.trim();
+				if (!keyword) return false;
+				this.store.dispatch({ type: 'SET_SEARCH_QUERY', payload: { keyword } });
+				return true;
+			},
+		});
+	}
+
+	private renderSearchTag(parentEl: HTMLElement, keyword: string): HTMLElement {
+		const tagEl = parentEl.createDiv({
+			cls: 'aulyckanban-task-search-tag',
+			attr: { tabindex: '-1', role: 'group' },
+		});
+		tagEl.createSpan({ cls: 'aulyckanban-task-search-tag-text', text: keyword });
+		const clearBtn = tagEl.createEl('button', {
+			cls: 'aulyckanban-task-search-clear',
+			attr: { type: 'button', tabindex: '-1' },
+		});
+		setIcon(clearBtn, 'x');
+		appendAccessibleLabel(clearBtn, t('task.search.clear'));
+		const clear = (event: MouseEvent | KeyboardEvent): void => {
+			event.preventDefault();
+			event.stopPropagation();
+			this.store.dispatch({ type: 'SET_SEARCH_QUERY', payload: { keyword: '' } });
+		};
+		clearBtn.addEventListener('click', clear);
+		tagEl.addEventListener('keydown', (event: KeyboardEvent) => {
+			if (event.key === 'Escape' || event.key === 'Backspace' || event.key === 'Delete') {
+				clear(event);
+			}
+		});
+		return tagEl;
+	}
+
+	getEl(): HTMLElement {
+		return this.el;
+	}
+}

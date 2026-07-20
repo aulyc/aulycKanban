@@ -1,24 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import vm from 'node:vm';
-import { build } from 'esbuild';
+import i18nModule from '../src/i18n.ts';
 
-async function loadI18n() {
-	const bundle = await build({
-		entryPoints: [new URL('../src/i18n.ts', import.meta.url).pathname],
-		bundle: true,
-		format: 'cjs',
-		platform: 'node',
-		write: false,
-		logLevel: 'silent',
-	});
-	const module = { exports: {} };
-	vm.runInNewContext(bundle.outputFiles[0].text, { module, exports: module.exports });
-	return module.exports;
-}
+const { initI18n, t } = i18nModule;
 
 test('simplified Chinese settings use localized section headings and clear-data copy', async () => {
-	const { initI18n, t } = await loadI18n();
 	initI18n('zh-CN');
 
 	assert.equal(t('settings.dataManagement'), '数据管理');
@@ -38,7 +24,6 @@ test('simplified Chinese settings use localized section headings and clear-data 
 });
 
 test('English settings retain their localized copy', async () => {
-	const { initI18n, t } = await loadI18n();
 	initI18n('en');
 
 	assert.equal(t('settings.dataManagement'), 'Data management');

@@ -1,8 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import vm from 'node:vm';
-import ts from 'typescript';
+import { loadSourceModule } from './helpers/load-source-module.mjs';
 
 class MockElement {
 	constructor(options = {}) {
@@ -70,45 +69,37 @@ function descendants(element) {
 }
 
 const source = readFileSync(new URL('../src/ui/CategoryNav.ts', import.meta.url), 'utf8');
-const output = ts.transpileModule(source, {
-	compilerOptions: {
-		module: ts.ModuleKind.CommonJS,
-		target: ts.ScriptTarget.ES2020,
+const { CategoryNav } = await loadSourceModule(
+	new URL('../src/ui/CategoryNav.ts', import.meta.url),
+	{
+		label: 'category-nav',
+		mocks: {
+			obsidian: { Menu: class {} },
+			'../i18n': {
+				t: (key) => (key === 'column.addPrompt' ? '输入新象限名称' : key),
+			},
+			'./ConfirmModal': { ConfirmModal: class {} },
+			'./InlineInput': {
+				createInlineInput: (parent, options) => parent.createDiv({ cls: options.cls }),
+			},
+			'../utils/dom': {
+				appendAccessibleLabel: (element, text) =>
+					element.createSpan({
+						cls: 'aulyckanban-accessible-label',
+						text,
+					}),
+			},
+		},
 	},
-}).outputText;
+);
 
 function createCategoryNavHarness(overrides = {}) {
-	const module = { exports: {} };
-	const context = {
-		module,
-		exports: module.exports,
-		require: (id) => {
-			if (id === 'obsidian') return { Menu: class {} };
-			if (id === '../i18n')
-				return { t: (key) => (key === 'column.addPrompt' ? '输入新象限名称' : key) };
-			if (id === './ConfirmModal') return { ConfirmModal: class {} };
-			if (id === './InlineInput') {
-				return {
-					createInlineInput: (parent, options) => parent.createDiv({ cls: options.cls }),
-				};
-			}
-			if (id === '../utils/dom') {
-				return {
-					appendAccessibleLabel: (element, text) =>
-						element.createSpan({
-							cls: 'aulyckanban-accessible-label',
-							text,
-						}),
-				};
-			}
-			throw new Error(`Unexpected import: ${id}`);
-		},
-	};
-	vm.runInNewContext(output, context);
-
 	const store = {
 		actions: [],
-		getCurrentColumns: () => [{ id: 'last', title: '多少啊', tasks: [] }],
+		getCurrentColumns: () => [
+			{ id: 'last', title: '多少啊', tasks: [] },
+			{ id: 'later', title: '稍后', tasks: [] },
+		],
 		getActiveColumnId: () => 'last',
 		isShowingArchive: () => false,
 		isShowingAllColumns: () => false,
@@ -121,32 +112,48 @@ function createCategoryNavHarness(overrides = {}) {
 		...overrides,
 	};
 	const parent = new MockElement();
-	new context.module.exports.CategoryNav(parent, {}, store);
-	return { parent, store };
+	const categoryNav = new CategoryNav(parent, {}, store);
+	return { categoryNav, parent, store };
 }
 
-test('all quadrants is a fixed first navigation control with the aggregate count', () => {
-	const { parent, store } = createCategoryNavHarness();
+test('quadrant navigation contains only existing quadrants and the retained add control', () => {
+	const { parent } = createCategoryNavHarness();
 	const nav = parent.children[0];
 	const allButton = descendants(nav).find((element) =>
 		element.classList.contains('aulyckanban-nav-all-btn'),
 	);
-	assert.ok(allButton);
-	assert.equal(nav.children[0], allButton);
-	assert.equal(allButton.children[1].textContent, '2');
-
-	allButton.listeners.get('click')[0]({ preventDefault() {}, stopPropagation() {} });
-	assert.equal(store.actions.at(-1).type, 'SHOW_ALL_COLUMNS');
+	const quadrant = descendants(nav).find((element) => element.dataset.columnId === 'last');
+	const addButton = descendants(nav).find((element) =>
+		element.classList.contains('aulyckanban-nav-add-btn'),
+	);
+	assert.equal(allButton, undefined);
+	assert.ok(quadrant);
+	assert.ok(addButton);
+	assert.equal(quadrant.children[1].textContent, '2');
 });
 
-test('all quadrants is the only business-active navigation item in aggregate scope', () => {
-	const { parent } = createCategoryNavHarness({ isShowingAllColumns: () => true });
+test('the selected existing quadrant owns the business-active state', () => {
+	const { parent } = createCategoryNavHarness();
 	const nav = parent.children[0];
 	const activeItems = descendants(nav).filter((element) =>
 		element.classList.contains('aulyckanban-nav-item-active'),
 	);
 	assert.equal(activeItems.length, 1);
-	assert.equal(activeItems[0].classList.contains('aulyckanban-nav-all-btn'), true);
+	assert.equal(activeItems[0].dataset.columnId, 'last');
+});
+
+test('renaming an existing quadrant replaces only that item with an inline editor', () => {
+	const { categoryNav, parent } = createCategoryNavHarness();
+	const item = descendants(parent).find((element) => element.dataset.columnId === 'last');
+	categoryNav.startInlineRename('last', item);
+	const editingItem = descendants(parent).find((element) => element.dataset.columnId === 'last');
+	assert.equal(editingItem.classList.contains('aulyckanban-nav-item-editing'), true);
+	assert.equal(
+		descendants(editingItem).some((element) =>
+			element.classList.contains('aulyckanban-nav-inline-input'),
+		),
+		true,
+	);
 });
 
 test('category add control has an accessible name without tooltip attributes', () => {

@@ -1,8 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import vm from 'node:vm';
-import ts from 'typescript';
+import { loadSourceModule } from './helpers/load-source-module.mjs';
 
 class MockElement {
 	constructor(tagName, options, documentRef) {
@@ -81,41 +80,31 @@ function descendants(element) {
 }
 
 const source = readFileSync(new URL('../src/ui/Toolbar.ts', import.meta.url), 'utf8');
-const output = ts.transpileModule(source, {
-	compilerOptions: {
-		module: ts.ModuleKind.CommonJS,
-		target: ts.ScriptTarget.ES2020,
+const { Toolbar } = await loadSourceModule(new URL('../src/ui/Toolbar.ts', import.meta.url), {
+	label: 'toolbar',
+	mocks: {
+		'../i18n': { t: (key) => key },
+		'./InlineInput': {
+			createInlineInput: (parent, options) => parent.createEl('input', { cls: options.cls }),
+		},
+		'./ConfirmModal': { ConfirmModal: class {} },
+		'../utils/focusCycle': { revealTaskTypeItem: () => {} },
+		'../utils/dom': {
+			appendAccessibleLabel: (element, text) =>
+				element.createSpan({
+					cls: 'aulyckanban-accessible-label',
+					text,
+				}),
+		},
+		obsidian: { Menu: class {}, setIcon: () => {} },
 	},
-}).outputText;
+});
 
 function createToolbarHarness() {
 	const documentRef = { activeElement: null };
-	const module = { exports: {} };
-	const context = {
-		module,
-		exports: module.exports,
-		document: documentRef,
-		HTMLElement: MockElement,
-		requestAnimationFrame: (callback) => callback(),
-		require: (id) => {
-			if (id === '../i18n') return { t: (key) => key };
-			if (id === './InlineInput') return { createInlineInput: () => ({}) };
-			if (id === './ConfirmModal') return { ConfirmModal: class {} };
-			if (id === '../utils/focusCycle') return { revealTaskTypeItem: () => {} };
-			if (id === '../utils/dom') {
-				return {
-					appendAccessibleLabel: (element, text) =>
-						element.createSpan({
-							cls: 'aulyckanban-accessible-label',
-							text,
-						}),
-				};
-			}
-			if (id === 'obsidian') return { Menu: class {}, setIcon: () => {} };
-			throw new Error(`Unexpected import: ${id}`);
-		},
-	};
-	vm.runInNewContext(output, context);
+	globalThis.document = documentRef;
+	globalThis.HTMLElement = MockElement;
+	globalThis.requestAnimationFrame = (callback) => callback();
 
 	const store = {
 		currentView: 'work',
@@ -143,14 +132,14 @@ function createToolbarHarness() {
 		},
 	};
 	const parent = new MockElement('div', {}, documentRef);
-	const toolbar = new context.module.exports.Toolbar(parent, {}, store);
+	const toolbar = new Toolbar(parent, {}, store);
 	return { documentRef, parent, store, toolbar };
 }
 
 test('task type controls stay out of the native Tab order', () => {
 	const { parent } = createToolbarHarness();
 	const buttons = descendants(parent).filter((element) => element.tagName === 'button');
-	assert.equal(buttons.length, 5);
+	assert.equal(buttons.length, 3);
 	assert.equal(
 		buttons.every((button) => button.attributes.tabindex === '-1'),
 		true,
@@ -172,20 +161,25 @@ test('toolbar icon controls use hidden accessible text without tooltip attribute
 		descendants(parent).filter((element) =>
 			element.classList.contains('aulyckanban-accessible-label'),
 		).length,
-		3,
+		1,
 	);
 });
 
-test('all tasks is a fixed accessible control before the scrollable task type strip', () => {
-	const { parent, store } = createToolbarHarness();
-	const allButton = descendants(parent).find((element) =>
-		element.classList.contains('aulyckanban-all-tasks-btn'),
+test('task type toolbar contains only existing task types and the retained add control', () => {
+	const { parent } = createToolbarHarness();
+	assert.equal(
+		descendants(parent).some((element) => element.classList.contains('aulyckanban-all-tasks-btn')),
+		false,
 	);
-	assert.ok(allButton);
-	assert.equal(allButton.parentElement.classList.contains('aulyckanban-all-tasks-slot'), true);
-
-	allButton.listeners.get('click')[0]({ preventDefault() {}, stopPropagation() {} });
-	assert.equal(store.actions.at(-1).type, 'SHOW_ALL_TASKS');
+	assert.equal(
+		descendants(parent).some((element) => element.classList.contains('aulyckanban-archive-btn')),
+		false,
+	);
+	assert.equal(
+		descendants(parent).filter((element) => element.classList.contains('aulyckanban-view-tab'))
+			.length,
+		2,
+	);
 });
 
 test('task type add control stays fixed outside the scrollable task type strip', () => {
@@ -202,7 +196,19 @@ test('task type add control stays fixed outside the scrollable task type strip',
 	assert.notEqual(addButton.parentElement, viewStrip);
 });
 
-test('clicking the retained task type exits all-task scope even when its id did not change', () => {
+test('task type add control expands into the retained inline editor', () => {
+	const { parent } = createToolbarHarness();
+	const addButton = descendants(parent).find((element) =>
+		element.classList.contains('aulyckanban-view-add-btn'),
+	);
+	addButton.listeners.get('click')[0]({ preventDefault() {}, stopPropagation() {} });
+	assert.equal(
+		descendants(parent).some((element) => element.classList.contains('aulyckanban-view-add-input')),
+		true,
+	);
+});
+
+test('clicking the retained task type exits a hidden aggregate scope even when its id did not change', () => {
 	const { parent, store, toolbar } = createToolbarHarness();
 	store.taskScope = 'all';
 	toolbar.render();

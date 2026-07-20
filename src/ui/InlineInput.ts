@@ -109,7 +109,8 @@ export function createInlineInput(
 		options.onInput?.(el.value);
 		scheduleDebounce();
 	});
-	el.addEventListener('keydown', (event: KeyboardEvent) => {
+	el.addEventListener('keydown', (nativeEvent: Event) => {
+		const event = nativeEvent as KeyboardEvent;
 		if (options.multiline && event.key === 'Enter' && event.shiftKey) return;
 		if (shouldCommitInlineInput(event, composing)) {
 			event.preventDefault();
@@ -128,7 +129,7 @@ export function createInlineInput(
 		else if (options.blurBehavior === 'cancel') cancel();
 	});
 	if (options.stopClickPropagation) {
-		el.addEventListener('click', (event: MouseEvent) => event.stopPropagation());
+		el.addEventListener('click', (event: Event) => event.stopPropagation());
 	}
 
 	if (options.focusOnMount) {

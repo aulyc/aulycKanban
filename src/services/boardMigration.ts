@@ -1,7 +1,16 @@
-import type { ArchiveData, BoardData, Column, TaskView, ViewData } from '../types';
+import type { ArchiveData, BoardData, Column, Task, TaskView } from '../types';
 import { getDefaultBoardData } from '../constants';
 import { t } from '../i18n';
 import { synchronizeSharedColumnDefinitions } from './sharedColumns';
+
+const FALLBACK_CREATED_AT = '1970-01-01T00:00:00.000Z';
+const OPTIONAL_TASK_STRINGS = ['updatedAt', 'completedAt', 'archivedAt', 'sourceColumnId'] as const;
+
+type UnknownRecord = Record<string, unknown>;
+
+function isRecord(value: unknown): value is UnknownRecord {
+	return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
 
 export function isMigratableBoardData(data: Record<string, unknown>): boolean {
 	return (
@@ -11,60 +20,197 @@ export function isMigratableBoardData(data: Record<string, unknown>): boolean {
 	);
 }
 
-function isValidViewData(value: unknown): value is ViewData {
-	if (!value || typeof value !== 'object') return false;
-	const columns = (value as Record<string, unknown>)['columns'];
+function isValidViewData(value: unknown): value is UnknownRecord & { columns: unknown[] } {
+	if (!isRecord(value)) return false;
+	const columns = value['columns'];
 	return (
 		Array.isArray(columns) &&
 		columns.every((column) => {
-			if (!column || typeof column !== 'object') return false;
-			const candidate = column as Record<string, unknown>;
+			if (!isRecord(column)) return false;
 			return (
-				typeof candidate['id'] === 'string' &&
-				typeof candidate['title'] === 'string' &&
-				Array.isArray(candidate['tasks'])
+				typeof column['id'] === 'string' &&
+				typeof column['title'] === 'string' &&
+				Array.isArray(column['tasks'])
 			);
 		})
 	);
 }
 
-function sanitizeColumns(columns: Column[]): Column[] {
-	return columns
-		.filter((column) => column.id && column.title && Array.isArray(column.tasks))
-		.map((column, index) => ({ ...column, order: column.order ?? index }));
+function sanitizeTask(value: unknown): Task | null {
+	if (!isRecord(value)) return null;
+	const id = value['id'];
+	const rawContent = value['content'];
+	if (typeof id !== 'string' || !id.trim()) return null;
+	if (!['string', 'number', 'boolean'].includes(typeof rawContent)) return null;
+
+	const task: Task = {
+		id,
+		content: String(rawContent),
+		completed: typeof value['completed'] === 'boolean' ? value['completed'] : false,
+		createdAt:
+			typeof value['createdAt'] === 'string' && value['createdAt']
+				? value['createdAt']
+				: FALLBACK_CREATED_AT,
+	};
+	for (const field of OPTIONAL_TASK_STRINGS) {
+		const candidate = value[field];
+		if (typeof candidate === 'string') task[field] = candidate;
+	}
+	return task;
+}
+
+function sanitizeColumns(columns: unknown[]): Column[] {
+	return columns.flatMap((value, index): Column[] => {
+		if (!isRecord(value)) return [];
+		const id = value['id'];
+		const title = value['title'];
+		const tasks = value['tasks'];
+		if (
+			typeof id !== 'string' ||
+			!id.trim() ||
+			typeof title !== 'string' ||
+			!title.trim() ||
+			!Array.isArray(tasks)
+		)
+			return [];
+		return [
+			{
+				id,
+				title,
+				order: typeof value['order'] === 'number' ? value['order'] : index,
+				tasks: tasks.flatMap((task): Task[] => {
+					const sanitized = sanitizeTask(task);
+					return sanitized ? [sanitized] : [];
+				}),
+			},
+		];
+	});
 }
 
 function sanitizeArchive(value: unknown): ArchiveData {
-	if (!value || typeof value !== 'object') return { tasks: [] };
-	const tasks = (value as Record<string, unknown>)['tasks'];
-	return { tasks: Array.isArray(tasks) ? (tasks as ArchiveData['tasks']) : [] };
+	if (!isRecord(value)) return { tasks: [] };
+	const tasks = value['tasks'];
+	if (!Array.isArray(tasks)) return { tasks: [] };
+	return {
+		tasks: tasks.flatMap((task): Task[] => {
+			const sanitized = sanitizeTask(task);
+			return sanitized ? [sanitized] : [];
+		}),
+	};
+}
+
+function hasOnlyValidOptionalTaskFields(task: UnknownRecord): boolean {
+	if (task['completed'] !== undefined && typeof task['completed'] !== 'boolean') return false;
+	if (task['createdAt'] !== undefined && typeof task['createdAt'] !== 'string') return false;
+	return OPTIONAL_TASK_STRINGS.every(
+		(field) => task[field] === undefined || typeof task[field] === 'string',
+	);
+}
+
+function isValidImportedTask(value: unknown): boolean {
+	if (!isRecord(value)) return false;
+	return (
+		typeof value['id'] === 'string' &&
+		Boolean(value['id'].trim()) &&
+		typeof value['content'] === 'string' &&
+		hasOnlyValidOptionalTaskFields(value)
+	);
+}
+
+function isValidImportedColumn(value: unknown): boolean {
+	if (!isRecord(value)) return false;
+	const tasks = value['tasks'];
+	return (
+		typeof value['id'] === 'string' &&
+		Boolean(value['id'].trim()) &&
+		typeof value['title'] === 'string' &&
+		Boolean(value['title'].trim()) &&
+		Array.isArray(tasks) &&
+		tasks.every(isValidImportedTask)
+	);
+}
+
+function isValidImportedViewData(value: unknown): boolean {
+	if (!isRecord(value)) return false;
+	const columns = value['columns'];
+	return Array.isArray(columns) && columns.every(isValidImportedColumn);
+}
+
+function isValidImportedArchive(value: unknown): boolean {
+	if (!isRecord(value)) return false;
+	const tasks = value['tasks'];
+	return Array.isArray(tasks) && tasks.every(isValidImportedTask);
+}
+
+function hasValidImportedArchives(value: unknown): boolean {
+	if (value === undefined) return true;
+	return isRecord(value) && Object.values(value).every(isValidImportedArchive);
+}
+
+function isValidImportedBoardData(data: UnknownRecord): boolean {
+	if (Array.isArray(data['views'])) {
+		const views = data['views'];
+		return (
+			views.length > 0 &&
+			views.every(
+				(value) =>
+					isRecord(value) &&
+					typeof value['id'] === 'string' &&
+					Boolean(value['id'].trim()) &&
+					typeof value['title'] === 'string' &&
+					Boolean(value['title'].trim()) &&
+					isValidImportedViewData(value),
+			) &&
+			views.some(
+				(value) => isRecord(value) && (value['columns'] as unknown[] | undefined)?.length,
+			) &&
+			hasValidImportedArchives(data['archives'])
+		);
+	}
+
+	if (data['work'] && data['personal']) {
+		return (
+			isValidImportedViewData(data['work']) &&
+			isValidImportedViewData(data['personal']) &&
+			isValidImportedArchive(data['workArchive'] ?? { tasks: [] }) &&
+			isValidImportedArchive(data['personalArchive'] ?? { tasks: [] })
+		);
+	}
+
+	if (Array.isArray(data['columns'])) {
+		return data['columns'].length > 0 && data['columns'].every(isValidImportedColumn);
+	}
+
+	return false;
+}
+
+/** Validate an entire backup before migration so an invalid element cannot partially overwrite data. */
+export function migrateImportedBoardData(raw: unknown): BoardData | null {
+	if (!isRecord(raw) || !isMigratableBoardData(raw) || !isValidImportedBoardData(raw)) return null;
+	return migrateBoardData(raw);
 }
 
 export function migrateBoardData(raw: unknown): BoardData {
-	if (!raw || typeof raw !== 'object') return getDefaultBoardData();
-	const obj = raw as Record<string, unknown>;
+	if (!isRecord(raw)) return getDefaultBoardData();
+	const obj = raw;
 
 	if (Array.isArray(obj['views'])) {
-		const views = (obj['views'] as unknown[]).flatMap((value, index): TaskView[] => {
-			if (!value || typeof value !== 'object' || !isValidViewData(value)) return [];
-			const candidate = value as unknown as Record<string, unknown>;
-			if (typeof candidate['id'] !== 'string' || typeof candidate['title'] !== 'string') return [];
+		const views = obj['views'].flatMap((value, index): TaskView[] => {
+			if (!isRecord(value) || !isValidViewData(value)) return [];
+			if (typeof value['id'] !== 'string' || typeof value['title'] !== 'string') return [];
 			return [
 				{
-					id: candidate['id'],
-					title: candidate['title'].trim() || candidate['id'],
-					order: typeof candidate['order'] === 'number' ? candidate['order'] : index,
-					columns: sanitizeColumns(candidate['columns'] as Column[]),
+					id: value['id'],
+					title: value['title'].trim() || value['id'],
+					order: typeof value['order'] === 'number' ? value['order'] : index,
+					columns: sanitizeColumns(value['columns']),
 				},
 			];
 		});
 		if (views.length === 0 || views.every((view) => view.columns.length === 0))
 			return getDefaultBoardData();
-		const rawArchives =
-			obj['archives'] && typeof obj['archives'] === 'object'
-				? (obj['archives'] as Record<string, unknown>)
-				: {};
-		const archives: Record<string, ArchiveData> = {};
+		const rawArchives = isRecord(obj['archives']) ? obj['archives'] : {};
+		const archives = Object.create(null) as Record<string, ArchiveData>;
 		for (const view of views) archives[view.id] = sanitizeArchive(rawArchives[view.id]);
 		return synchronizeSharedColumnDefinitions({ views, archives });
 	}
@@ -77,13 +223,13 @@ export function migrateBoardData(raw: unknown): BoardData {
 				id: 'work',
 				title: t('view.work'),
 				order: 0,
-				columns: sanitizeColumns((obj['work'] as ViewData).columns),
+				columns: sanitizeColumns(obj['work'].columns),
 			},
 			{
 				id: 'personal',
 				title: t('view.personal'),
 				order: 1,
-				columns: sanitizeColumns((obj['personal'] as ViewData).columns),
+				columns: sanitizeColumns(obj['personal'].columns),
 			},
 		];
 		return synchronizeSharedColumnDefinitions({
@@ -96,7 +242,7 @@ export function migrateBoardData(raw: unknown): BoardData {
 	}
 
 	if (Array.isArray(obj['columns'])) {
-		const columns = sanitizeColumns(obj['columns'] as Column[]);
+		const columns = sanitizeColumns(obj['columns']);
 		if (columns.length === 0) return getDefaultBoardData();
 		const personalColumns = columns.map((column) => ({ ...column, tasks: [] }));
 		return {

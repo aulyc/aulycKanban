@@ -1,8 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import vm from 'node:vm';
-import ts from 'typescript';
+import { loadSourceModule } from './helpers/load-source-module.mjs';
 
 const renderedSettings = [];
 const renderedFolderSuggests = [];
@@ -162,13 +161,42 @@ class MockConfirmModal {
 	}
 }
 
-const source = readFileSync(new URL('../src/ui/KanbanSettingTab.ts', import.meta.url), 'utf8');
-const output = ts.transpileModule(source, {
-	compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
-}).outputText;
+const { KanbanSettingTab } = await loadSourceModule(
+	new URL('../src/ui/KanbanSettingTab.ts', import.meta.url),
+	{
+		label: 'kanban-setting-tab',
+		mocks: {
+			obsidian: {
+				AbstractInputSuggest: MockAbstractInputSuggest,
+				Notice: class {
+					constructor(message) {
+						renderedNotices.push(message);
+					}
+				},
+				normalizePath: (value) => value,
+				PluginSettingTab: MockPluginSettingTab,
+				Setting: MockSetting,
+			},
+			'../i18n': {
+				t: (key) => (key === 'settings.sync.force.success' ? 'sync success {count}' : key),
+			},
+			'../services/backupService': { BackupService: class {} },
+			'../utils/noteSync': {
+				normalizeSyncFolder: (value) => {
+					const folder = value
+						.trim()
+						.replace(/\/{2,}/g, '/')
+						.replace(/^\/+|\/+$/g, '');
+					return folder || 'X-aulyc看板';
+				},
+			},
+			'./ClearDataModal': { ClearDataModal: class {} },
+			'./ConfirmModal': { ConfirmModal: MockConfirmModal },
+		},
+	},
+);
 
 function createHarness() {
-	const module = { exports: {} };
 	const settings = {
 		syncFolder: 'X-aulyc看板',
 		viewSyncTargets: { work: { filePath: '旧/工作.md' } },
@@ -208,46 +236,7 @@ function createHarness() {
 			],
 		},
 	};
-	const context = {
-		module,
-		exports: module.exports,
-		require: (id) => {
-			if (id === 'obsidian') {
-				return {
-					AbstractInputSuggest: MockAbstractInputSuggest,
-					Notice: class {
-						constructor(message) {
-							renderedNotices.push(message);
-						}
-					},
-					normalizePath: (value) => value,
-					PluginSettingTab: MockPluginSettingTab,
-					Setting: MockSetting,
-				};
-			}
-			if (id === '../i18n') {
-				return {
-					t: (key) => (key === 'settings.sync.force.success' ? 'sync success {count}' : key),
-				};
-			}
-			if (id === '../services/backupService') return { BackupService: class {} };
-			if (id === '../utils/noteSync')
-				return {
-					normalizeSyncFolder: (value) => {
-						const folder = value
-							.trim()
-							.replace(/\/{2,}/g, '/')
-							.replace(/^\/+|\/+$/g, '');
-						return folder || 'X-aulyc看板';
-					},
-				};
-			if (id === './ClearDataModal') return { ClearDataModal: class {} };
-			if (id === './ConfirmModal') return { ConfirmModal: MockConfirmModal };
-			throw new Error(`Unexpected import: ${id}`);
-		},
-	};
-	vm.runInNewContext(output, context);
-	const tab = new context.module.exports.KanbanSettingTab(app, plugin);
+	const tab = new KanbanSettingTab(app, plugin);
 	return { tab, settings, syncCalls };
 }
 

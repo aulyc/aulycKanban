@@ -1,25 +1,11 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import vm from 'node:vm';
-import ts from 'typescript';
+import domModule from '../src/utils/dom.ts';
 
-const source = readFileSync(new URL('../src/utils/dom.ts', import.meta.url), 'utf8');
-const output = ts.transpileModule(source, {
-	compilerOptions: {
-		module: ts.ModuleKind.CommonJS,
-		target: ts.ScriptTarget.ES2020,
-	},
-}).outputText;
-const module = { exports: {} };
-vm.runInNewContext(output, {
-	module,
-	exports: module.exports,
-	requestAnimationFrame: (callback) => callback(),
-	getComputedStyle: (element) => element.computedStyle,
-});
+const { autoResizeTextarea, getTextareaBorderBoxHeight } = domModule;
 
-const { autoResizeTextarea, getTextareaBorderBoxHeight } = module.exports;
+globalThis.requestAnimationFrame = (callback) => callback();
+globalThis.getComputedStyle = (element) => element.computedStyle;
 
 test('textarea border-box height includes both borders', () => {
 	assert.equal(getTextareaBorderBoxHeight(37, '1px', '1px'), 39);

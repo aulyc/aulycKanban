@@ -1,8 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import vm from 'node:vm';
-import ts from 'typescript';
+import { loadSourceModule } from './helpers/load-source-module.mjs';
 
 class MockElement {
 	constructor(tagName, options = {}) {
@@ -97,12 +96,49 @@ function byClass(root, className) {
 
 const source = readFileSync(new URL('../src/ui/ArchiveView.ts', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
-const output = ts.transpileModule(source, {
-	compilerOptions: {
-		module: ts.ModuleKind.CommonJS,
-		target: ts.ScriptTarget.ES2020,
+const { ArchiveView } = await loadSourceModule(
+	new URL('../src/ui/ArchiveView.ts', import.meta.url),
+	{
+		label: 'archive-view',
+		mocks: {
+			obsidian: {
+				setIcon: (element, icon) => {
+					element.icon = icon;
+				},
+			},
+			'../i18n': {
+				t: (key) => (key === 'archive.delete.selectedCount' ? '已选 {count} 项' : key),
+			},
+			'./ConfirmModal': { ConfirmModal: class {} },
+			'../utils/datetime': { formatDateTimeMinute: () => '2026/07/12 21:10' },
+			'../utils/dom': {
+				appendAccessibleLabel: (element, text) =>
+					element.createSpan({
+						cls: 'aulyckanban-accessible-label',
+						text,
+					}),
+				setTextWithLineBreaks: (element, value) => {
+					element.textContent = value;
+				},
+			},
+			'../utils/task': {
+				getArchivedAtIso: (value) => value.archivedAt,
+				getArchivedAtTime: () => 1,
+			},
+			'../utils/taskQuery': {
+				getTaskRefKey: (ref) => `${ref.viewId}:${ref.columnId}:${ref.task.id}`,
+			},
+			'./InlineInput': {
+				createInlineInput: (parent, options) => {
+					const input = parent.createEl('input', { cls: options.cls });
+					input.value = options.initialValue ?? '';
+					return input;
+				},
+			},
+			'../constants': { ARCHIVE_UNCATEGORIZED_ID: '__other__' },
+		},
 	},
-}).outputText;
+);
 
 function createHarness() {
 	const task = {
@@ -143,65 +179,9 @@ function createHarness() {
 		activeElement: null,
 		createElement: (tagName) => new MockElement(tagName),
 	};
-	const module = { exports: {} };
-	const context = {
-		module,
-		exports: module.exports,
-		document: documentRef,
-		Element: MockElement,
-		require: (id) => {
-			if (id === 'obsidian') {
-				return {
-					setIcon: (element, icon) => {
-						element.icon = icon;
-					},
-				};
-			}
-			if (id === '../i18n') {
-				return {
-					t: (key) => (key === 'archive.delete.selectedCount' ? '已选 {count} 项' : key),
-				};
-			}
-			if (id === './ConfirmModal') return { ConfirmModal: class {} };
-			if (id === '../utils/datetime') return { formatDateTimeMinute: () => '2026/07/12 21:10' };
-			if (id === '../utils/dom') {
-				return {
-					appendAccessibleLabel: (element, text) =>
-						element.createSpan({
-							cls: 'aulyckanban-accessible-label',
-							text,
-						}),
-					setTextWithLineBreaks: (element, value) => {
-						element.textContent = value;
-					},
-				};
-			}
-			if (id === '../utils/task') {
-				return {
-					getArchivedAtIso: (value) => value.archivedAt,
-					getArchivedAtTime: () => 1,
-				};
-			}
-			if (id === '../utils/taskQuery') {
-				return {
-					getTaskRefKey: (ref) => `${ref.viewId}:${ref.columnId}:${ref.task.id}`,
-				};
-			}
-			if (id === './InlineInput') {
-				return {
-					createInlineInput: (parent, options) => {
-						const input = parent.createEl('input', { cls: options.cls });
-						input.value = options.initialValue ?? '';
-						return input;
-					},
-				};
-			}
-			if (id === '../constants') return { ARCHIVE_UNCATEGORIZED_ID: '__other__' };
-			throw new Error(`Unexpected import: ${id}`);
-		},
-	};
-	vm.runInNewContext(output, context);
-	const archiveView = new context.module.exports.ArchiveView(container, {}, store);
+	globalThis.document = documentRef;
+	globalThis.Element = MockElement;
+	const archiveView = new ArchiveView(container, {}, store);
 	archiveView.render();
 	return { archiveView, container };
 }

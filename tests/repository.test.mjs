@@ -1,25 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import vm from 'node:vm';
-import { build } from 'esbuild';
+import repositoryModule from '../src/services/repository.ts';
 
-async function loadRepository() {
-	const bundle = await build({
-		entryPoints: [new URL('../src/services/repository.ts', import.meta.url).pathname],
-		bundle: true,
-		format: 'cjs',
-		platform: 'node',
-		write: false,
-		logLevel: 'silent',
-	});
-	const module = { exports: {} };
-	vm.runInNewContext(bundle.outputFiles[0].text, {
-		module,
-		exports: module.exports,
-		console,
-	});
-	return module.exports.PluginDataRepository;
-}
+const { PluginDataRepository } = repositoryModule;
 
 function board() {
 	return {
@@ -36,7 +19,6 @@ function board() {
 }
 
 async function loadSettings(rawSettings) {
-	const PluginDataRepository = await loadRepository();
 	const repository = new PluginDataRepository(
 		async () => ({ settings: rawSettings, board: board() }),
 		async () => {},

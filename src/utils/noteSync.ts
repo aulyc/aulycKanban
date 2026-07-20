@@ -12,7 +12,9 @@ export function normalizeSyncFolder(rawFolder: string): string {
 		.replace(/\\/g, '/')
 		.replace(/\/{2,}/g, '/');
 	const withoutEdges = normalized.replace(/^\/+|\/+$/g, '');
-	return withoutEdges || DEFAULT_SYNC_FOLDER;
+	const segments = withoutEdges.split('/').filter((segment) => segment && segment !== '.');
+	if (segments.some((segment) => segment === '..')) return DEFAULT_SYNC_FOLDER;
+	return segments.join('/') || DEFAULT_SYNC_FOLDER;
 }
 
 /** 文件名保留可读标题，同时移除导航标题开头的图标。 */

@@ -36,7 +36,18 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	padding: 0;
 }
 
-/* ==================== 工具栏 ==================== */
+/* ==================== 顶部工具区 ==================== */
+.aulyckanban-utility-bar {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 8px;
+	padding: var(--aulyckanban-toolbar-padding-y) var(--aulyckanban-toolbar-padding-x);
+	border-bottom: 1px solid var(--background-modifier-border);
+	flex-shrink: 0;
+}
+
+/* ==================== 任务类型栏 ==================== */
 .aulyckanban-toolbar {
 	display: flex;
 	justify-content: space-between;
@@ -48,7 +59,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 
 .aulyckanban-toolbar-left {
 	display: grid;
-	grid-template-columns: auto minmax(0, 1fr) auto auto;
+	grid-template-columns: minmax(0, 1fr) auto;
 	align-items: center;
 	gap: 8px;
 	width: 100%;
@@ -75,33 +86,6 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	align-items: center;
 	flex: none;
 	min-width: 0;
-}
-
-.aulyckanban-archive-slot {
-	display: flex;
-	align-items: center;
-	flex: none;
-	padding-left: 0;
-	border-left: 0;
-}
-
-.aulyckanban-all-tasks-slot {
-	display: flex;
-	align-items: center;
-	flex: none;
-}
-
-.aulyckanban-kanban-container .aulyckanban-tab.aulyckanban-all-tasks-btn {
-	justify-content: center;
-	min-width: 30px;
-	width: 30px;
-	padding: 6px;
-}
-
-.aulyckanban-all-tasks-btn svg {
-	flex: none;
-	width: 16px;
-	height: 16px;
 }
 
 .aulyckanban-tab {
@@ -175,8 +159,9 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 
 .aulyckanban-kanban-container .aulyckanban-tab.aulyckanban-archive-btn {
 	justify-content: center;
-	min-width: 30px;
-	width: 30px;
+	min-width: 38px;
+	width: 38px;
+	height: 38px;
 	padding: 6px;
 	background: color-mix(in srgb, var(--color-orange) 16%, var(--interactive-normal));
 	border-color: color-mix(in srgb, var(--color-orange) 38%, var(--background-modifier-border));
@@ -198,18 +183,6 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 .aulyckanban-kanban-container
 	.aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active:hover {
 	background: color-mix(in srgb, var(--color-orange) 54%, var(--background-primary));
-}
-
-/* 新增任务类型接管焦点时，归档退回非激活语义色，而不是普通按钮灰色。 */
-.aulyckanban-toolbar:has(.aulyckanban-view-add-btn:focus)
-	.aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active,
-.aulyckanban-toolbar:has(.aulyckanban-view-add-btn:focus-visible)
-	.aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active,
-.aulyckanban-toolbar:has(.aulyckanban-view-inline-input:focus)
-	.aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active {
-	background: color-mix(in srgb, var(--color-orange) 16%, var(--interactive-normal));
-	border-color: color-mix(in srgb, var(--color-orange) 38%, var(--background-modifier-border));
-	color: var(--color-orange);
 }
 
 .aulyckanban-archive-btn svg {
@@ -263,7 +236,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	overflow: hidden;
 }
 
-/* 左侧任务区：共享搜索/新增控件，列表与归档视图互斥。 */
+/* 左侧任务区：共享新增控件，列表与归档视图互斥。 */
 .aulyckanban-task-pane {
 	display: flex;
 	flex-direction: column;
@@ -275,6 +248,10 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 }
 
 .aulyckanban-task-pane.aulyckanban-mode-archive .aulyckanban-task-list {
+	display: none;
+}
+
+.aulyckanban-task-pane.aulyckanban-mode-archive .aulyckanban-task-controls {
 	display: none;
 }
 
@@ -520,11 +497,6 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	min-height: 0;
 	overflow-y: auto;
 	padding-bottom: 1px;
-}
-
-.aulyckanban-nav-all-btn {
-	flex: none;
-	margin-bottom: 4px;
 }
 
 .aulyckanban-nav-item {
@@ -837,9 +809,13 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 
 /* ==================== 任务时间 ==================== */
 .aulyckanban-task-time {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
 	font-size: 11px;
 	color: var(--text-faint);
 	line-height: 1.3;
+	white-space: nowrap;
 }
 
 .aulyckanban-task-source {

@@ -3,6 +3,8 @@ main.js
 dist/main.js
 release-artifacts/
 coverage/
+audit-output/
+test-bundles/
 .cache/
 .claude/
 .codex/
