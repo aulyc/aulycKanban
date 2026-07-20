@@ -418,14 +418,15 @@ test('Tab and window fallback move focus between real view zones without escapin
 	const harness = createHarness();
 	await harness.view.onOpen();
 	const utility = child(harness.contentEl, 'aulyckanban-utility-bar');
-	const search = child(utility, 'aulyckanban-task-search-input');
+	child(utility, 'aulyckanban-task-search-input');
+	const archive = child(utility, 'aulyckanban-archive-btn');
 	const toolbar = child(harness.contentEl, 'aulyckanban-toolbar');
 	const viewTab = child(toolbar, 'aulyckanban-view-tab aulyckanban-tab-active', { viewId: 'work' });
 	const taskPane = child(harness.contentEl, 'aulyckanban-task-pane');
 	const task = child(taskPane, 'aulyckanban-task');
 	const columns = child(harness.contentEl, 'aulyckanban-category-nav');
 	const column = child(columns, 'aulyckanban-nav-item-active');
-	utilityFocusTarget = search;
+	utilityFocusTarget = archive;
 	taskFocusTarget = task;
 
 	viewTab.focus();
@@ -449,7 +450,7 @@ test('Tab and window fallback move focus between real view zones without escapin
 	const fallbackTab = keyEvent('Tab', { target: harness.documentRef.body, path: [] });
 	dispatchKey(harness.windowRef, fallbackTab);
 	assert.equal(fallbackTab.defaultPrevented, true);
-	assert.equal(harness.documentRef.activeElement, search);
+	assert.equal(harness.documentRef.activeElement, archive);
 
 	harness.setActiveView(null);
 	harness.documentRef.activeElement = harness.documentRef.body;
@@ -574,7 +575,7 @@ test('reverse arrows and shared task controls navigate in the expected direction
 	const viewArrow = keyEvent('ArrowLeft', { target: viewTab });
 	dispatchKey(harness.contentEl, viewArrow);
 	assert.equal(viewArrow.defaultPrevented, true);
-	assert.equal(viewNavigationCalls.at(-1)[2], -1);
+	assert.equal(viewNavigationCalls.at(-1)[3], -1);
 	assert.deepEqual(harness.store.state.actions.at(-1), {
 		type: 'SWITCH_VIEW',
 		payload: { view: 'personal' },
@@ -619,14 +620,15 @@ test('Tab handles document-level, missing-focus, selector-fallback, and editing-
 	const harness = createHarness();
 	await harness.view.onOpen();
 	const utility = child(harness.contentEl, 'aulyckanban-utility-bar');
-	const search = child(utility, 'aulyckanban-task-search-input');
+	child(utility, 'aulyckanban-task-search-input');
 	const toolbar = child(harness.contentEl, 'aulyckanban-toolbar');
 	child(toolbar, 'aulyckanban-view-tab', { viewId: 'work' });
 	const taskPane = child(harness.contentEl, 'aulyckanban-task-pane');
 	const task = child(taskPane, 'aulyckanban-task');
 	const columnNav = child(harness.contentEl, 'aulyckanban-category-nav');
 	const plainColumn = child(columnNav, 'aulyckanban-nav-item', { columnId: 'base' });
-	utilityFocusTarget = search;
+	const archive = child(utility, 'aulyckanban-archive-btn');
+	utilityFocusTarget = archive;
 	taskFocusTarget = task;
 
 	harness.documentRef.activeElement = harness.documentRef.documentElement;
@@ -636,14 +638,14 @@ test('Tab handles document-level, missing-focus, selector-fallback, and editing-
 	});
 	dispatchKey(harness.windowRef, documentTab);
 	assert.equal(documentTab.defaultPrevented, true);
-	assert.equal(harness.documentRef.activeElement, search);
+	assert.equal(harness.documentRef.activeElement, archive);
 
 	const unzoned = child(harness.contentEl, 'aulyckanban-unzoned-control');
 	unzoned.focus();
 	const unzonedTab = keyEvent('Tab', { target: unzoned, path: [unzoned, harness.contentEl] });
 	dispatchKey(harness.contentEl, unzonedTab);
 	assert.equal(unzonedTab.defaultPrevented, true);
-	assert.equal(harness.documentRef.activeElement, search);
+	assert.equal(harness.documentRef.activeElement, archive);
 
 	harness.documentRef.activeElement = {};
 	const missingFocusTab = keyEvent('Tab', {
@@ -652,7 +654,7 @@ test('Tab handles document-level, missing-focus, selector-fallback, and editing-
 	});
 	dispatchKey(harness.windowRef, missingFocusTab);
 	assert.equal(missingFocusTab.defaultPrevented, true);
-	assert.equal(harness.documentRef.activeElement, search);
+	assert.equal(harness.documentRef.activeElement, archive);
 
 	const editingInput = taskPane.append(
 		new MockTextAreaElement(harness.documentRef, {
@@ -677,6 +679,7 @@ test('view navigation recognizes the retained add control and avoids redundant s
 	const harness = createHarness();
 	await harness.view.onOpen();
 	const toolbar = child(harness.contentEl, 'aulyckanban-toolbar');
+	const allTasks = child(toolbar, 'aulyckanban-all-tasks-btn');
 	const viewTab = child(toolbar, 'aulyckanban-view-tab aulyckanban-tab-active', {
 		viewId: 'work',
 	});
@@ -685,7 +688,7 @@ test('view navigation recognizes the retained add control and avoids redundant s
 	addView.focus();
 	nextViewNavigationTarget = { kind: 'view', id: 'work' };
 	dispatchKey(harness.contentEl, keyEvent('ArrowRight', { target: addView }));
-	assert.deepEqual(viewNavigationCalls.at(-1)[3], { kind: 'add' });
+	assert.deepEqual(viewNavigationCalls.at(-1)[4], { kind: 'add' });
 	harness.flushAnimationFrames();
 	assert.equal(harness.documentRef.activeElement, viewTab);
 
@@ -698,10 +701,18 @@ test('view navigation recognizes the retained add control and avoids redundant s
 
 	nextViewNavigationTarget = { kind: 'view', id: 'work' };
 	dispatchKey(harness.contentEl, keyEvent('ArrowRight', { target: viewTab }));
-	assert.deepEqual(viewNavigationCalls.at(-1)[3], { kind: 'view', id: 'work' });
+	assert.deepEqual(viewNavigationCalls.at(-1)[4], { kind: 'view', id: 'work' });
 	assert.equal(harness.store.state.actions.length, actionCount);
 
+	viewTab.focus();
+	nextViewNavigationTarget = { kind: 'all' };
+	dispatchKey(harness.contentEl, keyEvent('ArrowLeft', { target: viewTab }));
+	assert.equal(harness.store.state.actions.at(-1).type, 'SHOW_ALL_TASKS');
+	harness.flushAnimationFrames();
+	assert.equal(harness.documentRef.activeElement, allTasks);
+
 	harness.store.state.taskScope = 'archive';
+	nextViewNavigationTarget = { kind: 'view', id: 'work' };
 	dispatchKey(harness.contentEl, keyEvent('ArrowRight', { target: viewTab }));
 	assert.equal(harness.store.state.actions.at(-1).type, 'SWITCH_VIEW');
 	assert.equal(harness.store.state.taskScope, 'current');

@@ -128,7 +128,7 @@ test('utility row keeps search flexible and archive fixed above the task types',
 	assert.match(utility, /border-bottom:\s*1px solid var\(--background-modifier-border\)/);
 
 	const taskTypes = rule('.aulyckanban-toolbar-left');
-	assert.match(taskTypes, /grid-template-columns:\s*minmax\(0, 1fr\) auto/);
+	assert.match(taskTypes, /grid-template-columns:\s*auto minmax\(0, 1fr\) auto/);
 });
 
 test('task list is transparent while each task card owns a themed surface', () => {

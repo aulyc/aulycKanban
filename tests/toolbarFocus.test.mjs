@@ -139,7 +139,7 @@ function createToolbarHarness() {
 test('task type controls stay out of the native Tab order', () => {
 	const { parent } = createToolbarHarness();
 	const buttons = descendants(parent).filter((element) => element.tagName === 'button');
-	assert.equal(buttons.length, 3);
+	assert.equal(buttons.length, 4);
 	assert.equal(
 		buttons.every((button) => button.attributes.tabindex === '-1'),
 		true,
@@ -161,16 +161,17 @@ test('toolbar icon controls use hidden accessible text without tooltip attribute
 		descendants(parent).filter((element) =>
 			element.classList.contains('aulyckanban-accessible-label'),
 		).length,
-		1,
+		2,
 	);
 });
 
-test('task type toolbar contains only existing task types and the retained add control', () => {
-	const { parent } = createToolbarHarness();
-	assert.equal(
-		descendants(parent).some((element) => element.classList.contains('aulyckanban-all-tasks-btn')),
-		false,
+test('task type toolbar restores all tasks while keeping archive in the utility row', () => {
+	const { parent, store } = createToolbarHarness();
+	const allButton = descendants(parent).find((element) =>
+		element.classList.contains('aulyckanban-all-tasks-btn'),
 	);
+	assert.ok(allButton);
+	assert.equal(allButton.parentElement.classList.contains('aulyckanban-all-tasks-slot'), true);
 	assert.equal(
 		descendants(parent).some((element) => element.classList.contains('aulyckanban-archive-btn')),
 		false,
@@ -180,6 +181,8 @@ test('task type toolbar contains only existing task types and the retained add c
 			.length,
 		2,
 	);
+	allButton.listeners.get('click')[0]({ preventDefault() {}, stopPropagation() {} });
+	assert.equal(store.actions.at(-1).type, 'SHOW_ALL_TASKS');
 });
 
 test('task type add control stays fixed outside the scrollable task type strip', () => {

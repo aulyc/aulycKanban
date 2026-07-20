@@ -1,5 +1,10 @@
+import type { TaskScope } from './taskQuery';
+
 export type KanbanFocusZone = 'utility' | 'view' | 'tasks' | 'columns';
-export type TaskTypeNavigationTarget = { kind: 'view'; id: string } | { kind: 'add' };
+export type TaskTypeNavigationTarget =
+	| { kind: 'all' }
+	| { kind: 'view'; id: string }
+	| { kind: 'add' };
 export type ColumnNavigationTarget = { kind: 'column'; id: string } | { kind: 'add' };
 
 const FOCUS_ORDER: readonly KanbanFocusZone[] = ['utility', 'view', 'tasks', 'columns'];
@@ -34,7 +39,10 @@ export function getNextFocusZone(
 
 /** 获取工具区进入焦点循环时的默认目标。 */
 export function getUtilityZoneFocusTarget(root: ParentNode): HTMLElement | null {
-	return root.querySelector<HTMLElement>(UTILITY_ZONE_CONTROL_SELECTOR);
+	return (
+		root.querySelector<HTMLElement>('.aulyckanban-archive-btn') ??
+		root.querySelector<HTMLElement>(UTILITY_ZONE_CONTROL_SELECTOR)
+	);
 }
 
 /** 获取工具区中可用方向键切换的搜索与归档控件。 */
@@ -116,14 +124,16 @@ export function revealTaskTypeItem(item: HTMLElement): void {
 	);
 }
 
-/** 普通任务类型按显示顺序排列，新增按钮固定为最后一个可选择项。 */
+/** 全部任务固定为首项，普通任务类型按显示顺序排列，新增按钮固定为末项。 */
 export function getTaskTypeNavigationTarget(
 	viewIds: readonly string[],
 	currentViewId: string,
+	taskScope: TaskScope,
 	offset: number,
 	focusedTarget: TaskTypeNavigationTarget | null = null,
 ): TaskTypeNavigationTarget | null {
 	const navigationItems: TaskTypeNavigationTarget[] = [
+		{ kind: 'all' },
 		...viewIds.map((id) => ({ kind: 'view' as const, id })),
 		{ kind: 'add' },
 	];
@@ -133,7 +143,9 @@ export function getTaskTypeNavigationTarget(
 					item.kind === focusedTarget.kind &&
 					(item.kind !== 'view' || focusedTarget.kind !== 'view' || item.id === focusedTarget.id),
 			)
-		: navigationItems.findIndex((item) => item.kind === 'view' && item.id === currentViewId);
+		: taskScope === 'all'
+			? 0
+			: navigationItems.findIndex((item) => item.kind === 'view' && item.id === currentViewId);
 	const targetIndex = getWrappedItemIndex(currentIndex, navigationItems.length, offset);
 	return targetIndex >= 0 ? (navigationItems[targetIndex] ?? null) : null;
 }

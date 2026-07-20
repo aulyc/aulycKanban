@@ -59,12 +59,31 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 
 .aulyckanban-toolbar-left {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) auto;
+	grid-template-columns: auto minmax(0, 1fr) auto;
 	align-items: center;
 	gap: 8px;
 	width: 100%;
 	min-width: 0;
 	overflow: hidden;
+}
+
+.aulyckanban-all-tasks-slot {
+	display: flex;
+	align-items: center;
+	flex: none;
+}
+
+.aulyckanban-kanban-container .aulyckanban-tab.aulyckanban-all-tasks-btn {
+	justify-content: center;
+	min-width: 30px;
+	width: 30px;
+	padding: 6px;
+}
+
+.aulyckanban-all-tasks-btn svg {
+	flex: none;
+	width: 16px;
+	height: 16px;
 }
 
 .aulyckanban-view-strip {

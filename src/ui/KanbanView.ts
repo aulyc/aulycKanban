@@ -256,9 +256,6 @@ export class KanbanView extends ItemView {
 	private getFocusTarget(zone: KanbanFocusZone): HTMLElement | null {
 		switch (zone) {
 			case 'utility':
-				if (this.plugin.store.isShowingArchive()) {
-					return this.contentEl.querySelector<HTMLElement>('.aulyckanban-archive-btn');
-				}
 				return getUtilityZoneFocusTarget(this.contentEl);
 			case 'view':
 				return this.getCurrentTaskTypeButton();
@@ -279,11 +276,15 @@ export class KanbanView extends ItemView {
 		const target = getTaskTypeNavigationTarget(
 			views.map((view) => view.id),
 			store.getCurrentView(),
+			store.getTaskScope(),
 			offset,
 			focusedTarget,
 		);
 		if (!target) return;
-		if (target.kind === 'add') {
+		if (target.kind === 'all') {
+			if (!store.isShowingAllTasks()) store.dispatch({ type: 'SHOW_ALL_TASKS' });
+			this.focusZoneAfterRender('view');
+		} else if (target.kind === 'add') {
 			const addButton = this.contentEl.querySelector<HTMLElement>('.aulyckanban-view-add-btn');
 			addButton?.focus({ preventScroll: true });
 			if (addButton) revealTaskTypeItem(addButton);
@@ -302,6 +303,7 @@ export class KanbanView extends ItemView {
 	private getFocusedTaskTypeTarget(): TaskTypeNavigationTarget | null {
 		const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 		if (!active || !this.contentEl.contains(active)) return null;
+		if (active.closest('.aulyckanban-all-tasks-btn')) return { kind: 'all' };
 		if (active.closest('.aulyckanban-view-add-btn')) return { kind: 'add' };
 		const viewTab = active.closest<HTMLElement>('.aulyckanban-view-tab');
 		const viewId = viewTab?.dataset['viewId'];
@@ -353,6 +355,9 @@ export class KanbanView extends ItemView {
 	}
 
 	private getCurrentTaskTypeButton(): HTMLElement | null {
+		if (this.plugin.store.isShowingAllTasks()) {
+			return this.contentEl.querySelector<HTMLElement>('.aulyckanban-all-tasks-btn');
+		}
 		const currentViewId = this.plugin.store.getCurrentView();
 		return (
 			Array.from(this.contentEl.querySelectorAll<HTMLElement>('.aulyckanban-view-tab')).find(

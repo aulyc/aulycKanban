@@ -53,7 +53,7 @@ test('utility focus and arrow navigation contain search plus archive only', () =
 	const root = {
 		querySelector(selector) {
 			selectors.push(selector);
-			return search;
+			return selector === '.aulyckanban-archive-btn' ? archive : search;
 		},
 		querySelectorAll(selector) {
 			selectors.push(selector);
@@ -61,7 +61,7 @@ test('utility focus and arrow navigation contain search plus archive only', () =
 		},
 	};
 
-	assert.equal(getUtilityZoneFocusTarget(root), search);
+	assert.equal(getUtilityZoneFocusTarget(root), archive);
 	assert.deepEqual(getUtilityZoneNavigationItems(root), [search, archive]);
 	assert.equal(
 		selectors.every((selector) => selector.includes('.aulyckanban-archive-btn')),
@@ -167,22 +167,25 @@ test('horizontal task type navigation reveals clipped items without a visible sc
 	assert.equal(getHorizontalRevealScrollLeft(10, 20, 220, -50, 20), 0);
 });
 
-test('task type navigation contains existing task types and the retained add control', () => {
-	const afterFirstView = getTaskTypeNavigationTarget(['work', 'personal'], 'work', 1);
+test('task type navigation contains all tasks, existing task types, and the retained add control', () => {
+	const afterAll = getTaskTypeNavigationTarget(['work', 'personal'], 'work', 'all', 1);
+	assert.equal(afterAll?.kind, 'view');
+	assert.equal(afterAll?.id, 'work');
+
+	const afterFirstView = getTaskTypeNavigationTarget(['work', 'personal'], 'work', 'current', 1);
 	assert.equal(afterFirstView?.kind, 'view');
 	assert.equal(afterFirstView?.id, 'personal');
 
-	const afterLastView = getTaskTypeNavigationTarget(['work', 'personal'], 'personal', 1);
+	const afterLastView = getTaskTypeNavigationTarget(['work', 'personal'], 'personal', 'current', 1);
 	assert.equal(afterLastView?.kind, 'add');
 
-	const afterAdd = getTaskTypeNavigationTarget(['work', 'personal'], 'personal', 1, {
+	const afterAdd = getTaskTypeNavigationTarget(['work', 'personal'], 'personal', 'current', 1, {
 		kind: 'add',
 	});
-	assert.equal(afterAdd?.kind, 'view');
-	assert.equal(afterAdd?.id, 'work');
+	assert.equal(afterAdd?.kind, 'all');
 
-	const beforeFirstView = getTaskTypeNavigationTarget(['work', 'personal'], 'work', -1);
-	assert.equal(beforeFirstView?.kind, 'add');
+	const beforeFirstView = getTaskTypeNavigationTarget(['work', 'personal'], 'work', 'current', -1);
+	assert.equal(beforeFirstView?.kind, 'all');
 });
 
 test('quadrant navigation contains existing quadrants and the retained add control', () => {
