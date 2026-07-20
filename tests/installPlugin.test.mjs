@@ -91,8 +91,13 @@ test('Vault target is discovered through a mocked Obsidian CLI when no path is c
 			calls.push([command, ...args]);
 			return { status: 0, stdout: `${vaultPath}\n`, stderr: '' };
 		};
-		assert.equal(discoverVaultPath({ env: {}, runner }), vaultPath);
-		assert.deepEqual(calls, [['obsidian', 'eval', 'code=app.vault.adapter.basePath']]);
+		assert.equal(
+			discoverVaultPath({ env: { OBSIDIAN_VAULT_NAME: 'Test Vault' }, runner }),
+			vaultPath,
+		);
+		assert.deepEqual(calls, [
+			['obsidian', 'eval', 'code=app.vault.adapter.basePath', 'vault=Test Vault'],
+		]);
 	} finally {
 		await rm(vaultPath, { recursive: true, force: true });
 	}

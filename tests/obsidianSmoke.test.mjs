@@ -52,7 +52,7 @@ test('runs the Obsidian smoke flow against an explicitly selected vault', () => 
 	assert.equal(calls.length, 7);
 	for (const call of calls) {
 		assert.equal(call[0], 'obsidian');
-		assert.equal(call[1], 'vault=Test Vault');
+		assert.equal(call.at(-1), 'vault=Test Vault');
 	}
 });
 
@@ -107,7 +107,7 @@ test('post-install smoke derives expected identity from the actual installed man
 		});
 		assert.equal(result.version, '2.1.10');
 		assert.equal(calls.length, 7);
-		assert.ok(calls.every((call) => call.includes('vault=Fixture Vault')));
+		assert.ok(calls.every((call) => call.at(-1) === 'vault=Fixture Vault'));
 	} finally {
 		rmSync(vaultPath, { recursive: true, force: true });
 	}

@@ -41,7 +41,7 @@ export function runObsidianSmoke({
 	const vaultArgs = vaultName ? [`vault=${vaultName}`] : [];
 
 	const run = (label, args) => {
-		const fullArgs = [...vaultArgs, ...args];
+		const fullArgs = [...args, ...vaultArgs];
 		const result = runner(cli, fullArgs, { encoding: 'utf8' });
 
 		if (result.error?.code === 'ENOENT') {

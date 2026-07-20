@@ -196,7 +196,7 @@ test('test release orchestrates tagged build, verified install, and mocked post-
 		assert.equal(result.installed.manifest.version, fixture.version);
 		assert.equal(await readFile(path.join(pluginDir, 'data.json'), 'utf8'), 'preserve-me');
 		assert.equal(calls.length, 7);
-		assert.ok(calls.every((call) => call.includes('vault=Fixture Vault')));
+		assert.ok(calls.every((call) => call.at(-1) === 'vault=Fixture Vault'));
 	} finally {
 		await cleanupFixture(fixture.rootDir);
 		await rm(outputDir, { recursive: true, force: true });

@@ -30,9 +30,9 @@ export function discoverVaultPath({
 	const explicit = vaultPath?.trim() || env.OBSIDIAN_VAULT_PATH?.trim();
 	if (explicit) return path.resolve(explicit);
 	const args = [
-		...(vaultName ? [`vault=${vaultName}`] : []),
 		'eval',
 		'code=app.vault.adapter.basePath',
+		...(vaultName ? [`vault=${vaultName}`] : []),
 	];
 	const result = runner(cli, args, { encoding: 'utf8' });
 	if (result.error?.code === 'ENOENT') throw new Error(`Obsidian CLI not found: ${cli}`);

@@ -142,6 +142,7 @@ npm run install:formal -- \
 ```
 
 目标 Vault 的优先级为显式 `--vault`、`OBSIDIAN_VAULT_PATH`、Obsidian CLI 当前/指定 Vault 发现；不硬编码默认 Vault。
+通过 `OBSIDIAN_VAULT_NAME` 指定 Vault 时，CLI 调用必须使用 `obsidian <command> [arguments] vault=<name>` 的参数顺序。
 
 安装前验证 ZIP、provenance、tag、Commit、版本、构建号、渠道、插件 ID、文件集合和所有 SHA-256。安装时只覆盖三个发布文件，保留 `data.json` 及其他用户运行数据；安装后逐文件复算 SHA-256，并核对目标 `manifest.json` 的 ID 和版本。
 

@@ -160,11 +160,11 @@
   "trackedFiles": [
     {
       "path": "AGENTS.md",
-      "sha256": "b815d9bddeeee21468bf9dddbdd32da27c3913cadeee3ae5d0d4674edce4da1c"
+      "sha256": "48b38b2708f17e14eb25a370e921c8fd7beda60cec6b39ae1be4b7954fa094b1"
     },
     {
       "path": "VERSIONING.md",
-      "sha256": "85644699f81348484c4344f722f59750da764ce39bcb150b684d2e6e228e9496"
+      "sha256": "38c2ccaca01486ca8f104f16a18acbc71367f4346c0f8d8eafb91a12907c8913"
     },
     {
       "path": "version-bump.mjs",
@@ -188,11 +188,11 @@
     },
     {
       "path": "scripts/install-plugin.mjs",
-      "sha256": "e02ace8ead62cb1597a2c79034da468ec2db2e15692b4ea3201728c93ca53d41"
+      "sha256": "1cd27bb6a036242e4d21dbf6a48c1cb77525dd563758e97af4dac2a540ba82e9"
     },
     {
       "path": "scripts/obsidian-smoke.mjs",
-      "sha256": "c6b7af173c4e6545d2aa5c1ee3e2804614c769b3ba840cc7215db01742bf1b7d"
+      "sha256": "0819f780fe3ba68a2375a21260a4a79beff63c2c4aa680c89693e1edfd0f6b35"
     },
     {
       "path": "scripts/release-check.mjs",
