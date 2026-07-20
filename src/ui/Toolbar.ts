@@ -35,7 +35,6 @@ export class Toolbar {
 
 		this.el.empty();
 		const currentView = this.store.getCurrentView();
-		const isArchive = this.store.isShowingArchive();
 		const isAllTasks = this.store.isShowingAllTasks();
 		const leftEl = this.el.createDiv({ cls: 'aulyckanban-toolbar-left' });
 		const allSlotEl = leftEl.createDiv({ cls: 'aulyckanban-all-tasks-slot' });
@@ -54,7 +53,9 @@ export class Toolbar {
 		allBtn.addEventListener('click', (event: MouseEvent) => {
 			event.preventDefault();
 			event.stopPropagation();
-			if (!this.store.isShowingAllTasks()) this.store.dispatch({ type: 'SHOW_ALL_TASKS' });
+			if (!this.store.isShowingAllTasks() || this.store.isShowingArchive()) {
+				this.store.dispatch({ type: 'SHOW_ALL_TASKS' });
+			}
 		});
 		const viewStripEl = leftEl.createDiv({ cls: 'aulyckanban-view-strip' });
 		let selectedViewButton: HTMLButtonElement | null = null;
@@ -64,7 +65,7 @@ export class Toolbar {
 				this.renderRenameInput(viewStripEl, view.id, view.title);
 				continue;
 			}
-			const isActive = currentView === view.id && !isArchive && !isAllTasks;
+			const isActive = currentView === view.id && !isAllTasks;
 			const button = this.createTab(viewStripEl, view.id, view.title, isActive);
 			if (isActive) selectedViewButton = button;
 		}

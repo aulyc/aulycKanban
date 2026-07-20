@@ -10,7 +10,7 @@ import { getTaskRefKey, type TaskRef } from '../utils/taskQuery';
 
 /**
  * 归档视图组件
- * 合并展示全部任务类型的归档，并保留来源任务类型与象限
+ * 按当前任务类型范围和象限展示归档，并保留来源任务类型与象限
  */
 export class ArchiveView {
 	private readonly containerEl: HTMLElement;

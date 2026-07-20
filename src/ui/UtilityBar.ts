@@ -47,12 +47,16 @@ export class UtilityBar {
 		});
 		setIcon(archiveBtn, 'archive');
 		appendAccessibleLabel(archiveBtn, t('archive.open'));
-		archiveBtn.addEventListener('click', (event: MouseEvent) => {
-			event.preventDefault();
-			event.stopPropagation();
+		const activateArchive = (): void => {
 			if (!this.store.isShowingArchive()) {
 				this.store.dispatch({ type: 'TOGGLE_ARCHIVE_VIEW' });
 			}
+		};
+		archiveBtn.addEventListener('focus', activateArchive);
+		archiveBtn.addEventListener('click', (event: MouseEvent) => {
+			event.preventDefault();
+			event.stopPropagation();
+			activateArchive();
 		});
 
 		if (restoreSearchFocus) searchTarget.focus({ preventScroll: true });

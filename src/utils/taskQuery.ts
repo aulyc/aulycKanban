@@ -1,6 +1,7 @@
 import type { BoardData, Task, ViewKind } from '../types';
 
 export type TaskScope = 'current' | 'all' | 'archive';
+export type TaskTypeScope = Exclude<TaskScope, 'archive'>;
 export type ColumnScope = 'current' | 'all';
 
 export interface TaskRef {
@@ -13,6 +14,7 @@ export interface TaskRef {
 
 export interface TaskQuery {
 	taskScope: TaskScope;
+	taskTypeScope: TaskTypeScope;
 	currentViewId: ViewKind;
 	columnScope: ColumnScope;
 	activeColumnId: string;
@@ -31,13 +33,7 @@ export function queryTaskRefs(board: Readonly<BoardData>, query: TaskQuery): Tas
 	const keyword = normalizeTaskSearchText(query.keyword);
 	const views = [...board.views]
 		.sort((a, b) => a.order - b.order)
-		.filter((view) => {
-			return (
-				query.taskScope === 'all' ||
-				query.taskScope === 'archive' ||
-				view.id === query.currentViewId
-			);
-		});
+		.filter((view) => query.taskTypeScope === 'all' || view.id === query.currentViewId);
 	const refs: TaskRef[] = [];
 	for (const view of views) {
 		const columns = [...view.columns].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));

@@ -12,7 +12,13 @@ import type {
 import { getDefaultBoardData, ID_PREFIX, PERFORMANCE } from './constants';
 import type KanbanPlugin from './main';
 import { synchronizeSharedColumnDefinitions } from './services/sharedColumns';
-import { queryTaskRefs, type ColumnScope, type TaskRef, type TaskScope } from './utils/taskQuery';
+import {
+	queryTaskRefs,
+	type ColumnScope,
+	type TaskRef,
+	type TaskScope,
+	type TaskTypeScope,
+} from './utils/taskQuery';
 
 type Listener = () => void;
 
@@ -31,6 +37,7 @@ export class KanbanStore {
 	private _lastActionType: ActionType | null = null;
 	private _lastMutatedViewId: ViewKind | null = null;
 	private taskScope: TaskScope;
+	private archiveTaskTypeScope: TaskTypeScope = 'current';
 	private columnScope: ColumnScope = 'current';
 	private searchKeyword = '';
 
@@ -70,13 +77,16 @@ export class KanbanStore {
 		return this.taskScope === 'archive';
 	}
 	isShowingAllTasks(): boolean {
-		return this.taskScope === 'all';
+		return this.getTaskTypeScope() === 'all';
 	}
 	isShowingAllColumns(): boolean {
 		return this.columnScope === 'all';
 	}
 	getTaskScope(): TaskScope {
 		return this.taskScope;
+	}
+	getTaskTypeScope(): TaskTypeScope {
+		return this.taskScope === 'archive' ? this.archiveTaskTypeScope : this.taskScope;
 	}
 	getColumnScope(): ColumnScope {
 		return this.columnScope;
@@ -87,6 +97,7 @@ export class KanbanStore {
 	getVisibleTaskRefs(): TaskRef[] {
 		return queryTaskRefs(this.board, {
 			taskScope: this.taskScope,
+			taskTypeScope: this.getTaskTypeScope(),
 			currentViewId: this.settings.currentView,
 			columnScope: this.columnScope,
 			activeColumnId: this.getActiveColumnId(),
@@ -96,6 +107,7 @@ export class KanbanStore {
 	getTaskCountForColumn(columnId: string): number {
 		return queryTaskRefs(this.board, {
 			taskScope: this.taskScope,
+			taskTypeScope: this.getTaskTypeScope(),
 			currentViewId: this.settings.currentView,
 			columnScope: 'current',
 			activeColumnId: columnId,
@@ -105,6 +117,7 @@ export class KanbanStore {
 	getVisibleTaskCount(): number {
 		return queryTaskRefs(this.board, {
 			taskScope: this.taskScope,
+			taskTypeScope: this.getTaskTypeScope(),
 			currentViewId: this.settings.currentView,
 			columnScope: 'all',
 			activeColumnId: this.getActiveColumnId(),
@@ -145,9 +158,12 @@ export class KanbanStore {
 		return columns[0]?.id ?? '';
 	}
 
-	/** 汇总全部任务类型中指定象限的归档任务数。 */
+	/** 按当前任务类型范围汇总指定象限的归档任务数。 */
 	getArchiveTaskCount(columnId: string): number {
-		return this.getTaskViews().reduce(
+		const currentView = this.getCurrentTaskView();
+		const views =
+			this.getTaskTypeScope() === 'all' ? this.getTaskViews() : currentView ? [currentView] : [];
+		return views.reduce(
 			(count, view) =>
 				count +
 				this.getArchive(view.id).filter((task) => this.getArchiveColumnId(task) === columnId)
@@ -222,11 +238,13 @@ export class KanbanStore {
 			case 'SWITCH_VIEW':
 				if (this.getView(action.payload.view)) this.settings.currentView = action.payload.view;
 				this.taskScope = 'current';
+				this.archiveTaskTypeScope = 'current';
 				this.settings.showArchive = false;
 				this.ensureActiveColumn();
 				break;
 			case 'SHOW_ALL_TASKS':
 				this.taskScope = 'all';
+				this.archiveTaskTypeScope = 'all';
 				this.settings.showArchive = false;
 				break;
 			case 'SHOW_ALL_COLUMNS':
@@ -239,6 +257,7 @@ export class KanbanStore {
 				didMutateData = this.addView(action.payload.title);
 				if (didMutateData) {
 					this.taskScope = 'current';
+					this.archiveTaskTypeScope = 'current';
 					this.columnScope = 'current';
 				}
 				break;
@@ -269,7 +288,12 @@ export class KanbanStore {
 				didMutateData = this.reorderColumns(action.payload.columnIds);
 				break;
 			case 'TOGGLE_ARCHIVE_VIEW':
-				this.taskScope = this.taskScope === 'archive' ? 'current' : 'archive';
+				if (this.taskScope === 'archive') {
+					this.taskScope = this.archiveTaskTypeScope;
+				} else {
+					this.archiveTaskTypeScope = this.taskScope;
+					this.taskScope = 'archive';
+				}
 				this.settings.showArchive = this.taskScope === 'archive';
 				break;
 			case 'RESTORE_TASK': {
@@ -554,6 +578,7 @@ export class KanbanStore {
 
 	private resetTaskQuery(): void {
 		this.taskScope = 'current';
+		this.archiveTaskTypeScope = 'current';
 		this.columnScope = 'current';
 		this.searchKeyword = '';
 		this.settings.showArchive = false;

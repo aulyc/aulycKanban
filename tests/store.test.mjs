@@ -183,7 +183,7 @@ test('a new quadrant appears in every existing task type while task contents sta
 	store.destroy();
 });
 
-test('archive quadrant counts span every task type and legacy tasks fall back to the first quadrant', () => {
+test('archive quadrant counts follow the selected task type scope and legacy fallback', () => {
 	const views = ['work', 'personal', 'project'].map((id, order) =>
 		view(id, id, [column('base', '基础'), column('second', '第二', [], 1)], order),
 	);
@@ -197,10 +197,50 @@ test('archive quadrant counts span every task type and legacy tasks fall back to
 	};
 	const store = createStore(board, 'project', 'second');
 
+	assert.equal(store.getArchiveTaskCount('second'), 0);
+	assert.equal(store.getArchiveTaskCount('base'), 1);
+	store.dispatch({ type: 'SHOW_ALL_TASKS' });
 	assert.equal(store.getArchiveTaskCount('second'), 1);
 	assert.equal(store.getArchiveTaskCount('base'), 2);
 	assert.equal(store.getArchiveColumnId(board.archives.personal.tasks[0]), 'base');
 	assert.equal(store.getArchiveColumnId(board.archives.project.tasks[0]), 'base');
+	store.destroy();
+});
+
+test('archive activation preserves current or all task types while intersecting the quadrant', () => {
+	const store = createStore(
+		{
+			views: [
+				view('work', '工作', [column('base', '基础')], 0),
+				view('personal', '个人', [column('base', '基础')], 1),
+			],
+			archives: {
+				work: { tasks: [{ ...task('work-archive'), sourceColumnId: 'base' }] },
+				personal: { tasks: [{ ...task('personal-archive'), sourceColumnId: 'base' }] },
+			},
+		},
+		'personal',
+		'base',
+	);
+
+	store.dispatch({ type: 'TOGGLE_ARCHIVE_VIEW' });
+	assert.equal(store.getTaskScope(), 'archive');
+	assert.equal(store.isShowingAllTasks(), false);
+	assert.equal(
+		JSON.stringify(store.getVisibleTaskRefs().map((ref) => ref.task.id)),
+		'["personal-archive"]',
+	);
+
+	store.dispatch({ type: 'TOGGLE_ARCHIVE_VIEW' });
+	assert.equal(store.getTaskScope(), 'current');
+	store.dispatch({ type: 'SHOW_ALL_TASKS' });
+	store.dispatch({ type: 'TOGGLE_ARCHIVE_VIEW' });
+	assert.equal(store.getTaskScope(), 'archive');
+	assert.equal(store.isShowingAllTasks(), true);
+	assert.equal(
+		JSON.stringify(store.getVisibleTaskRefs().map((ref) => ref.task.id)),
+		'["work-archive","personal-archive"]',
+	);
 	store.destroy();
 });
 

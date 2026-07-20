@@ -154,16 +154,21 @@ test('committed search becomes a removable tag', () => {
 	assert.equal(store.actions.at(-1).payload.keyword, '');
 });
 
-test('archive activation is idempotent and uses the active semantic state', () => {
+test('archive focus activates immediately and remains idempotent for click or rerender', () => {
 	const { parent, store, utilityBar } = createHarness();
 	const archive = find(parent, 'aulyckanban-archive-btn');
-	archive.listeners.get('click')[0]({ preventDefault() {}, stopPropagation() {} });
+	archive.listeners.get('focus')[0]();
 	assert.equal(store.actions.at(-1).type, 'TOGGLE_ARCHIVE_VIEW');
+
+	const focusedActionCount = store.actions.length;
+	archive.listeners.get('click')[0]({ preventDefault() {}, stopPropagation() {} });
+	assert.equal(store.actions.length, focusedActionCount);
 
 	utilityBar.render();
 	const activeArchive = find(parent, 'aulyckanban-archive-btn');
 	assert.equal(activeArchive.classList.contains('aulyckanban-tab-active'), true);
 	const actionCount = store.actions.length;
+	activeArchive.listeners.get('focus')[0]();
 	activeArchive.listeners.get('click')[0]({ preventDefault() {}, stopPropagation() {} });
 	assert.equal(store.actions.length, actionCount);
 });

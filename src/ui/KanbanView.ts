@@ -73,6 +73,8 @@ export class KanbanView extends ItemView {
 
 		// Tab 在工具、任务类型、任务内容、象限四区间循环。
 		this.tabHandler = (e: KeyboardEvent) => {
+			if (this.handleSearchShortcut(e)) return;
+
 			const active = this.getActiveElement();
 			if (e.key === 'Tab') {
 				this.handleTabKey(e, active);
@@ -211,6 +213,28 @@ export class KanbanView extends ItemView {
 			: null;
 	}
 
+	private handleSearchShortcut(e: KeyboardEvent): boolean {
+		if (
+			e.isComposing ||
+			!e.metaKey ||
+			e.ctrlKey ||
+			e.altKey ||
+			e.shiftKey ||
+			e.key.toLocaleLowerCase() !== 'f'
+		)
+			return false;
+
+		const target = this.contentEl.querySelector<HTMLElement>(
+			'.aulyckanban-task-search-input, .aulyckanban-task-search-tag',
+		);
+		if (!target) return false;
+
+		e.preventDefault();
+		e.stopPropagation();
+		target.focus({ preventScroll: true });
+		return true;
+	}
+
 	private handleTabKey(e: KeyboardEvent, active: HTMLElement | null): void {
 		e.preventDefault();
 		e.stopPropagation();
@@ -284,7 +308,9 @@ export class KanbanView extends ItemView {
 		);
 		if (!target) return;
 		if (target.kind === 'all') {
-			if (!store.isShowingAllTasks()) store.dispatch({ type: 'SHOW_ALL_TASKS' });
+			if (!store.isShowingAllTasks() || store.isShowingArchive()) {
+				store.dispatch({ type: 'SHOW_ALL_TASKS' });
+			}
 			this.focusZoneAfterRender('view');
 		} else if (target.kind === 'add') {
 			const addButton = this.contentEl.querySelector<HTMLElement>('.aulyckanban-view-add-btn');

@@ -341,10 +341,24 @@ function child(parent, cls, dataset = {}) {
 	return parent.append(new MockElement(parent.ownerDocument, { cls, dataset }));
 }
 
-function keyEvent(key, { shiftKey = false, isComposing = false, target = null, path = [] } = {}) {
+function keyEvent(
+	key,
+	{
+		shiftKey = false,
+		metaKey = false,
+		ctrlKey = false,
+		altKey = false,
+		isComposing = false,
+		target = null,
+		path = [],
+	} = {},
+) {
 	return {
 		key,
 		shiftKey,
+		metaKey,
+		ctrlKey,
+		altKey,
 		isComposing,
 		target,
 		defaultPrevented: false,
@@ -358,6 +372,36 @@ function keyEvent(key, { shiftKey = false, isComposing = false, target = null, p
 		composedPath: () => path,
 	};
 }
+
+test('Command+F focuses the search control without changing task state', async () => {
+	const harness = createHarness();
+	await harness.view.onOpen();
+	const utility = child(harness.contentEl, 'aulyckanban-utility-bar');
+	const search = child(utility, 'aulyckanban-task-search-input');
+	const taskPane = child(harness.contentEl, 'aulyckanban-task-pane');
+	const task = child(taskPane, 'aulyckanban-task');
+	task.focus();
+	const actionCount = harness.store.state.actions.length;
+
+	const commandFind = keyEvent('f', {
+		metaKey: true,
+		target: task,
+		path: [task, taskPane, harness.contentEl],
+	});
+	dispatchKey(harness.contentEl, commandFind);
+
+	assert.equal(commandFind.defaultPrevented, true);
+	assert.equal(commandFind.propagationStopped, true);
+	assert.equal(harness.documentRef.activeElement, search);
+	assert.deepEqual(search.focusCalls.at(-1), { preventScroll: true });
+	assert.equal(harness.store.state.actions.length, actionCount);
+
+	task.focus();
+	const controlFind = keyEvent('f', { ctrlKey: true, target: task });
+	dispatchKey(harness.contentEl, controlFind);
+	assert.equal(controlFind.defaultPrevented, false);
+	assert.equal(harness.documentRef.activeElement, task);
+});
 
 function dispatchKey(target, event) {
 	for (const listener of target.listeners.get('keydown') ?? []) listener(event);

@@ -31,13 +31,19 @@ const board = {
 	],
 	archives: {
 		work: { tasks: [{ ...task('work-archive', '处理旧邮箱'), sourceColumnId: 'urgent' }] },
-		personal: { tasks: [{ ...task('personal-archive', '整理旧照片'), sourceColumnId: 'later' }] },
+		personal: {
+			tasks: [
+				{ ...task('personal-urgent-archive', '购买旧药品'), sourceColumnId: 'urgent' },
+				{ ...task('personal-archive', '整理旧照片'), sourceColumnId: 'later' },
+			],
+		},
 	},
 };
 
 test('specific task type and quadrant return only their intersecting active tasks', () => {
 	const refs = queryTaskRefs(board, {
 		taskScope: 'current',
+		taskTypeScope: 'current',
 		currentViewId: 'personal',
 		columnScope: 'current',
 		activeColumnId: 'urgent',
@@ -52,6 +58,7 @@ test('specific task type and quadrant return only their intersecting active task
 test('all task and quadrant scopes preserve view and column order', () => {
 	const refs = queryTaskRefs(board, {
 		taskScope: 'all',
+		taskTypeScope: 'all',
 		currentViewId: 'personal',
 		columnScope: 'all',
 		activeColumnId: 'urgent',
@@ -67,6 +74,7 @@ test('all task and quadrant scopes preserve view and column order', () => {
 test('search normalizes whitespace and filters only task content inside the selected scopes', () => {
 	const refs = queryTaskRefs(board, {
 		taskScope: 'all',
+		taskTypeScope: 'all',
 		currentViewId: 'work',
 		columnScope: 'all',
 		activeColumnId: 'urgent',
@@ -76,18 +84,35 @@ test('search normalizes whitespace and filters only task content inside the sele
 	assert.equal(JSON.stringify(refs.map((ref) => ref.task.id)), '["personal-later"]');
 });
 
-test('archive scope spans task types and still intersects the selected quadrant', () => {
+test('archive scope intersects the selected task type and quadrant', () => {
 	const refs = queryTaskRefs(board, {
 		taskScope: 'archive',
+		taskTypeScope: 'current',
 		currentViewId: 'personal',
 		columnScope: 'current',
 		activeColumnId: 'urgent',
 		keyword: '旧',
 	});
 
-	assert.equal(JSON.stringify(refs.map((ref) => ref.task.id)), '["work-archive"]');
-	assert.equal(refs[0].viewTitle, '工作任务');
+	assert.equal(JSON.stringify(refs.map((ref) => ref.task.id)), '["personal-urgent-archive"]');
+	assert.equal(refs[0].viewTitle, '个人任务');
 	assert.equal(refs[0].columnTitle, '紧急');
+});
+
+test('archive scope preserves the all-task-types selection when requested', () => {
+	const refs = queryTaskRefs(board, {
+		taskScope: 'archive',
+		taskTypeScope: 'all',
+		currentViewId: 'personal',
+		columnScope: 'current',
+		activeColumnId: 'urgent',
+		keyword: '旧',
+	});
+
+	assert.equal(
+		JSON.stringify(refs.map((ref) => ref.task.id)),
+		'["work-archive","personal-urgent-archive"]',
+	);
 });
 
 test('task reference keys include every source coordinate', () => {

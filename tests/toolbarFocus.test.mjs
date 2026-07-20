@@ -109,6 +109,7 @@ function createToolbarHarness() {
 	const store = {
 		currentView: 'work',
 		taskScope: 'current',
+		archiveTaskTypeScope: 'current',
 		actions: [],
 		getCurrentView() {
 			return this.currentView;
@@ -120,7 +121,9 @@ function createToolbarHarness() {
 			return this.taskScope === 'archive';
 		},
 		isShowingAllTasks() {
-			return this.taskScope === 'all';
+			return this.taskScope === 'archive'
+				? this.archiveTaskTypeScope === 'all'
+				: this.taskScope === 'all';
 		},
 		getTaskViews: () => [
 			{ id: 'work', title: 'Work' },
@@ -128,7 +131,10 @@ function createToolbarHarness() {
 		],
 		dispatch(action) {
 			this.actions.push(action);
-			if (action.type === 'SHOW_ALL_TASKS') this.taskScope = 'all';
+			if (action.type === 'SHOW_ALL_TASKS') {
+				this.taskScope = 'all';
+				this.archiveTaskTypeScope = 'all';
+			}
 		},
 	};
 	const parent = new MockElement('div', {}, documentRef);
@@ -182,6 +188,31 @@ test('task type toolbar restores all tasks while keeping archive in the utility 
 		2,
 	);
 	allButton.listeners.get('click')[0]({ preventDefault() {}, stopPropagation() {} });
+	assert.equal(store.actions.at(-1).type, 'SHOW_ALL_TASKS');
+});
+
+test('archive mode keeps its originating task type scope visibly selected', () => {
+	const { parent, store, toolbar } = createToolbarHarness();
+	store.taskScope = 'archive';
+	toolbar.render();
+
+	const currentView = descendants(parent).find(
+		(element) => element.dataset.viewId === store.currentView,
+	);
+	const allButton = descendants(parent).find((element) =>
+		element.classList.contains('aulyckanban-all-tasks-btn'),
+	);
+	assert.equal(currentView.classList.contains('aulyckanban-tab-active'), true);
+	assert.equal(allButton.classList.contains('aulyckanban-tab-active'), false);
+
+	store.archiveTaskTypeScope = 'all';
+	toolbar.render();
+	const activeAllButton = descendants(parent).find((element) =>
+		element.classList.contains('aulyckanban-all-tasks-btn'),
+	);
+	assert.equal(activeAllButton.classList.contains('aulyckanban-tab-active'), true);
+
+	activeAllButton.listeners.get('click')[0]({ preventDefault() {}, stopPropagation() {} });
 	assert.equal(store.actions.at(-1).type, 'SHOW_ALL_TASKS');
 });
 
