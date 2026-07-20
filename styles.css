@@ -399,7 +399,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	display: grid;
 	place-items: center;
 	width: 100%;
-	height: 32px;
+	height: 38px;
 	padding: 0;
 	transition: none;
 }

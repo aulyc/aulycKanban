@@ -33,6 +33,11 @@ export class UtilityBar {
 		const searchTarget = keyword
 			? this.renderSearchTag(searchShellEl, keyword)
 			: this.renderSearchInput(searchShellEl);
+		searchTarget.addEventListener('focus', () => {
+			if (this.store.isShowingArchive()) {
+				this.store.dispatch({ type: 'TOGGLE_ARCHIVE_VIEW' });
+			}
+		});
 
 		const isArchive = this.store.isShowingArchive();
 		const archiveBtn = this.el.createEl('button', {

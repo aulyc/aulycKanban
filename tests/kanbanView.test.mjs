@@ -272,7 +272,9 @@ function createStore() {
 		dispatch(action) {
 			state.actions.push(action);
 			if (action.type === 'SHOW_ALL_TASKS') state.taskScope = 'all';
-			if (action.type === 'TOGGLE_ARCHIVE_VIEW') state.taskScope = 'archive';
+			if (action.type === 'TOGGLE_ARCHIVE_VIEW') {
+				state.taskScope = state.taskScope === 'archive' ? 'current' : 'archive';
+			}
 			if (action.type === 'SWITCH_VIEW') {
 				state.taskScope = 'current';
 				state.currentView = action.payload.view;
@@ -515,6 +517,42 @@ test('Tab and window fallback move focus between real view zones without escapin
 	assert.equal(inactiveTab.defaultPrevented, false);
 	assert.equal(harness.documentRef.activeElement, harness.documentRef.body);
 	assert.ok(column);
+});
+
+test('Tab leaving archive restores the ordinary task list before moving through later zones', async () => {
+	const harness = createHarness();
+	await harness.view.onOpen();
+	const utility = child(harness.contentEl, 'aulyckanban-utility-bar');
+	const archive = child(utility, 'aulyckanban-archive-btn');
+	const toolbar = child(harness.contentEl, 'aulyckanban-toolbar');
+	const viewTab = child(toolbar, 'aulyckanban-view-tab aulyckanban-tab-active', {
+		viewId: 'work',
+	});
+	const taskPane = child(harness.contentEl, 'aulyckanban-task-pane');
+	const task = child(taskPane, 'aulyckanban-task');
+	taskFocusTarget = task;
+	harness.store.state.taskScope = 'archive';
+	archive.focus();
+
+	const leaveArchive = keyEvent('Tab', {
+		target: archive,
+		path: [archive, utility, harness.contentEl],
+	});
+	dispatchKey(harness.contentEl, leaveArchive);
+
+	assert.equal(leaveArchive.defaultPrevented, true);
+	assert.equal(harness.store.state.taskScope, 'current');
+	assert.equal(harness.store.state.actions.at(-1).type, 'TOGGLE_ARCHIVE_VIEW');
+	assert.equal(harness.documentRef.activeElement, archive);
+	harness.flushAnimationFrames();
+	assert.equal(harness.documentRef.activeElement, viewTab);
+
+	dispatchKey(
+		harness.contentEl,
+		keyEvent('Tab', { target: viewTab, path: [viewTab, toolbar, harness.contentEl] }),
+	);
+	assert.equal(harness.documentRef.activeElement, task);
+	assert.equal(harness.store.state.taskScope, 'current');
 });
 
 test('arrow navigation moves within all four zones and dispatches real selections', async () => {

@@ -121,6 +121,14 @@ test('normal and archive task components share one horizontal content edge', () 
 	assert.match(rule('.aulyckanban-archive-list'), /padding:\s*0/);
 });
 
+test('collapsed and expanded task creation reserve the same single-row height', () => {
+	assert.match(rule('.aulyckanban-task-add-btn'), /height:\s*38px/);
+	assert.match(
+		rule('.aulyckanban-kanban-container .aulyckanban-task-create-input'),
+		/min-height:\s*38px/,
+	);
+});
+
 test('utility row keeps search flexible and archive fixed above the task types', () => {
 	const utility = rule('.aulyckanban-utility-bar');
 	assert.match(utility, /display:\s*grid/);

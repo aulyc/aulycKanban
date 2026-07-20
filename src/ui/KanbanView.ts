@@ -268,6 +268,12 @@ export class KanbanView extends ItemView {
 	): void {
 		const currentZone = this.getFocusZone(active);
 		const nextZone = getNextFocusZone(currentZone, reverse);
+		if (this.plugin.store.isShowingArchive() && currentZone !== null) {
+			if (afterBlur) active?.blur();
+			this.plugin.store.dispatch({ type: 'TOGGLE_ARCHIVE_VIEW' });
+			this.focusZoneAfterRender(nextZone);
+			return;
+		}
 		const focusTarget = (): void => {
 			const target = this.getFocusTarget(nextZone);
 			target?.focus({ preventScroll: true });

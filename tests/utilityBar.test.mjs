@@ -97,7 +97,7 @@ function createHarness(overrides = {}) {
 		dispatch(action) {
 			this.actions.push(action);
 			if (action.type === 'SET_SEARCH_QUERY') this.keyword = action.payload.keyword;
-			if (action.type === 'TOGGLE_ARCHIVE_VIEW') this.archive = true;
+			if (action.type === 'TOGGLE_ARCHIVE_VIEW') this.archive = !this.archive;
 		},
 		...overrides,
 	};
@@ -171,6 +171,16 @@ test('archive focus activates immediately and remains idempotent for click or re
 	activeArchive.listeners.get('focus')[0]();
 	activeArchive.listeners.get('click')[0]({ preventDefault() {}, stopPropagation() {} });
 	assert.equal(store.actions.length, actionCount);
+});
+
+test('search focus leaves the temporary archive view', () => {
+	const { parent, store } = createHarness({ archive: true });
+	const search = find(parent, 'aulyckanban-task-search-input');
+	search.focus();
+	search.listeners.get('focus')[0]();
+
+	assert.equal(store.archive, false);
+	assert.equal(store.actions.at(-1).type, 'TOGGLE_ARCHIVE_VIEW');
 });
 
 test('utility rerender restores real search or archive focus', () => {
