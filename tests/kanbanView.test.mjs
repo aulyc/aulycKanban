@@ -430,12 +430,14 @@ test('Tab and window fallback move focus between real view zones without escapin
 	taskFocusTarget = task;
 
 	viewTab.focus();
+	const actionCount = harness.store.state.actions.length;
 	const tab = keyEvent('Tab', { target: viewTab, path: [viewTab, toolbar, harness.contentEl] });
 	dispatchKey(harness.contentEl, tab);
 	assert.equal(tab.defaultPrevented, true);
 	assert.equal(tab.propagationStopped, true);
 	assert.equal(harness.documentRef.activeElement, task);
 	assert.deepEqual(task.scrollCalls, [{ block: 'nearest' }]);
+	assert.equal(harness.store.state.actions.length, actionCount);
 
 	const reverseTab = keyEvent('Tab', {
 		shiftKey: true,
@@ -481,9 +483,9 @@ test('arrow navigation moves within all four zones and dispatches real selection
 
 	utilityNavigationItems = [search, archive];
 	search.focus();
-	dispatchKey(harness.contentEl, keyEvent('ArrowDown', { target: search }));
+	dispatchKey(harness.contentEl, keyEvent('ArrowRight', { target: search }));
 	assert.equal(harness.documentRef.activeElement, archive);
-	dispatchKey(harness.contentEl, keyEvent('ArrowDown', { target: archive }));
+	dispatchKey(harness.contentEl, keyEvent('ArrowRight', { target: archive }));
 	assert.equal(harness.documentRef.activeElement, search);
 
 	viewTab.focus();
@@ -600,20 +602,31 @@ test('reverse arrows and shared task controls navigate in the expected direction
 	assert.equal(harness.documentRef.activeElement, firstTask);
 
 	utilityNavigationItems = [search, archive];
+	search.value = '正在输入';
 	search.focus();
 	const searchCaretArrow = keyEvent('ArrowLeft', { target: search });
 	dispatchKey(harness.contentEl, searchCaretArrow);
 	assert.equal(searchCaretArrow.defaultPrevented, false);
 	assert.equal(harness.documentRef.activeElement, search);
-	const composingArrow = keyEvent('ArrowDown', { target: search, isComposing: true });
+	const composingArrow = keyEvent('ArrowRight', { target: search, isComposing: true });
 	dispatchKey(harness.contentEl, composingArrow);
 	assert.equal(composingArrow.defaultPrevented, false);
 	assert.equal(harness.documentRef.activeElement, search);
 
-	const searchArrow = keyEvent('ArrowDown', { target: search });
+	search.value = '';
+	const verticalArrow = keyEvent('ArrowDown', { target: search });
+	dispatchKey(harness.contentEl, verticalArrow);
+	assert.equal(verticalArrow.defaultPrevented, false);
+	assert.equal(harness.documentRef.activeElement, search);
+
+	const searchArrow = keyEvent('ArrowRight', { target: search });
 	dispatchKey(harness.contentEl, searchArrow);
 	assert.equal(searchArrow.defaultPrevented, true);
 	assert.equal(harness.documentRef.activeElement, archive);
+	const archiveArrow = keyEvent('ArrowLeft', { target: archive });
+	dispatchKey(harness.contentEl, archiveArrow);
+	assert.equal(archiveArrow.defaultPrevented, true);
+	assert.equal(harness.documentRef.activeElement, search);
 });
 
 test('Tab handles document-level, missing-focus, selector-fallback, and editing-blur paths', async () => {

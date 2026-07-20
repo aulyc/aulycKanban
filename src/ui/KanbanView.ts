@@ -91,8 +91,10 @@ export class KanbanView extends ItemView {
 				(e.key === 'ArrowUp' || e.key === 'ArrowDown');
 			const isUtilityControlNavigationArrow =
 				!e.isComposing &&
-				active?.matches('.aulyckanban-task-search-input, .aulyckanban-task-search-tag') &&
-				(e.key === 'ArrowUp' || e.key === 'ArrowDown');
+				(e.key === 'ArrowLeft' || e.key === 'ArrowRight') &&
+				(active?.matches('.aulyckanban-task-search-tag') ||
+					(active?.matches('.aulyckanban-task-search-input') &&
+						(active as HTMLInputElement).value.length === 0));
 			if (
 				!isEmptyTaskInputArrow &&
 				!isTaskControlNavigationArrow &&
@@ -105,10 +107,10 @@ export class KanbanView extends ItemView {
 			)
 				return;
 			const zone = this.getFocusZone(active);
-			if (zone === 'utility' && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+			if (zone === 'utility' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
 				e.preventDefault();
 				e.stopPropagation();
-				this.selectAdjacentUtilityItem(e.key === 'ArrowUp' ? -1 : 1);
+				this.selectAdjacentUtilityItem(e.key === 'ArrowLeft' ? -1 : 1);
 			} else if (zone === 'view' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
 				e.preventDefault();
 				e.stopPropagation();
