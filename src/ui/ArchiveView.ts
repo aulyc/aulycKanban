@@ -79,13 +79,17 @@ export class ArchiveView {
 			this.render();
 		});
 
+		this.renderSortButton(toolbarEl);
+	}
+
+	private renderSortButton(toolbarEl: HTMLElement): void {
 		const sortBtn = toolbarEl.createEl('button', {
 			cls: 'aulyckanban-archive-sort-btn',
 			attr: { type: 'button' },
 		});
 		const sortLabel =
 			this.sortOrder === 'desc' ? t('archive.sort.newest') : t('archive.sort.oldest');
-		setIcon(sortBtn, 'arrow-up-down');
+		setIcon(sortBtn, this.sortOrder === 'desc' ? 'arrow-down-wide-narrow' : 'arrow-up-narrow-wide');
 		appendAccessibleLabel(sortBtn, sortLabel);
 		sortBtn.addEventListener('click', () => {
 			this.sortOrder = this.sortOrder === 'desc' ? 'asc' : 'desc';
@@ -127,17 +131,6 @@ export class ArchiveView {
 		});
 
 		const actionsEl = toolbarEl.createDiv({ cls: 'aulyckanban-archive-selection-actions' });
-		const cancelBtn = actionsEl.createEl('button', {
-			cls: 'aulyckanban-archive-selection-btn',
-			text: t('archive.delete.cancel'),
-			attr: { type: 'button' },
-		});
-		cancelBtn.addEventListener('click', () => {
-			this.deleteMode = false;
-			this.selectedTaskKeys.clear();
-			this.render();
-		});
-
 		const deleteSelectedBtn = actionsEl.createEl('button', {
 			cls: 'aulyckanban-archive-selection-btn aulyckanban-archive-delete-selected-btn',
 			attr: { type: 'button' },
@@ -148,6 +141,20 @@ export class ArchiveView {
 		deleteSelectedBtn.addEventListener('click', () => {
 			this.confirmDeleteSelected(Array.from(this.selectedTaskKeys));
 		});
+
+		const cancelBtn = actionsEl.createEl('button', {
+			cls: 'aulyckanban-archive-selection-btn aulyckanban-archive-cancel-selection-btn',
+			attr: { type: 'button' },
+		});
+		setIcon(cancelBtn, 'list-x');
+		appendAccessibleLabel(cancelBtn, t('archive.delete.cancel'));
+		cancelBtn.addEventListener('click', () => {
+			this.deleteMode = false;
+			this.selectedTaskKeys.clear();
+			this.render();
+		});
+
+		this.renderSortButton(actionsEl);
 	}
 
 	private confirmDeleteSelected(keys: string[]): void {

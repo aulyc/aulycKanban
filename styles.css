@@ -1008,6 +1008,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 
 .aulyckanban-archive-sort-btn svg,
 .aulyckanban-archive-select-mode-btn svg,
+.aulyckanban-archive-selection-btn svg,
 .aulyckanban-archive-delete-selected-btn svg {
 	width: 15px;
 	height: 15px;
@@ -1017,6 +1018,8 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 .aulyckanban-archive-sort-btn:focus-visible,
 .aulyckanban-archive-select-mode-btn:focus,
 .aulyckanban-archive-select-mode-btn:focus-visible,
+.aulyckanban-archive-selection-btn:focus,
+.aulyckanban-archive-selection-btn:focus-visible,
 .aulyckanban-archive-delete-selected-btn:focus,
 .aulyckanban-archive-delete-selected-btn:focus-visible {
 	border-color: var(--aulyckanban-selection-border);
@@ -1070,12 +1073,12 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 }
 
 .aulyckanban-archive-selection-btn {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	min-width: 48px;
+	display: grid;
+	place-items: center;
+	min-width: 30px;
+	width: 30px;
+	padding: 0;
 	box-shadow: none;
-	white-space: nowrap;
 }
 
 .aulyckanban-archive-delete-selected-btn {

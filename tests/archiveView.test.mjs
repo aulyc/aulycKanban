@@ -214,7 +214,7 @@ test('archive browse actions place icon selection before bidirectional sort at t
 		byClass(selectButton, 'aulyckanban-accessible-label')[0].textContent,
 		'archive.delete.mode',
 	);
-	assert.equal(sortButton.icon, 'arrow-up-down');
+	assert.equal(sortButton.icon, 'arrow-down-wide-narrow');
 
 	const browseToolbarRule =
 		css.match(/\.aulyckanban-archive-toolbar-browse\s*\{([^}]*)\}/)?.[1] ?? '';
@@ -225,7 +225,7 @@ test('archive bidirectional sort button toggles newest and oldest order without 
 	const { container } = createHarness();
 	const newestFirstButton = byClass(container, 'aulyckanban-archive-sort-btn')[0];
 
-	assert.equal(newestFirstButton.icon, 'arrow-up-down');
+	assert.equal(newestFirstButton.icon, 'arrow-down-wide-narrow');
 	assert.equal(newestFirstButton.attributes['aria-label'], undefined);
 	assert.equal(newestFirstButton.attributes.title, undefined);
 	assert.equal(
@@ -235,7 +235,7 @@ test('archive bidirectional sort button toggles newest and oldest order without 
 	newestFirstButton.listeners.get('click')[0]();
 
 	const oldestFirstButton = byClass(container, 'aulyckanban-archive-sort-btn')[0];
-	assert.equal(oldestFirstButton.icon, 'arrow-up-down');
+	assert.equal(oldestFirstButton.icon, 'arrow-up-narrow-wide');
 	assert.equal(
 		byClass(oldestFirstButton, 'aulyckanban-accessible-label')[0].textContent,
 		'archive.sort.oldest',
@@ -252,7 +252,11 @@ test('archive selection mode replaces browse controls and hides restore actions'
 	assert.equal(byClass(container, 'aulyckanban-archive-search').length, 0);
 	assert.equal(byClass(container, 'aulyckanban-archive-restore-btn').length, 0);
 	assert.equal(byClass(container, 'aulyckanban-archive-more-btn').length, 0);
+	const selectionActions = byClass(container, 'aulyckanban-archive-selection-actions')[0];
 	const deleteButton = byClass(container, 'aulyckanban-archive-delete-selected-btn')[0];
+	const cancelButton = byClass(container, 'aulyckanban-archive-cancel-selection-btn')[0];
+	const sortButton = byClass(container, 'aulyckanban-archive-sort-btn')[0];
+	assert.deepEqual(selectionActions.children, [deleteButton, cancelButton, sortButton]);
 	assert.equal(deleteButton.icon, 'trash-2');
 	assert.equal(deleteButton.textContent, '');
 	assert.equal(
@@ -260,6 +264,16 @@ test('archive selection mode replaces browse controls and hides restore actions'
 		'archive.delete.selected',
 	);
 	assert.equal(deleteButton.disabled, true);
+	assert.equal(cancelButton.icon, 'list-x');
+	assert.equal(cancelButton.textContent, '');
+	assert.equal(
+		byClass(cancelButton, 'aulyckanban-accessible-label')[0].textContent,
+		'archive.delete.cancel',
+	);
+	assert.equal(sortButton.icon, 'arrow-down-wide-narrow');
+	sortButton.listeners.get('click')[0]();
+	assert.equal(byClass(container, 'aulyckanban-archive-toolbar-selection').length, 1);
+	assert.equal(byClass(container, 'aulyckanban-archive-sort-btn')[0].icon, 'arrow-up-narrow-wide');
 });
 
 test('archive selection mode has one explicit delete path and an unboxed toolbar', () => {

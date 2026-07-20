@@ -17,6 +17,7 @@ export class UtilityBar {
 
 	render(): void {
 		const focusedEl = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+		const isArchive = this.store.isShowingArchive();
 		const restoreSearchFocus =
 			!!focusedEl &&
 			this.el.contains(focusedEl) &&
@@ -25,7 +26,8 @@ export class UtilityBar {
 		const restoreArchiveFocus =
 			!!focusedEl &&
 			this.el.contains(focusedEl) &&
-			focusedEl.classList.contains('aulyckanban-archive-btn');
+			focusedEl.classList.contains('aulyckanban-archive-btn') &&
+			isArchive;
 
 		this.el.empty();
 		const searchShellEl = this.el.createDiv({ cls: 'aulyckanban-task-search-shell' });
@@ -39,7 +41,6 @@ export class UtilityBar {
 			}
 		});
 
-		const isArchive = this.store.isShowingArchive();
 		const archiveBtn = this.el.createEl('button', {
 			cls: isArchive
 				? 'aulyckanban-tab aulyckanban-archive-btn aulyckanban-tab-active'

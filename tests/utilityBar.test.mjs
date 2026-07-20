@@ -54,6 +54,7 @@ class MockElement {
 
 	focus() {
 		this.ownerDocument.activeElement = this;
+		for (const listener of this.listeners.get('focus') ?? []) listener();
 	}
 }
 
@@ -194,4 +195,20 @@ test('utility rerender restores real search or archive focus', () => {
 	store.archive = true;
 	utilityBar.render();
 	assert.equal(documentRef.activeElement.classList.contains('aulyckanban-archive-btn'), true);
+});
+
+test('leaving archive does not refocus the rebuilt archive control and reopen it', () => {
+	const { documentRef, parent, store, utilityBar } = createHarness();
+	const archive = find(parent, 'aulyckanban-archive-btn');
+	archive.focus();
+	assert.equal(store.archive, true);
+
+	store.archive = false;
+	const actionCount = store.actions.length;
+	utilityBar.render();
+
+	const rebuiltArchive = find(parent, 'aulyckanban-archive-btn');
+	assert.equal(store.archive, false);
+	assert.equal(store.actions.length, actionCount);
+	assert.notEqual(documentRef.activeElement, rebuiltArchive);
 });
