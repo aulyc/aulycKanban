@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+## [2.8.0-beta.1] - 2026-07-20
+
 - 备份导入新增逐任务深层校验，历史损坏任务会安全清洗，渲染层同时增加缺失内容兜底。
 - 同步目录拒绝 `..` 路径段，避免受管 Markdown 逃出 Vault；中央正式发版脚本改由 `AULYC_STANDARDS_ROOT` 可配置定位。
 - 项目采用的公共 core 升级到 `2.0.1`，固定 Obsidian/TypeScript/Node 类型依赖，启用 TypeScript strict，并新增可归因到 `src/` 的分层覆盖率门禁。
