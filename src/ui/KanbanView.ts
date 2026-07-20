@@ -140,6 +140,9 @@ export class KanbanView extends ItemView {
 				const ownerDocument = container.ownerDocument;
 				const active = this.getActiveElement();
 				const eventTarget = e.target;
+				const viewIsActive = this.app.workspace.getActiveViewOfType(KanbanView) === this;
+				const eventPathIncludesView = e.composedPath().includes(container);
+				const activeElementIsInsideView = active !== null && container.contains(active);
 				const documentLevelTarget =
 					eventTarget === null ||
 					eventTarget === fallbackWindow ||
@@ -147,13 +150,22 @@ export class KanbanView extends ItemView {
 					eventTarget === ownerDocument.body ||
 					eventTarget === ownerDocument.documentElement;
 
+				// Obsidian 会在 document 捕获阶段接管 Command+F，因此需要先在 window
+				// 捕获阶段处理看板内部事件，避免它到不了下面的容器监听器。
+				if (
+					viewIsActive &&
+					(eventPathIncludesView || activeElementIsInsideView) &&
+					this.handleSearchShortcut(e)
+				)
+					return;
+
 				if (
 					!shouldUseTabFocusFallback({
 						key: e.key,
 						defaultPrevented: e.defaultPrevented,
-						viewIsActive: this.app.workspace.getActiveViewOfType(KanbanView) === this,
-						eventPathIncludesView: e.composedPath().includes(container),
-						activeElementIsInsideView: active !== null && container.contains(active),
+						viewIsActive,
+						eventPathIncludesView,
+						activeElementIsInsideView,
 						documentLevelTarget,
 					})
 				)

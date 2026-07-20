@@ -373,7 +373,7 @@ function keyEvent(
 	};
 }
 
-test('Command+F focuses the search control without changing task state', async () => {
+test('window capture handles Command+F before Obsidian without changing task state', async () => {
 	const harness = createHarness();
 	await harness.view.onOpen();
 	const utility = child(harness.contentEl, 'aulyckanban-utility-bar');
@@ -388,7 +388,7 @@ test('Command+F focuses the search control without changing task state', async (
 		target: task,
 		path: [task, taskPane, harness.contentEl],
 	});
-	dispatchKey(harness.contentEl, commandFind);
+	dispatchKey(harness.windowRef, commandFind);
 
 	assert.equal(commandFind.defaultPrevented, true);
 	assert.equal(commandFind.propagationStopped, true);
@@ -398,8 +398,18 @@ test('Command+F focuses the search control without changing task state', async (
 
 	task.focus();
 	const controlFind = keyEvent('f', { ctrlKey: true, target: task });
-	dispatchKey(harness.contentEl, controlFind);
+	dispatchKey(harness.windowRef, controlFind);
 	assert.equal(controlFind.defaultPrevented, false);
+	assert.equal(harness.documentRef.activeElement, task);
+
+	harness.setActiveView(null);
+	const inactiveFind = keyEvent('f', {
+		metaKey: true,
+		target: task,
+		path: [task, taskPane, harness.contentEl],
+	});
+	dispatchKey(harness.windowRef, inactiveFind);
+	assert.equal(inactiveFind.defaultPrevented, false);
 	assert.equal(harness.documentRef.activeElement, task);
 });
 
