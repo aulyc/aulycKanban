@@ -547,12 +547,17 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 }
 
 .aulyckanban-nav-item-active:hover {
-	background: var(--interactive-accent-hover);
+	background: var(--interactive-accent);
+}
+
+.aulyckanban-nav-item-active:focus,
+.aulyckanban-nav-item-active:focus-visible {
+	background: var(--interactive-accent);
 }
 
 .aulyckanban-nav-item:focus,
 .aulyckanban-nav-item:focus-visible {
-	border-color: var(--aulyckanban-selection-border);
+	border: 1px solid var(--aulyckanban-selection-border) !important;
 	outline: none;
 	box-shadow: none;
 }

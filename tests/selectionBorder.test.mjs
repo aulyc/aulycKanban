@@ -54,6 +54,26 @@ test('each of the four keyboard zones draws white only from actual focus', () =>
 	}
 });
 
+test('focused active quadrant keeps its selected fill and adds the white focus border', () => {
+	const activeHover = rule('.aulyckanban-nav-item-active:hover');
+	assert.equal(declarationValue(activeHover, 'background'), 'var(--interactive-accent)');
+
+	const activeFocus = combinedRule([
+		'.aulyckanban-nav-item-active:focus',
+		'.aulyckanban-nav-item-active:focus-visible',
+	]);
+	assert.equal(declarationValue(activeFocus, 'background'), 'var(--interactive-accent)');
+
+	const focus = combinedRule([
+		'.aulyckanban-nav-item:focus',
+		'.aulyckanban-nav-item:focus-visible',
+	]);
+	assert.equal(
+		declarationValue(focus, 'border'),
+		'1px solid var(--aulyckanban-selection-border) !important',
+	);
+});
+
 test('keyboard navigation targets update instantly without visual trails', () => {
 	for (const selector of [
 		'.aulyckanban-tab',

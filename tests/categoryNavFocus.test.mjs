@@ -5,6 +5,7 @@ import { loadSourceModule } from './helpers/load-source-module.mjs';
 
 class MockElement {
 	constructor(options = {}) {
+		this.ownerDocument = options.ownerDocument ?? { activeElement: null };
 		this.children = [];
 		this.dataset = {};
 		this.attributes = { ...(options.attr ?? {}) };
@@ -19,7 +20,7 @@ class MockElement {
 	}
 
 	createDiv(options = {}) {
-		const child = new MockElement(options);
+		const child = new MockElement({ ...options, ownerDocument: this.ownerDocument });
 		this.children.push(child);
 		return child;
 	}
@@ -57,6 +58,17 @@ class MockElement {
 		const listeners = this.listeners.get(name) ?? [];
 		listeners.push(listener);
 		this.listeners.set(name, listeners);
+	}
+
+	focus() {
+		this.ownerDocument.activeElement = this;
+	}
+
+	querySelectorAll(selector) {
+		if (selector !== '.aulyckanban-nav-item') return [];
+		return descendants(this).filter((element) =>
+			element.classList.contains('aulyckanban-nav-item'),
+		);
 	}
 
 	querySelector() {
@@ -152,6 +164,28 @@ test('all quadrants remains available and owns the active state in archive aggre
 	assert.equal(activeItems.length, 1);
 	assert.equal(activeItems[0].classList.contains('aulyckanban-nav-all-btn'), true);
 	assert.equal(activeItems[0].children[1].textContent, '5');
+});
+
+test('clicking a quadrant restores focus to the selected item after the store rerender', () => {
+	let activeColumnId = 'last';
+	const { categoryNav, parent, store } = createCategoryNavHarness({
+		getActiveColumnId: () => activeColumnId,
+		dispatch(action) {
+			this.actions.push(action);
+			if (action.type === 'SELECT_COLUMN') activeColumnId = action.payload.columnId;
+		},
+	});
+	const initialTarget = descendants(parent).find((element) => element.dataset.columnId === 'later');
+
+	initialTarget.listeners.get('click')[0]({ preventDefault() {}, stopPropagation() {} });
+	categoryNav.render();
+
+	const renderedTarget = descendants(parent).find(
+		(element) => element.dataset.columnId === 'later',
+	);
+	assert.equal(store.actions.at(-1).type, 'SELECT_COLUMN');
+	assert.equal(renderedTarget.classList.contains('aulyckanban-nav-item-active'), true);
+	assert.equal(parent.ownerDocument.activeElement, renderedTarget);
 });
 
 test('renaming an existing quadrant replaces only that item with an inline editor', () => {

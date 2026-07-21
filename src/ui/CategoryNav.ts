@@ -18,6 +18,7 @@ export class CategoryNav {
 	private isAdding = false;
 	private draftTitle = '';
 	private shouldFocusInput = false;
+	private focusTargetAfterRender: { kind: 'all' } | { kind: 'column'; id: string } | null = null;
 
 	constructor(parentEl: HTMLElement, app: App, store: KanbanStore) {
 		this.app = app;
@@ -45,7 +46,12 @@ export class CategoryNav {
 		const showAllColumns = (event: MouseEvent | KeyboardEvent): void => {
 			event.preventDefault();
 			event.stopPropagation();
-			if (!this.store.isShowingAllColumns()) this.store.dispatch({ type: 'SHOW_ALL_COLUMNS' });
+			if (this.store.isShowingAllColumns()) {
+				allItemEl.focus({ preventScroll: true });
+				return;
+			}
+			this.focusTargetAfterRender = { kind: 'all' };
+			this.store.dispatch({ type: 'SHOW_ALL_COLUMNS' });
 		};
 		allItemEl.addEventListener('click', showAllColumns);
 		allItemEl.addEventListener('keydown', (event: KeyboardEvent) => {
@@ -84,6 +90,7 @@ export class CategoryNav {
 				e.stopPropagation();
 				// 如果正在编辑（有输入框），不切换分类
 				if (itemEl.classList.contains('aulyckanban-nav-item-editing')) return;
+				this.focusTargetAfterRender = { kind: 'column', id: column.id };
 				this.store.dispatch({
 					type: 'SELECT_COLUMN',
 					payload: { columnId: column.id },
@@ -92,6 +99,7 @@ export class CategoryNav {
 			itemEl.addEventListener('keydown', (e: KeyboardEvent) => {
 				if (e.key !== 'Enter' && e.key !== ' ') return;
 				e.preventDefault();
+				this.focusTargetAfterRender = { kind: 'column', id: column.id };
 				this.store.dispatch({ type: 'SELECT_COLUMN', payload: { columnId: column.id } });
 			});
 
@@ -144,6 +152,21 @@ export class CategoryNav {
 				this.startInlineAdd();
 			});
 		}
+
+		this.restoreRequestedFocus(allItemEl, listEl);
+	}
+
+	private restoreRequestedFocus(allItemEl: HTMLElement, listEl: HTMLElement): void {
+		const target = this.focusTargetAfterRender;
+		if (!target) return;
+		this.focusTargetAfterRender = null;
+		const targetEl =
+			target.kind === 'all'
+				? allItemEl
+				: Array.from(listEl.querySelectorAll<HTMLElement>('.aulyckanban-nav-item')).find(
+						(item) => item.dataset['columnId'] === target.id,
+					);
+		targetEl?.focus({ preventScroll: true });
 	}
 
 	/**
