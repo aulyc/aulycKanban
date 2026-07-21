@@ -182,8 +182,8 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	width: 38px;
 	height: 38px;
 	padding: 6px;
-	background: color-mix(in srgb, var(--color-orange) 16%, var(--interactive-normal));
-	border-color: color-mix(in srgb, var(--color-orange) 38%, var(--background-modifier-border));
+	background: transparent;
+	border-color: var(--background-modifier-border);
 	color: var(--color-orange);
 }
 
@@ -195,7 +195,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 
 .aulyckanban-kanban-container .aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active {
 	background: color-mix(in srgb, var(--color-orange) 44%, var(--background-primary));
-	border-color: transparent;
+	border-color: var(--aulyckanban-selection-border);
 	color: var(--text-normal);
 }
 

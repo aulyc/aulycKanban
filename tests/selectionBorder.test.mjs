@@ -90,10 +90,10 @@ test('keyboard navigation targets update instantly without visual trails', () =>
 	assert.match(rule('.aulyckanban-task:focus'), /box-shadow:\s*none/);
 });
 
-test('archive control keeps selection separate from focus in the utility row', () => {
+test('archive control is unfilled while inactive and gains fill plus white border when active', () => {
 	const button = rule('.aulyckanban-kanban-container .aulyckanban-tab.aulyckanban-archive-btn');
-	assert.match(button, /background:\s*color-mix\([^;]*var\(--color-orange\)/);
-	assert.match(button, /border-color:\s*color-mix\([^;]*var\(--color-orange\)/);
+	assert.equal(declarationValue(button, 'background'), 'transparent');
+	assert.equal(declarationValue(button, 'border-color'), 'var(--background-modifier-border)');
 	assert.match(button, /color:\s*var\(--color-orange\)/);
 	assert.match(button, /width:\s*38px/);
 	assert.match(button, /height:\s*38px/);
@@ -103,8 +103,7 @@ test('archive control keeps selection separate from focus in the utility row', (
 			'.aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active',
 	);
 	assert.match(active, /background:\s*color-mix\([^;]*var\(--color-orange\)/);
-	assert.match(active, /border-color:\s*transparent/);
-	assert.doesNotMatch(active, /border-color:\s*var\(--color-orange\)/);
+	assert.equal(declarationValue(active, 'border-color'), 'var(--aulyckanban-selection-border)');
 });
 
 test('task archive hover adopts the toolbar archive semantic color', () => {
@@ -229,14 +228,21 @@ test('archive container draws its panel frame only for keyboard-visible focus', 
 	);
 });
 
-test('every white selection border reference belongs to a focus selector', () => {
+test('white selection borders belong to focus selectors or the active archive control', () => {
 	const rules = [
 		...css.matchAll(/([^{}]+)\{([^{}]*var\(--aulyckanban-selection-border\)[^{}]*)\}/g),
 	];
 	assert.ok(rules.length > 0);
 	for (const [, selectorList] of rules) {
 		for (const selector of selectorList.split(',')) {
-			assert.match(selector, /:focus(?:-visible)?\s*$/);
+			const normalizedSelector = selector.trim();
+			assert.equal(
+				/:focus(?:-visible)?$/.test(normalizedSelector) ||
+					normalizedSelector ===
+						'.aulyckanban-kanban-container .aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active',
+				true,
+				`unexpected white selection border selector: ${normalizedSelector}`,
+			);
 		}
 	}
 });
