@@ -106,6 +106,25 @@ const zh = {
 		'将以当前看板数据覆盖全部自动同步笔记。旧版残留内容会移入“历史同步内容”，是否继续？',
 	'settings.sync.force.success': '已强制刷新 {count} 个同步笔记',
 	'settings.sync.force.fail': '强制刷新失败',
+	'settings.about.name': '关于 aulycKanban',
+	'settings.about.desc': '查看插件说明与致谢信息。',
+
+	// 关于
+	'about.title': '关于 aulycKanban',
+	'about.version': '插件版本',
+	'about.requirements': '软件要求',
+	'about.introduction': '应用介绍',
+	'about.introduction.line1':
+		'1. aulycKanban 是一款 Obsidian 任务看板插件，通过任务类型与四象限帮助整理工作和个人任务；',
+	'about.introduction.line2': '2. 支持任务搜索、归档、恢复，以及任务类型和象限的灵活管理；',
+	'about.introduction.line3': '3. 看板数据保存在本地，并支持 JSON 备份、导入和 Markdown 笔记同步。',
+	'about.website': '官方网站',
+	'about.acknowledgements': '致谢',
+	'about.acknowledgements.line1': '1. 感谢伟大的 AI 时代；',
+	'about.acknowledgements.line2': '2. 致敬 Codex & Claude；',
+	'about.acknowledgements.line3': '3. 感谢 Obsidian 提供开放的插件平台；',
+	'about.acknowledgements.line4': '4. 感谢四象限时间管理方法提供的灵感；',
+	'about.acknowledgements.line5': '5. 感谢 aulyc 带来的坚持和灵感。',
 
 	// 保存
 	'save.fail': '看板数据保存失败，请检查磁盘空间或权限',
@@ -232,6 +251,27 @@ const en: Record<I18nKey, string> = {
 		'This will overwrite every managed synchronization note with the current kanban data. Legacy content will be moved to “Historical synchronization content”. Continue?',
 	'settings.sync.force.success': 'Force-refreshed {count} synchronization notes',
 	'settings.sync.force.fail': 'Force refresh failed',
+	'settings.about.name': 'About aulycKanban',
+	'settings.about.desc': 'View the plugin overview and acknowledgements.',
+
+	'about.title': 'About aulycKanban',
+	'about.version': 'Plugin version',
+	'about.requirements': 'Requirements',
+	'about.introduction': 'Overview',
+	'about.introduction.line1':
+		'1. aulycKanban is an Obsidian task-board plugin that organizes work and personal tasks by task type and quadrant;',
+	'about.introduction.line2':
+		'2. It supports search, archiving, restoration, and flexible management of task types and quadrants;',
+	'about.introduction.line3':
+		'3. Board data stays local, with JSON backup, import, and Markdown note synchronization.',
+	'about.website': 'Official website',
+	'about.acknowledgements': 'Acknowledgements',
+	'about.acknowledgements.line1': '1. Thank you to the remarkable AI era;',
+	'about.acknowledgements.line2': '2. A tribute to Codex & Claude;',
+	'about.acknowledgements.line3': '3. Thank you to Obsidian for its open plugin platform;',
+	'about.acknowledgements.line4':
+		'4. Thank you to the four-quadrant time-management method for its inspiration;',
+	'about.acknowledgements.line5': '5. Thank you to aulyc for the persistence and inspiration.',
 
 	'save.fail': 'Failed to save kanban data. Check disk space or permissions.',
 

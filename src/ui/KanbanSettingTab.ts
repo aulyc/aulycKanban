@@ -3,6 +3,7 @@ import { t } from '../i18n';
 import type KanbanPlugin from '../main';
 import { BackupService } from '../services/backupService';
 import { normalizeSyncFolder } from '../utils/noteSync';
+import { AboutModal } from './AboutModal';
 import { ClearDataModal } from './ClearDataModal';
 import { ConfirmModal } from './ConfirmModal';
 
@@ -166,6 +167,7 @@ export class KanbanSettingTab extends PluginSettingTab {
 					.setPlaceholder(t('settings.sync.folder.placeholder'))
 					.setValue(settings.syncFolder)
 					.onChange(persistFolder);
+				text.inputEl.classList.add('aulyckanban-sync-folder-input');
 				text.inputEl.addEventListener('change', () => {
 					if (latestFolder) this.plugin.syncService.scheduleSyncAllViews();
 				});
@@ -202,6 +204,25 @@ export class KanbanSettingTab extends PluginSettingTab {
 							void runForceSync();
 						},
 					}).open();
+				});
+			});
+
+		// ==================== 关于 ====================
+		new Setting(containerEl)
+			.setName(t('settings.about.name'))
+			.setDesc(t('settings.about.desc'))
+			.addButton((btn) => {
+				btn.setIcon('info');
+				btn.buttonEl.createSpan({
+					cls: 'aulyckanban-accessible-label',
+					text: t('settings.about.name'),
+				});
+				btn.onClick(() => {
+					new AboutModal(
+						this.app,
+						this.plugin.manifest.version,
+						this.plugin.manifest.minAppVersion,
+					).open();
 				});
 			});
 	}

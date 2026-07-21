@@ -1,3 +1,4 @@
+import '../aboutModal.test.mjs';
 import '../archiveView.test.mjs';
 import '../boardLayout.test.mjs';
 import '../backupService.test.mjs';

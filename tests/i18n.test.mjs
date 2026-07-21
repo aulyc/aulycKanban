@@ -20,6 +20,11 @@ test('simplified Chinese settings use localized section headings and clear-data 
 	assert.equal(t('settings.clear.name'), '清除数据');
 	assert.equal(t('settings.clear.button'), '清除');
 	assert.equal(t('settings.clear.desc'), '不可恢复的删除所有数据');
+	assert.equal(t('settings.about.name'), '关于 aulycKanban');
+	assert.equal(t('about.version'), '插件版本');
+	assert.equal(t('about.requirements'), '软件要求');
+	assert.equal(t('about.website'), '官方网站');
+	assert.equal(t('about.acknowledgements'), '致谢');
 	assert.match(t('view.deleteData'), /对应 Markdown 会移入恢复目录/);
 });
 
@@ -32,4 +37,7 @@ test('English settings retain their localized copy', async () => {
 	assert.equal(t('settings.sync.force.name'), 'Force refresh synchronization');
 	assert.equal(t('settings.sync.force.button'), 'Sync now');
 	assert.equal(t('settings.clear.button'), 'Clear data');
+	assert.equal(t('settings.about.name'), 'About aulycKanban');
+	assert.equal(t('about.version'), 'Plugin version');
+	assert.equal(t('about.website'), 'Official website');
 });

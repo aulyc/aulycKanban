@@ -49,6 +49,12 @@ export const COVERAGE_THRESHOLDS = {
 			functions: 75,
 			lines: 85,
 		},
+		'src/ui/AboutModal.ts': {
+			statements: 100,
+			branches: 100,
+			functions: 100,
+			lines: 100,
+		},
 		'src/ui/ClearDataModal.ts': {
 			statements: 100,
 			branches: 100,

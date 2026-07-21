@@ -6,6 +6,7 @@ import { loadSourceModule } from './helpers/load-source-module.mjs';
 const renderedSettings = [];
 const renderedFolderSuggests = [];
 const renderedConfirmModals = [];
+const renderedAboutModals = [];
 const renderedNotices = [];
 const styles = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
 
@@ -69,6 +70,16 @@ class MockSetting {
 	}
 	addButton(callback) {
 		const button = {
+			buttonEl: {
+				createSpan: (options) => {
+					button.accessibleLabel = options;
+					return {};
+				},
+			},
+			setIcon: (value) => {
+				button.icon = value;
+				return button;
+			},
 			setButtonText: (value) => {
 				button.text = value;
 				return button;
@@ -109,9 +120,11 @@ class MockSetting {
 	}
 	addText(callback) {
 		const listeners = new Map();
+		const classes = new Set();
 		const text = {
 			inputEl: {
 				value: '',
+				classList: { add: (value) => classes.add(value) },
 				getBoundingClientRect: () => ({ width: 248 }),
 				ownerDocument: {
 					createEvent: () => ({
@@ -129,6 +142,7 @@ class MockSetting {
 					return true;
 				},
 			},
+			classes,
 			listeners,
 			setPlaceholder: (value) => {
 				text.placeholder = value;
@@ -147,6 +161,18 @@ class MockSetting {
 		callback(text);
 		this.text = text;
 		return this;
+	}
+}
+
+class MockAboutModal {
+	constructor(app, version, minAppVersion) {
+		this.app = app;
+		this.version = version;
+		this.minAppVersion = minAppVersion;
+		renderedAboutModals.push(this);
+	}
+	open() {
+		this.opened = true;
 	}
 }
 
@@ -190,6 +216,7 @@ const { KanbanSettingTab } = await loadSourceModule(
 					return folder || 'X-aulyc看板';
 				},
 			},
+			'./AboutModal': { AboutModal: MockAboutModal },
 			'./ClearDataModal': { ClearDataModal: class {} },
 			'./ConfirmModal': { ConfirmModal: MockConfirmModal },
 		},
@@ -213,6 +240,7 @@ function createHarness() {
 		async saveNow() {},
 	};
 	const plugin = {
+		manifest: { version: '2.8.1-beta.6', minAppVersion: '1.5.0' },
 		store,
 		syncService: {
 			scheduleSyncAllViews: () => {
@@ -239,6 +267,31 @@ function createHarness() {
 	const tab = new KanbanSettingTab(app, plugin);
 	return { tab, settings, syncCalls };
 }
+
+test('about setting opens an information card using current manifest metadata', () => {
+	const { tab } = createHarness();
+	const settingStart = renderedSettings.length;
+	const modalStart = renderedAboutModals.length;
+	tab.display();
+	const aboutSetting = renderedSettings
+		.slice(settingStart)
+		.find((item) => item.name === 'settings.about.name');
+
+	assert.ok(aboutSetting);
+	assert.equal(aboutSetting.desc, 'settings.about.desc');
+	assert.equal(aboutSetting.controls[0].icon, 'info');
+	assert.deepEqual(aboutSetting.controls[0].accessibleLabel, {
+		cls: 'aulyckanban-accessible-label',
+		text: 'settings.about.name',
+	});
+	aboutSetting.controls[0].onClickHandler();
+
+	const modal = renderedAboutModals[modalStart];
+	assert.ok(modal);
+	assert.equal(modal.version, '2.8.1-beta.6');
+	assert.equal(modal.minAppVersion, '1.5.0');
+	assert.equal(modal.opened, true);
+});
 
 test('settings expose one automatic sync folder without layout or per-note controls', async () => {
 	const { tab, settings, syncCalls } = createHarness();
@@ -332,6 +385,24 @@ test('sync folder suggestion popover matches the input width', () => {
 	assert.match(rule, /width:\s*var\(--aulyckanban-folder-suggest-width\) !important/);
 	assert.match(rule, /min-width:\s*var\(--aulyckanban-folder-suggest-width\) !important/);
 	assert.match(rule, /max-width:\s*var\(--aulyckanban-folder-suggest-width\) !important/);
+});
+
+test('sync folder focus adds one pixel inside without an outward focus ring', () => {
+	const { tab } = createHarness();
+	const start = renderedSettings.length;
+	tab.display();
+	const folder = renderedSettings
+		.slice(start)
+		.find((item) => item.name === 'settings.sync.folder.name');
+	const focusRule = styles.match(/\.aulyckanban-sync-folder-input:focus\s*\{([^}]*)\}/)?.[1] ?? '';
+
+	assert.equal(folder.text.classes.has('aulyckanban-sync-folder-input'), true);
+	assert.match(focusRule, /border-color:\s*var\(--background-modifier-border-focus\)/);
+	assert.match(
+		focusRule,
+		/box-shadow:\s*inset 0 0 0 1px var\(--background-modifier-border-focus\) !important/,
+	);
+	assert.match(focusRule, /outline:\s*none/);
 });
 
 test('force refresh requires confirmation and reports the rebuilt note count', async () => {
