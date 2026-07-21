@@ -67,6 +67,7 @@ const zh = {
 	'archive.delete.selected': '删除',
 	'archive.delete.selectedCount': '已选 {count} 项',
 	'archive.delete.selectAll': '全选',
+	'archive.delete.clearAll': '取消全选',
 	'archive.delete.selectTask': '选择任务',
 	'archive.confirm.restore': '确认恢复该归档任务吗？',
 	'archive.confirm.deleteSelected': '将删除选中的 {count} 条归档任务，此操作不可恢复。确认删除吗？',
@@ -189,6 +190,7 @@ const en: Record<I18nKey, string> = {
 	'archive.delete.selected': 'Delete',
 	'archive.delete.selectedCount': '{count} selected',
 	'archive.delete.selectAll': 'Select all',
+	'archive.delete.clearAll': 'Clear selection',
 	'archive.delete.selectTask': 'Select task',
 	'archive.confirm.restore': 'Restore this archived task?',
 	'archive.confirm.deleteSelected':

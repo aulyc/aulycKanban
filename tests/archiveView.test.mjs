@@ -194,6 +194,9 @@ test('archive browse mode uses one compact toolbar and one-line card metadata', 
 	assert.equal(byClass(container, 'aulyckanban-archive-sort-btn').length, 1);
 	assert.equal(byClass(container, 'aulyckanban-archive-filter-select').length, 0);
 	assert.equal(byClass(container, 'aulyckanban-archive-select-mode-btn').length, 1);
+	assert.equal(byClass(container, 'aulyckanban-archive-select-all-btn').length, 1);
+	assert.equal(byClass(container, 'aulyckanban-archive-delete-selected-btn').length, 1);
+	assert.equal(byClass(container, 'aulyckanban-archive-selected-count').length, 1);
 	assert.equal(byClass(container, 'aulyckanban-archive-toolbar-selection').length, 0);
 	assert.equal(byClass(container, 'aulyckanban-archive-task-meta').length, 1);
 	assert.equal(byClass(container, 'aulyckanban-archive-tag').length, 0);
@@ -201,28 +204,52 @@ test('archive browse mode uses one compact toolbar and one-line card metadata', 
 	assert.equal(byClass(container, 'aulyckanban-task-content-completed').length, 0);
 });
 
-test('archive browse actions align icon selection and sort with selection-mode controls', () => {
+test('archive browse toolbar keeps sort, select, select-all, delete, and count in fixed order', () => {
 	const { container } = createHarness();
 	const toolbar = byClass(container, 'aulyckanban-archive-toolbar-browse')[0];
-	const selectButton = byClass(toolbar, 'aulyckanban-archive-select-mode-btn')[0];
 	const sortButton = byClass(toolbar, 'aulyckanban-archive-sort-btn')[0];
+	const selectButton = byClass(toolbar, 'aulyckanban-archive-select-mode-btn')[0];
+	const selectAllButton = byClass(toolbar, 'aulyckanban-archive-select-all-btn')[0];
+	const deleteButton = byClass(toolbar, 'aulyckanban-archive-delete-selected-btn')[0];
+	const selectedCount = byClass(toolbar, 'aulyckanban-archive-selected-count')[0];
 
-	assert.deepEqual(toolbar.children, [selectButton, sortButton]);
+	assert.deepEqual(toolbar.children, [
+		sortButton,
+		selectButton,
+		selectAllButton,
+		deleteButton,
+		selectedCount,
+	]);
+	assert.equal(sortButton.icon, 'arrow-down-wide-narrow');
 	assert.equal(selectButton.icon, 'list-checks');
 	assert.equal(selectButton.textContent, '');
 	assert.equal(
 		byClass(selectButton, 'aulyckanban-accessible-label')[0].textContent,
 		'archive.delete.mode',
 	);
-	assert.equal(sortButton.icon, 'arrow-down-wide-narrow');
+	assert.equal(selectAllButton.icon, 'check-check');
+	assert.equal(
+		byClass(selectAllButton, 'aulyckanban-accessible-label')[0].textContent,
+		'archive.delete.selectAll',
+	);
+	assert.equal(deleteButton.icon, 'trash-2');
+	assert.equal(deleteButton.disabled, true);
+	assert.equal(
+		byClass(selectedCount, 'aulyckanban-archive-selected-count-value')[0].textContent,
+		'0',
+	);
 
 	const browseToolbarRule =
 		css.match(/\.aulyckanban-archive-toolbar-browse\s*\{([^}]*)\}/)?.[1] ?? '';
 	assert.match(browseToolbarRule, /justify-content:\s*flex-start;/);
 
-	const selectionActionsRule =
-		css.match(/\.aulyckanban-archive-selection-actions\s*\{([^}]*)\}/)?.[1] ?? '';
-	assert.match(selectionActionsRule, /gap:\s*8px;/);
+	const countRule = css.match(/\.aulyckanban-archive-selected-count\s*\{([^}]*)\}/)?.[1] ?? '';
+	assert.match(countRule, /margin-left:\s*auto;/);
+	const countValueRule =
+		css.match(/\.aulyckanban-archive-selected-count-value\s*\{([^}]*)\}/)?.[1] ?? '';
+	assert.match(countValueRule, /min-width:\s*3ch;/);
+	assert.match(countValueRule, /text-align:\s*right;/);
+	assert.match(countValueRule, /font-variant-numeric:\s*tabular-nums;/);
 });
 
 test('archive bidirectional sort button toggles newest and oldest order without a select menu', () => {
@@ -246,7 +273,7 @@ test('archive bidirectional sort button toggles newest and oldest order without 
 	);
 });
 
-test('archive selection mode replaces browse controls and hides restore actions', () => {
+test('archive selection toolbar keeps aligned icon actions and hides restore actions', () => {
 	const { container } = createHarness();
 	const selectButton = byClass(container, 'aulyckanban-archive-select-mode-btn')[0];
 	selectButton.listeners.get('click')[0]();
@@ -257,16 +284,18 @@ test('archive selection mode replaces browse controls and hides restore actions'
 	assert.equal(byClass(container, 'aulyckanban-archive-restore-btn').length, 0);
 	assert.equal(byClass(container, 'aulyckanban-archive-more-btn').length, 0);
 	const toolbar = byClass(container, 'aulyckanban-archive-toolbar-selection')[0];
-	const selectionActions = byClass(container, 'aulyckanban-archive-selection-actions')[0];
-	const selectionSummary = byClass(container, 'aulyckanban-archive-selection-summary')[0];
-	const deleteButton = byClass(container, 'aulyckanban-archive-delete-selected-btn')[0];
-	const cancelButton = byClass(container, 'aulyckanban-archive-cancel-selection-btn')[0];
 	const sortButton = byClass(container, 'aulyckanban-archive-sort-btn')[0];
-	const selectAll = byClass(container, 'aulyckanban-archive-select-all')[0];
+	const cancelButton = byClass(container, 'aulyckanban-archive-cancel-selection-btn')[0];
+	const clearAllButton = byClass(container, 'aulyckanban-archive-clear-all-btn')[0];
+	const deleteButton = byClass(container, 'aulyckanban-archive-delete-selected-btn')[0];
 	const selectedCount = byClass(container, 'aulyckanban-archive-selected-count')[0];
-	assert.deepEqual(toolbar.children, [selectionActions, deleteButton, selectionSummary]);
-	assert.deepEqual(selectionActions.children, [cancelButton, sortButton]);
-	assert.deepEqual(selectionSummary.children, [selectAll, selectedCount]);
+	assert.deepEqual(toolbar.children, [
+		sortButton,
+		cancelButton,
+		clearAllButton,
+		deleteButton,
+		selectedCount,
+	]);
 	assert.equal(deleteButton.icon, 'trash-2');
 	assert.equal(deleteButton.textContent, '');
 	assert.equal(
@@ -279,6 +308,12 @@ test('archive selection mode replaces browse controls and hides restore actions'
 	assert.equal(
 		byClass(cancelButton, 'aulyckanban-accessible-label')[0].textContent,
 		'archive.delete.cancel',
+	);
+	assert.equal(clearAllButton.icon, 'square-x');
+	assert.equal(clearAllButton.disabled, true);
+	assert.equal(
+		byClass(clearAllButton, 'aulyckanban-accessible-label')[0].textContent,
+		'archive.delete.clearAll',
 	);
 	assert.equal(sortButton.icon, 'arrow-down-wide-narrow');
 	sortButton.listeners.get('click')[0]();
@@ -303,19 +338,47 @@ test('archive selection mode has one explicit delete path and an unboxed toolbar
 
 	const deleteRule =
 		css.match(/\.aulyckanban-archive-delete-selected-btn\s*\{([^}]*)\}/)?.[1] ?? '';
-	assert.match(deleteRule, /margin-left:\s*auto;/);
+	assert.doesNotMatch(deleteRule, /margin-left:\s*auto;/);
+	assert.doesNotMatch(source, /selectAllCheckbox|aulyckanban-archive-select-all[^-]/);
 });
 
-test('clicking an archive card selects the whole card and updates the selected count', () => {
+test('select-all and clear-all icons update selection while preserving the toolbar slots', () => {
 	const { container } = createHarness();
+	byClass(container, 'aulyckanban-archive-select-all-btn')[0].listeners.get('click')[0]();
+
+	assert.equal(byClass(container, 'aulyckanban-archive-toolbar-selection').length, 1);
+	assert.equal(byClass(container, 'aulyckanban-archive-task-selected').length, 1);
+	assert.equal(byClass(container, 'aulyckanban-archive-selected-count-value')[0].textContent, '1');
+	assert.equal(byClass(container, 'aulyckanban-archive-delete-selected-btn')[0].disabled, false);
+
+	byClass(container, 'aulyckanban-archive-clear-all-btn')[0].listeners.get('click')[0]();
+	assert.equal(byClass(container, 'aulyckanban-archive-toolbar-selection').length, 1);
+	assert.equal(byClass(container, 'aulyckanban-archive-task-selected').length, 0);
+	assert.equal(byClass(container, 'aulyckanban-archive-selected-count-value')[0].textContent, '0');
+	assert.equal(byClass(container, 'aulyckanban-archive-delete-selected-btn')[0].disabled, true);
+});
+
+test('archive card selection checkbox occupies the restore action position', () => {
+	const { container } = createHarness();
+	const browseTop = byClass(container, 'aulyckanban-archive-task-top')[0];
+	const browseMain = byClass(browseTop, 'aulyckanban-archive-task-main')[0];
+	const browseActions = byClass(browseTop, 'aulyckanban-archive-task-actions')[0];
+	const restoreButton = byClass(browseActions, 'aulyckanban-archive-restore-btn')[0];
+	assert.deepEqual(browseTop.children, [browseMain, browseActions]);
+	assert.equal(restoreButton.parentElement, browseActions);
+
 	byClass(container, 'aulyckanban-archive-select-mode-btn')[0].listeners.get('click')[0]();
+	const selectingTop = byClass(container, 'aulyckanban-archive-task-top')[0];
+	const selectingMain = byClass(selectingTop, 'aulyckanban-archive-task-main')[0];
+	const selectingActions = byClass(selectingTop, 'aulyckanban-archive-task-actions')[0];
+	const checkboxLabel = byClass(selectingActions, 'aulyckanban-archive-select-label')[0];
+	assert.deepEqual(selectingTop.children, [selectingMain, selectingActions]);
+	assert.equal(checkboxLabel.parentElement, selectingActions);
+
 	const card = byClass(container, 'aulyckanban-archive-task')[0];
 	card.listeners.get('click')[0]({ target: card });
 
 	assert.equal(byClass(container, 'aulyckanban-archive-task-selected').length, 1);
-	assert.equal(
-		byClass(container, 'aulyckanban-archive-selected-count')[0].textContent,
-		'已选 1 项',
-	);
+	assert.equal(byClass(container, 'aulyckanban-archive-selected-count-value')[0].textContent, '1');
 	assert.equal(byClass(container, 'aulyckanban-archive-delete-selected-btn')[0].disabled, false);
 });
