@@ -10,7 +10,7 @@ import { createInlineInput } from './InlineInput';
 
 /**
  * 任务卡片组件
- * - 首次点击选中卡片，再次点击或按 Enter 进入编辑模式（inline textarea）
+ * - 单击选中卡片，双击任务内容或按 Enter 进入编辑模式（inline textarea）
  * - 删除按钮两次点击确认（第一次变色，第二次删除）
  * - 显示创建/修改时间
  */
@@ -67,8 +67,12 @@ export class TaskCard {
 			e.stopPropagation();
 			if (document.activeElement !== this.el) {
 				this.el.focus({ preventScroll: true });
-				return;
 			}
+		});
+		contentEl.addEventListener('dblclick', (e: MouseEvent) => {
+			e.preventDefault();
+			e.stopPropagation();
+			this.el.focus({ preventScroll: true });
 			this.enterEditMode(contentEl);
 		});
 		this.el.addEventListener('keydown', (e: KeyboardEvent) => {
@@ -135,7 +139,7 @@ export class TaskCard {
 	}
 
 	/**
-	 * 已选中后再次点击或按 Enter 进入内联编辑模式
+	 * 双击任务内容或在卡片获得焦点时按 Enter 进入内联编辑模式
 	 */
 	private enterEditMode(contentEl: HTMLElement): void {
 		// 避免重复进入

@@ -149,7 +149,7 @@ test('task archive action reuses the toolbar archive folder icon', () => {
 	assert.equal(icons[0].name, 'archive');
 });
 
-test('first mouse click selects a task and the second click edits it', () => {
+test('single mouse clicks only select a task and double-clicking its content edits it', () => {
 	const { card, documentRef, inlineInputs } = createHarness();
 	const click = card.listeners.get('click')[0];
 	const event = { stopPropagation() {} };
@@ -160,6 +160,21 @@ test('first mouse click selects a task and the second click edits it', () => {
 	assert.equal(inlineInputs.length, 0);
 
 	click(event);
+	assert.equal(documentRef.activeElement, card);
+	assert.equal(card.classList.contains('aulyckanban-task-editing'), false);
+	assert.equal(inlineInputs.length, 0);
+
+	const content = descendants(card).find((element) =>
+		element.classList.contains('aulyckanban-task-content'),
+	);
+	let defaultPrevented = false;
+	content.listeners.get('dblclick')[0]({
+		preventDefault() {
+			defaultPrevented = true;
+		},
+		stopPropagation() {},
+	});
+	assert.equal(defaultPrevented, true);
 	assert.equal(card.classList.contains('aulyckanban-task-editing'), true);
 	assert.equal(inlineInputs.length, 1);
 	assert.equal(inlineInputs[0].stopClickPropagation, true);
@@ -176,15 +191,17 @@ test('Enter edits an already selected task', () => {
 });
 
 test('aggregate cards display their source and dispatch edits to that exact task type', () => {
-	const { actions, card, documentRef, inlineInputs } = createHarness();
+	const { actions, card, inlineInputs } = createHarness();
 	const sourceLabel = descendants(card).find((element) =>
 		element.classList.contains('aulyckanban-task-source'),
 	);
 	assert.equal(sourceLabel.textContent, '工作任务');
 	assert.equal(card.dataset.viewId, 'work');
 
-	documentRef.activeElement = card;
-	card.listeners.get('click')[0]({ stopPropagation() {} });
+	const content = descendants(card).find((element) =>
+		element.classList.contains('aulyckanban-task-content'),
+	);
+	content.listeners.get('dblclick')[0]({ preventDefault() {}, stopPropagation() {} });
 	inlineInputs[0].onCommit('修改后', 'blur');
 	assert.equal(actions.at(-1).type, 'EDIT_TASK');
 	assert.equal(actions.at(-1).payload.viewId, 'work');
