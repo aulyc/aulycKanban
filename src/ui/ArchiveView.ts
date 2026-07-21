@@ -112,24 +112,25 @@ export class ArchiveView {
 	private renderSelectAllButton(toolbarEl: HTMLElement, filteredItems: TaskRef[]): void {
 		const filteredIds = filteredItems.map(getTaskRefKey);
 		const selectedCount = this.selectedTaskKeys.size;
+		const shouldClearSelection = this.deleteMode && selectedCount > 0;
 		const selectAllBtn = toolbarEl.createEl('button', {
 			cls: [
 				'aulyckanban-archive-selection-btn',
 				'aulyckanban-archive-select-all-btn',
-				this.deleteMode ? 'aulyckanban-archive-clear-all-btn' : '',
+				shouldClearSelection ? 'aulyckanban-archive-clear-all-btn' : '',
 			]
 				.filter(Boolean)
 				.join(' '),
 			attr: { type: 'button' },
 		});
-		setIcon(selectAllBtn, this.deleteMode ? 'square-x' : 'check-check');
+		setIcon(selectAllBtn, shouldClearSelection ? 'square-x' : 'check-check');
 		appendAccessibleLabel(
 			selectAllBtn,
-			this.deleteMode ? t('archive.delete.clearAll') : t('archive.delete.selectAll'),
+			shouldClearSelection ? t('archive.delete.clearAll') : t('archive.delete.selectAll'),
 		);
-		selectAllBtn.disabled = filteredIds.length === 0 || (this.deleteMode && selectedCount === 0);
+		selectAllBtn.disabled = filteredIds.length === 0;
 		selectAllBtn.addEventListener('click', () => {
-			if (this.deleteMode) {
+			if (shouldClearSelection) {
 				for (const id of filteredIds) this.selectedTaskKeys.delete(id);
 			} else {
 				this.deleteMode = true;

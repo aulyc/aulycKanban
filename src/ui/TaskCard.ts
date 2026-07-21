@@ -3,7 +3,7 @@ import type { App } from 'obsidian';
 import type { Task } from '../types';
 import type { KanbanStore } from '../store';
 import { t } from '../i18n';
-import { formatDateTimeMinuteParts } from '../utils/datetime';
+import { formatDateTimeMinute } from '../utils/datetime';
 import { setTextWithLineBreaks } from '../utils/dom';
 import { ConfirmModal } from './ConfirmModal';
 import { createInlineInput } from './InlineInput';
@@ -78,16 +78,16 @@ export class TaskCard {
 			this.enterEditMode(contentEl);
 		});
 
-		// 底部信息：左侧来源与时间分行显示，操作图标固定在右侧
+		// 底部信息：来源与完整日期时间分行显示，操作图标固定在右侧
 		const metaRowEl = middleEl.createDiv({ cls: 'aulyckanban-task-meta-row' });
 		const metaDetailsEl = metaRowEl.createDiv({ cls: 'aulyckanban-task-meta-details' });
 		if (this.sourceLabel) {
 			metaDetailsEl.createDiv({ cls: 'aulyckanban-task-source', text: this.sourceLabel });
 		}
-		const timeParts = formatDateTimeMinuteParts(task.updatedAt ?? task.createdAt);
-		const timeEl = metaDetailsEl.createDiv({ cls: 'aulyckanban-task-time' });
-		timeEl.createDiv({ cls: 'aulyckanban-task-date', text: timeParts.date });
-		timeEl.createDiv({ cls: 'aulyckanban-task-clock', text: timeParts.time });
+		metaDetailsEl.createDiv({
+			cls: 'aulyckanban-task-time',
+			text: formatDateTimeMinute(task.updatedAt ?? task.createdAt),
+		});
 
 		const actionsEl = metaRowEl.createDiv({ cls: 'aulyckanban-task-actions' });
 

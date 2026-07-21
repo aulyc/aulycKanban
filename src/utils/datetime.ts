@@ -31,7 +31,7 @@ export function formatDateTime(isoStr: string | Date): string {
 }
 
 /**
- * 分别格式化分钟级日期与时间，供需要固定分行的界面使用。
+ * 分别格式化分钟级日期与时间，供完整分钟级时间字符串组合使用。
  */
 export function formatDateTimeMinuteParts(isoStr: string): { date: string; time: string } {
 	try {

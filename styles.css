@@ -838,9 +838,6 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 
 /* ==================== 任务时间 ==================== */
 .aulyckanban-task-time {
-	display: flex;
-	flex-direction: column;
-	align-items: flex-start;
 	font-size: 11px;
 	color: var(--text-faint);
 	line-height: 1.3;

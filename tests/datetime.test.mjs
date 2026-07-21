@@ -12,7 +12,7 @@ const { formatDateTimeMinute, formatDateTimeMinuteParts } = await loadSourceModu
 	},
 );
 
-test('minute formatting exposes locale-safe date and time parts for stacked UI', () => {
+test('minute formatting composes locale-safe date and time parts on one line', () => {
 	const value = '2026-07-13T12:00:00';
 	const parts = formatDateTimeMinuteParts(value);
 

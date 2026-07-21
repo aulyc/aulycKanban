@@ -91,7 +91,7 @@ const { TaskCard } = await loadSourceModule(new URL('../src/ui/TaskCard.ts', imp
 		},
 		'../i18n': { t: (key) => key },
 		'../utils/datetime': {
-			formatDateTimeMinuteParts: () => ({ date: '2026/07/13', time: '12:00' }),
+			formatDateTimeMinute: () => '2026/07/13 12:00',
 		},
 		'../utils/dom': {
 			setTextWithLineBreaks: (element, value) => {
@@ -191,7 +191,7 @@ test('aggregate cards display their source and dispatch edits to that exact task
 	assert.equal(actions.at(-1).payload.columnId, 'column');
 });
 
-test('task metadata renders date and time as separate lines below the source label', () => {
+test('task metadata renders date and time on one line below the source label', () => {
 	const { card } = createHarness();
 	const metaRow = descendants(card).find((element) =>
 		element.classList.contains('aulyckanban-task-meta-row'),
@@ -210,15 +210,6 @@ test('task metadata renders date and time as separate lines below the source lab
 	assert.equal(metaDetails.children[0].classList.contains('aulyckanban-task-source'), true);
 	assert.equal(metaDetails.children[0].textContent, '工作任务');
 	assert.equal(metaDetails.children[1].classList.contains('aulyckanban-task-time'), true);
-	assert.equal(metaDetails.children[1].children.length, 2);
-	assert.equal(metaDetails.children[1].children[0].textContent, '2026/07/13');
-	assert.equal(metaDetails.children[1].children[1].textContent, '12:00');
-	assert.equal(
-		metaDetails.children[1].children[0].classList.contains('aulyckanban-task-date'),
-		true,
-	);
-	assert.equal(
-		metaDetails.children[1].children[1].classList.contains('aulyckanban-task-clock'),
-		true,
-	);
+	assert.equal(metaDetails.children[1].textContent, '2026/07/13 12:00');
+	assert.equal(metaDetails.children[1].children.length, 0);
 });

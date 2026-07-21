@@ -144,14 +144,12 @@ test('task list is transparent while each task card owns a themed surface', () =
 	assert.match(rule('.aulyckanban-task'), /background:\s*var\(--background-secondary\)/);
 });
 
-test('task metadata stacks source and time at the left edge', () => {
+test('task metadata stacks source above a single-line date and time at the left edge', () => {
 	assert.match(rule('.aulyckanban-task-meta-row'), /align-items:\s*flex-end/);
 	const details = rule('.aulyckanban-task-meta-details');
 	assert.match(details, /flex-direction:\s*column/);
 	assert.match(details, /align-items:\s*flex-start/);
 	const time = rule('.aulyckanban-task-time');
-	assert.match(time, /display:\s*flex/);
-	assert.match(time, /flex-direction:\s*column/);
-	assert.match(time, /align-items:\s*flex-start/);
+	assert.doesNotMatch(time, /flex-direction:\s*column/);
 	assert.match(time, /white-space:\s*nowrap/);
 });
