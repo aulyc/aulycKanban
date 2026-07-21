@@ -47,7 +47,6 @@ export class Board {
 		this.archiveContainerEl = this.taskPaneEl.createDiv({
 			cls: 'aulyckanban-archive-container',
 		});
-		this.archiveContainerEl.setAttribute('tabindex', '-1');
 		this.archiveView = new ArchiveView(this.archiveContainerEl, app, this.store);
 
 		this.categoryNav = new CategoryNav(this.contentAreaEl, app, this.store);

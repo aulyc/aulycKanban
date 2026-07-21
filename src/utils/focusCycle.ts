@@ -17,7 +17,11 @@ const TASK_ZONE_RESULT_SELECTOR =
 	'.aulyckanban-task-pane:not(.aulyckanban-mode-archive) .aulyckanban-task-list .aulyckanban-task, ' +
 	'.aulyckanban-task-pane.aulyckanban-mode-archive .aulyckanban-archive-container .aulyckanban-archive-task';
 const TASK_ZONE_CONTROL_SELECTOR =
-	'.aulyckanban-task-add-btn, .aulyckanban-task-create-target, .aulyckanban-task-create-input';
+	'.aulyckanban-task-pane:not(.aulyckanban-mode-archive) .aulyckanban-task-add-btn, ' +
+	'.aulyckanban-task-pane:not(.aulyckanban-mode-archive) .aulyckanban-task-create-target, ' +
+	'.aulyckanban-task-pane:not(.aulyckanban-mode-archive) .aulyckanban-task-create-input';
+const ARCHIVE_TASK_ZONE_FALLBACK_SELECTOR =
+	'.aulyckanban-task-pane.aulyckanban-mode-archive .aulyckanban-archive-sort-btn';
 
 export interface TabFocusFallbackContext {
 	key: string;
@@ -67,14 +71,12 @@ export function shouldUseTabFocusFallback(context: TabFocusFallbackContext): boo
 	);
 }
 
-/** 获取普通任务区的首个焦点目标，避免命中隐藏归档区复用的任务样式。 */
+/** 获取任务区的首个局部焦点目标，避免焦点落到隐藏控件或整个归档面板。 */
 export function getTaskZoneFocusTarget(root: ParentNode): HTMLElement | null {
 	return (
 		root.querySelector<HTMLElement>(TASK_ZONE_RESULT_SELECTOR) ??
+		root.querySelector<HTMLElement>(ARCHIVE_TASK_ZONE_FALLBACK_SELECTOR) ??
 		root.querySelector<HTMLElement>(TASK_ZONE_CONTROL_SELECTOR) ??
-		root.querySelector<HTMLElement>(
-			'.aulyckanban-task-pane.aulyckanban-mode-archive .aulyckanban-archive-container',
-		) ??
 		root.querySelector<HTMLElement>('.aulyckanban-task-pane')
 	);
 }

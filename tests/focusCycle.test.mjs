@@ -27,23 +27,42 @@ test('empty task zones ignore hidden results and focus the task add control', ()
 	};
 
 	assert.equal(getTaskZoneFocusTarget(root), addButton);
+	const taskControlSelector = selectors.find((selector) =>
+		selector.includes('.aulyckanban-task-add-btn'),
+	);
 	assert.equal(
 		selectors[0].includes('.aulyckanban-task-pane:not(.aulyckanban-mode-archive)'),
 		true,
 	);
-	assert.equal(selectors[1].includes('.aulyckanban-task-search-input'), false);
-	assert.equal(selectors[1].includes('.aulyckanban-task-add-btn'), true);
+	assert.equal(taskControlSelector.includes('.aulyckanban-task-search-input'), false);
+	assert.equal(
+		taskControlSelector.includes('.aulyckanban-task-pane:not(.aulyckanban-mode-archive)'),
+		true,
+	);
 });
 
-test('an empty archive task zone focuses its visible archive container', () => {
-	const archiveContainer = { id: 'archive-container' };
+test('an empty archive task zone focuses its localized sort control', () => {
+	const archiveSortButton = { id: 'archive-sort' };
 	const root = {
 		querySelector(selector) {
-			if (selector.includes('.aulyckanban-archive-container')) return archiveContainer;
+			if (selector.includes('.aulyckanban-archive-sort-btn')) return archiveSortButton;
 			return null;
 		},
 	};
-	assert.equal(getTaskZoneFocusTarget(root), archiveContainer);
+	assert.equal(getTaskZoneFocusTarget(root), archiveSortButton);
+});
+
+test('a non-empty archive task zone focuses the first archive card before its toolbar', () => {
+	const archiveTask = { id: 'archive-task' };
+	const archiveSortButton = { id: 'archive-sort' };
+	const root = {
+		querySelector(selector) {
+			if (selector.includes('.aulyckanban-archive-task')) return archiveTask;
+			if (selector.includes('.aulyckanban-archive-sort-btn')) return archiveSortButton;
+			return null;
+		},
+	};
+	assert.equal(getTaskZoneFocusTarget(root), archiveTask);
 });
 
 test('utility focus and arrow navigation contain search plus archive only', () => {

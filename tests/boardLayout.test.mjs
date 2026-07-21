@@ -89,6 +89,7 @@ test('utility row precedes task types while task add stays above normal and arch
 	assert.equal(taskPane.classes.has('aulyckanban-task-pane'), true);
 	assert.equal(instances.get('tasks').parent, taskPane);
 	assert.equal(instances.get('archive').parent.parentElement, taskPane);
+	assert.equal(instances.get('archive').parent.attributes.tabindex, undefined);
 
 	board.render();
 	assert.equal(instances.get('utility').renderCount, 1);

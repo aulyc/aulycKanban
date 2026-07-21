@@ -394,3 +394,37 @@ test('archive card selection checkbox occupies the restore action position', () 
 	assert.equal(byClass(container, 'aulyckanban-archive-selected-count-value')[0].textContent, '1');
 	assert.equal(byClass(container, 'aulyckanban-archive-delete-selected-btn')[0].disabled, false);
 });
+
+test('archive card restore and selection controls share one centered action slot', () => {
+	const actionsRule = css.match(/\.aulyckanban-archive-task-actions\s*\{([^}]*)\}/)?.[1] ?? '';
+	assert.match(actionsRule, /display:\s*grid;/);
+	assert.match(actionsRule, /place-items:\s*center;/);
+	assert.match(actionsRule, /width:\s*24px;/);
+	assert.match(actionsRule, /height:\s*24px;/);
+
+	for (const selector of [
+		'.aulyckanban-archive-select-label',
+		'.aulyckanban-archive-restore-btn',
+	]) {
+		const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+		const declarations = css.match(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`))?.[1] ?? '';
+		assert.match(declarations, /display:\s*grid;/);
+		assert.match(declarations, /place-items:\s*center;/);
+		assert.match(declarations, /width:\s*24px;/);
+		assert.match(declarations, /height:\s*24px;/);
+	}
+
+	const checkboxRule = css.match(/\.aulyckanban-archive-select-checkbox\s*\{([^}]*)\}/)?.[1] ?? '';
+	assert.match(checkboxRule, /display:\s*block;/);
+});
+
+test('selected archive cards keep their normal surface and use only a red border', () => {
+	const selectedRule =
+		css.match(
+			/\.aulyckanban-archive-task-selected\s*,\s*\.aulyckanban-archive-task-selected:hover\s*\{([^}]*)\}/,
+		)?.[1] ?? '';
+
+	assert.match(selectedRule, /border-color:\s*var\(--text-error\);/);
+	assert.match(selectedRule, /background:\s*var\(--background-secondary\);/);
+	assert.doesNotMatch(selectedRule, /background:\s*color-mix\(/);
+});
