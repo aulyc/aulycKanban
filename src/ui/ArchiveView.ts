@@ -107,7 +107,34 @@ export class ArchiveView {
 			cls: 'aulyckanban-archive-toolbar aulyckanban-archive-toolbar-selection',
 		});
 
-		const selectAllLabel = toolbarEl.createEl('label', { cls: 'aulyckanban-archive-select-all' });
+		const actionsEl = toolbarEl.createDiv({ cls: 'aulyckanban-archive-selection-actions' });
+		const cancelBtn = actionsEl.createEl('button', {
+			cls: 'aulyckanban-archive-selection-btn aulyckanban-archive-cancel-selection-btn',
+			attr: { type: 'button' },
+		});
+		setIcon(cancelBtn, 'list-x');
+		appendAccessibleLabel(cancelBtn, t('archive.delete.cancel'));
+		cancelBtn.addEventListener('click', () => {
+			this.deleteMode = false;
+			this.selectedTaskKeys.clear();
+			this.render();
+		});
+
+		this.renderSortButton(actionsEl);
+
+		const deleteSelectedBtn = toolbarEl.createEl('button', {
+			cls: 'aulyckanban-archive-selection-btn aulyckanban-archive-delete-selected-btn',
+			attr: { type: 'button' },
+		});
+		setIcon(deleteSelectedBtn, 'trash-2');
+		appendAccessibleLabel(deleteSelectedBtn, t('archive.delete.selected'));
+		deleteSelectedBtn.disabled = selectedCount === 0;
+		deleteSelectedBtn.addEventListener('click', () => {
+			this.confirmDeleteSelected(Array.from(this.selectedTaskKeys));
+		});
+
+		const summaryEl = toolbarEl.createDiv({ cls: 'aulyckanban-archive-selection-summary' });
+		const selectAllLabel = summaryEl.createEl('label', { cls: 'aulyckanban-archive-select-all' });
 		const selectAllCheckbox = selectAllLabel.createEl('input', {
 			cls: 'aulyckanban-archive-select-checkbox',
 			attr: { type: 'checkbox' },
@@ -125,36 +152,10 @@ export class ArchiveView {
 			this.render();
 		});
 
-		toolbarEl.createSpan({
+		summaryEl.createSpan({
 			cls: 'aulyckanban-archive-selected-count',
 			text: t('archive.delete.selectedCount').replace('{count}', String(selectedCount)),
 		});
-
-		const actionsEl = toolbarEl.createDiv({ cls: 'aulyckanban-archive-selection-actions' });
-		const deleteSelectedBtn = actionsEl.createEl('button', {
-			cls: 'aulyckanban-archive-selection-btn aulyckanban-archive-delete-selected-btn',
-			attr: { type: 'button' },
-		});
-		setIcon(deleteSelectedBtn, 'trash-2');
-		appendAccessibleLabel(deleteSelectedBtn, t('archive.delete.selected'));
-		deleteSelectedBtn.disabled = selectedCount === 0;
-		deleteSelectedBtn.addEventListener('click', () => {
-			this.confirmDeleteSelected(Array.from(this.selectedTaskKeys));
-		});
-
-		const cancelBtn = actionsEl.createEl('button', {
-			cls: 'aulyckanban-archive-selection-btn aulyckanban-archive-cancel-selection-btn',
-			attr: { type: 'button' },
-		});
-		setIcon(cancelBtn, 'list-x');
-		appendAccessibleLabel(cancelBtn, t('archive.delete.cancel'));
-		cancelBtn.addEventListener('click', () => {
-			this.deleteMode = false;
-			this.selectedTaskKeys.clear();
-			this.render();
-		});
-
-		this.renderSortButton(actionsEl);
 	}
 
 	private confirmDeleteSelected(keys: string[]): void {

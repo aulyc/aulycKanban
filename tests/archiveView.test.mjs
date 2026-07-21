@@ -252,11 +252,17 @@ test('archive selection mode replaces browse controls and hides restore actions'
 	assert.equal(byClass(container, 'aulyckanban-archive-search').length, 0);
 	assert.equal(byClass(container, 'aulyckanban-archive-restore-btn').length, 0);
 	assert.equal(byClass(container, 'aulyckanban-archive-more-btn').length, 0);
+	const toolbar = byClass(container, 'aulyckanban-archive-toolbar-selection')[0];
 	const selectionActions = byClass(container, 'aulyckanban-archive-selection-actions')[0];
+	const selectionSummary = byClass(container, 'aulyckanban-archive-selection-summary')[0];
 	const deleteButton = byClass(container, 'aulyckanban-archive-delete-selected-btn')[0];
 	const cancelButton = byClass(container, 'aulyckanban-archive-cancel-selection-btn')[0];
 	const sortButton = byClass(container, 'aulyckanban-archive-sort-btn')[0];
-	assert.deepEqual(selectionActions.children, [deleteButton, cancelButton, sortButton]);
+	const selectAll = byClass(container, 'aulyckanban-archive-select-all')[0];
+	const selectedCount = byClass(container, 'aulyckanban-archive-selected-count')[0];
+	assert.deepEqual(toolbar.children, [selectionActions, deleteButton, selectionSummary]);
+	assert.deepEqual(selectionActions.children, [cancelButton, sortButton]);
+	assert.deepEqual(selectionSummary.children, [selectAll, selectedCount]);
 	assert.equal(deleteButton.icon, 'trash-2');
 	assert.equal(deleteButton.textContent, '');
 	assert.equal(
@@ -290,6 +296,10 @@ test('archive selection mode has one explicit delete path and an unboxed toolbar
 		css.match(/\.aulyckanban-archive-delete-selected-btn:disabled\s*\{([^}]*)\}/)?.[1] ?? '';
 	assert.match(disabledDeleteRule, /border-color:\s*var\(--background-modifier-border\);/);
 	assert.match(disabledDeleteRule, /background:\s*var\(--interactive-normal\);/);
+
+	const deleteRule =
+		css.match(/\.aulyckanban-archive-delete-selected-btn\s*\{([^}]*)\}/)?.[1] ?? '';
+	assert.match(deleteRule, /margin-left:\s*auto;/);
 });
 
 test('clicking an archive card selects the whole card and updates the selected count', () => {

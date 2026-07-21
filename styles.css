@@ -1062,7 +1062,6 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 
 .aulyckanban-archive-selected-count {
 	min-width: 0;
-	margin-right: auto;
 	overflow: hidden;
 	color: var(--text-muted);
 	font-size: 12px;
@@ -1077,6 +1076,14 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	flex: 0 0 auto;
 }
 
+.aulyckanban-archive-selection-summary {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+	flex: 0 1 auto;
+}
+
 .aulyckanban-archive-selection-btn {
 	display: grid;
 	place-items: center;
@@ -1089,6 +1096,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 .aulyckanban-archive-delete-selected-btn {
 	min-width: 30px;
 	width: 30px;
+	margin-left: auto;
 	padding: 0;
 	border-color: color-mix(in srgb, var(--text-error) 70%, var(--background-modifier-border));
 	background: var(--text-error);
