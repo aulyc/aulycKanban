@@ -201,7 +201,7 @@ test('archive browse mode uses one compact toolbar and one-line card metadata', 
 	assert.equal(byClass(container, 'aulyckanban-task-content-completed').length, 0);
 });
 
-test('archive browse actions place icon selection before bidirectional sort at the right edge', () => {
+test('archive browse actions align icon selection and sort with selection-mode controls', () => {
 	const { container } = createHarness();
 	const toolbar = byClass(container, 'aulyckanban-archive-toolbar-browse')[0];
 	const selectButton = byClass(toolbar, 'aulyckanban-archive-select-mode-btn')[0];
@@ -218,7 +218,11 @@ test('archive browse actions place icon selection before bidirectional sort at t
 
 	const browseToolbarRule =
 		css.match(/\.aulyckanban-archive-toolbar-browse\s*\{([^}]*)\}/)?.[1] ?? '';
-	assert.match(browseToolbarRule, /justify-content:\s*flex-end;/);
+	assert.match(browseToolbarRule, /justify-content:\s*flex-start;/);
+
+	const selectionActionsRule =
+		css.match(/\.aulyckanban-archive-selection-actions\s*\{([^}]*)\}/)?.[1] ?? '';
+	assert.match(selectionActionsRule, /gap:\s*8px;/);
 });
 
 test('archive bidirectional sort button toggles newest and oldest order without a select menu', () => {
