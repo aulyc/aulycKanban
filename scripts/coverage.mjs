@@ -24,6 +24,7 @@ export const COVERAGE_THRESHOLDS = {
 		lines: 82,
 	},
 	files: {
+		'src/main.ts': { statements: 95, branches: 85, functions: 95, lines: 95 },
 		'src/store.ts': { statements: 85, branches: 65, functions: 85, lines: 85 },
 		'src/services/backupService.ts': {
 			statements: 95,

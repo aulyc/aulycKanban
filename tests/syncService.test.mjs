@@ -160,6 +160,33 @@ test('initialization automatically creates one owned note per task type plus arc
 	assert.equal(notices.length, 0);
 });
 
+test('a task containing the managed end marker does not create unbounded history copies', async () => {
+	const notices = [];
+	const VaultSyncService = await loadSyncService(notices);
+	const vault = createVault();
+	const store = createStore({
+		settings: { viewSyncTargets: { work: { filePath: '' } } },
+		state: {
+			views: [
+				createView('work', '💼 工作任务', '正文 <!-- XAULYC_KANBAN:END --> 仍然属于任务内容'),
+			],
+			archives: { work: [] },
+		},
+	});
+	const service = new VaultSyncService(vault, store);
+	await service.initialize();
+
+	for (let index = 0; index < 3; index += 1) await service.syncCurrentView(true);
+
+	const history = [...vault.files.keys()].filter((path) => path.includes('/历史同步内容/'));
+	assert.deepEqual(history, []);
+	assert.equal(
+		vault.files.get('X-aulyc看板/工作任务.md').content.match(/<!-- XAULYC_KANBAN:END -->/gu)
+			?.length,
+		2,
+	);
+});
+
 test('initialization moves legacy mixed content to history and creates an exact managed mirror', async () => {
 	const notices = [];
 	const VaultSyncService = await loadSyncService(notices);

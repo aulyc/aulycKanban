@@ -233,6 +233,97 @@ test('import rejects a malformed task without mutating or saving the board', asy
 	}
 });
 
+async function assertImportRejected(board, duplicateId) {
+	const context = await prepareImport();
+	try {
+		await context.harness.dispatchFile({ text: async () => JSON.stringify(board) });
+		assert.deepEqual(context.actions, []);
+		assert.equal(context.getSaveCalls(), 0);
+		assert.equal(context.notices.length, 1);
+		assert.match(context.notices[0], new RegExp(duplicateId));
+	} finally {
+		context.restoreDocument();
+	}
+}
+
+test('import rejects duplicate task type ids before replacing the current board', async () => {
+	const board = createBoard();
+	board.views.push({
+		...structuredClone(board.views[0]),
+		title: '重复任务类型',
+		order: 1,
+	});
+	await assertImportRejected(board, 'work');
+});
+
+test('import rejects duplicate quadrant ids before shared definitions can discard tasks', async () => {
+	const board = createBoard();
+	board.views[0].columns.push({
+		id: 'base',
+		title: '重复象限',
+		order: 1,
+		tasks: [
+			{
+				id: 'task-2',
+				content: '不能静默丢失的任务',
+				completed: false,
+				createdAt: '2026-01-02T00:00:00.000Z',
+			},
+		],
+	});
+	await assertImportRejected(board, 'base');
+});
+
+test('import rejects duplicate task ids across active and archived tasks in one task type', async () => {
+	const board = createBoard();
+	board.archives.work.tasks.push({
+		id: 'task-1',
+		content: '重复归档任务',
+		completed: true,
+		createdAt: '2026-01-02T00:00:00.000Z',
+		archivedAt: '2026-01-03T00:00:00.000Z',
+	});
+	await assertImportRejected(board, 'task-1');
+});
+
+test('import rejects duplicate active task ids before edits can target the wrong card', async () => {
+	const board = createBoard();
+	board.views[0].columns[0].tasks.push({
+		...structuredClone(board.views[0].columns[0].tasks[0]),
+		content: '相同 ID 的第二张卡片',
+	});
+	await assertImportRejected(board, 'task-1');
+});
+
+test('import allows shared quadrant and task ids when their task type coordinates differ', async () => {
+	const context = await prepareImport();
+	try {
+		const board = createBoard();
+		board.views.push({
+			id: 'personal',
+			title: '个人',
+			order: 1,
+			columns: [
+				{
+					id: 'base',
+					title: '基础',
+					order: 0,
+					tasks: [structuredClone(board.views[0].columns[0].tasks[0])],
+				},
+			],
+		});
+		board.archives.personal = { tasks: [] };
+
+		await context.harness.dispatchFile({ text: async () => JSON.stringify(board) });
+
+		assert.equal(context.actions.length, 1);
+		assert.equal(context.actions[0].payload.board.views.length, 2);
+		assert.equal(context.getSaveCalls(), 1);
+	} finally {
+		context.restoreDocument();
+	}
+});
+
 test('import reports unreadable JSON and ignores an empty file selection', async () => {
 	const context = await prepareImport();
 	try {

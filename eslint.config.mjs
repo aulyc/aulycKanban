@@ -5,7 +5,15 @@ import tseslint from 'typescript-eslint';
 
 export default [
 	{
-		ignores: ['node_modules/', 'main.js', 'dist/', 'release-artifacts/', 'coverage/', '.cache/'],
+		ignores: [
+			'node_modules/',
+			'main.js',
+			'dist/',
+			'audit-output/',
+			'release-artifacts/',
+			'coverage/',
+			'.cache/',
+		],
 	},
 	js.configs.recommended,
 	...tseslint.configs.recommended,

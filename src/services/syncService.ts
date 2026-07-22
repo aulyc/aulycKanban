@@ -457,10 +457,11 @@ export class VaultSyncService {
 	}
 
 	private hasContentOutsideManagedBlock(content: string): boolean {
-		const start = content.indexOf(SYNC_START);
-		const end = content.indexOf(SYNC_END, start + SYNC_START.length);
-		if (start < 0 || end < 0) return content.trim().length > 0;
-		return `${content.slice(0, start)}${content.slice(end + SYNC_END.length)}`.trim().length > 0;
+		const normalized = content.trim();
+		if (!normalized) return false;
+		const start = normalized.indexOf(SYNC_START);
+		const end = normalized.lastIndexOf(SYNC_END);
+		return start !== 0 || end !== normalized.length - SYNC_END.length;
 	}
 
 	private async replaceLegacyNoteWithExactMirror(

@@ -8,8 +8,72 @@ const OPTIONAL_TASK_STRINGS = ['updatedAt', 'completedAt', 'archivedAt', 'source
 
 type UnknownRecord = Record<string, unknown>;
 
+export interface ImportedBoardDuplicateId {
+	field: 'viewId' | 'columnId' | 'taskId';
+	id: string;
+}
+
 function isRecord(value: unknown): value is UnknownRecord {
 	return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function findDuplicateRecordId(values: readonly unknown[]): string | null {
+	const seen = new Set<string>();
+	for (const value of values) {
+		if (!isRecord(value) || typeof value['id'] !== 'string') continue;
+		const id = value['id'];
+		if (seen.has(id)) return id;
+		seen.add(id);
+	}
+	return null;
+}
+
+function collectViewTasks(value: unknown): unknown[] {
+	if (!isRecord(value) || !Array.isArray(value['columns'])) return [];
+	return value['columns'].flatMap((column) =>
+		isRecord(column) && Array.isArray(column['tasks']) ? column['tasks'] : [],
+	);
+}
+
+function collectArchiveTasks(value: unknown): unknown[] {
+	return isRecord(value) && Array.isArray(value['tasks']) ? value['tasks'] : [];
+}
+
+function findViewDuplicateId(view: unknown, archive: unknown): ImportedBoardDuplicateId | null {
+	if (!isRecord(view) || !Array.isArray(view['columns'])) return null;
+	const columnId = findDuplicateRecordId(view['columns']);
+	if (columnId !== null) return { field: 'columnId', id: columnId };
+	const taskId = findDuplicateRecordId([
+		...collectViewTasks(view),
+		...collectArchiveTasks(archive),
+	]);
+	return taskId === null ? null : { field: 'taskId', id: taskId };
+}
+
+/** Find ambiguous entity identities before migration can merge or discard imported data. */
+export function findImportedBoardDuplicateId(raw: unknown): ImportedBoardDuplicateId | null {
+	if (!isRecord(raw)) return null;
+	if (Array.isArray(raw['views'])) {
+		const viewId = findDuplicateRecordId(raw['views']);
+		if (viewId !== null) return { field: 'viewId', id: viewId };
+		const archives = isRecord(raw['archives']) ? raw['archives'] : {};
+		for (const view of raw['views']) {
+			const id = isRecord(view) && typeof view['id'] === 'string' ? view['id'] : '';
+			const duplicate = findViewDuplicateId(view, archives[id]);
+			if (duplicate) return duplicate;
+		}
+		return null;
+	}
+	if (raw['work'] && raw['personal']) {
+		return (
+			findViewDuplicateId(raw['work'], raw['workArchive']) ??
+			findViewDuplicateId(raw['personal'], raw['personalArchive'])
+		);
+	}
+	if (Array.isArray(raw['columns'])) {
+		return findViewDuplicateId({ columns: raw['columns'] }, undefined);
+	}
+	return null;
 }
 
 export function isMigratableBoardData(data: Record<string, unknown>): boolean {
@@ -186,7 +250,13 @@ function isValidImportedBoardData(data: UnknownRecord): boolean {
 
 /** Validate an entire backup before migration so an invalid element cannot partially overwrite data. */
 export function migrateImportedBoardData(raw: unknown): BoardData | null {
-	if (!isRecord(raw) || !isMigratableBoardData(raw) || !isValidImportedBoardData(raw)) return null;
+	if (
+		!isRecord(raw) ||
+		!isMigratableBoardData(raw) ||
+		!isValidImportedBoardData(raw) ||
+		findImportedBoardDuplicateId(raw)
+	)
+		return null;
 	return migrateBoardData(raw);
 }
 

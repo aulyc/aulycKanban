@@ -5,6 +5,7 @@ import '../backupService.test.mjs';
 import '../categoryNavFocus.test.mjs';
 import '../datetime.test.mjs';
 import '../kanbanView.test.mjs';
+import '../main.test.mjs';
 import '../modalBehavior.test.mjs';
 import '../settingsSync.test.mjs';
 import '../syncService.test.mjs';

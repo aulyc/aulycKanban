@@ -2,7 +2,7 @@ import { Notice } from 'obsidian';
 import type { BoardData } from '../types';
 import type { KanbanStore } from '../store';
 import { t } from '../i18n';
-import { migrateImportedBoardData } from './boardMigration';
+import { findImportedBoardDuplicateId, migrateImportedBoardData } from './boardMigration';
 import { BACKUP_VERSION } from '../constants';
 
 /**
@@ -63,6 +63,11 @@ export class BackupService {
 			try {
 				const text = await file.text();
 				const importedData: unknown = JSON.parse(text);
+				const duplicate = findImportedBoardDuplicateId(importedData);
+				if (duplicate) {
+					new Notice(`${t('settings.import.duplicateId')}：${duplicate.field}=${duplicate.id}`);
+					return;
+				}
 
 				// 整份备份先完成深层校验，避免部分坏数据覆盖当前看板。
 				const validBoard = this.validateAndMigrate(importedData);
