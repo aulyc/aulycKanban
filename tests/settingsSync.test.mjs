@@ -320,6 +320,9 @@ test('settings action buttons share one fixed width', () => {
 	assert.match(rule, /min-width:\s*80px/);
 	assert.match(rule, /max-width:\s*80px/);
 	assert.match(rule, /justify-content:\s*center/);
+	const enabledRule =
+		styles.match(/\.aulyckanban-settings-action-button:not\(:disabled\)\s*\{([^}]*)\}/)?.[1] ?? '';
+	assert.match(enabledRule, /cursor:\s*pointer/);
 });
 
 test('settings expose one automatic sync folder without layout or per-note controls', async () => {

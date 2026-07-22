@@ -298,6 +298,10 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	justify-content: center;
 }
 
+.aulyckanban-settings-action-button:not(:disabled) {
+	cursor: pointer;
+}
+
 .aulyckanban-sync-folder-input:focus {
 	border-color: var(--background-modifier-border-focus);
 	outline: none;
