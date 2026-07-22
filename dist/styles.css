@@ -560,13 +560,15 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	border-color: transparent;
 }
 
-.aulyckanban-nav-item-active:hover {
-	background: var(--interactive-accent);
-}
-
 .aulyckanban-nav-item-active:focus,
 .aulyckanban-nav-item-active:focus-visible {
 	background: var(--interactive-accent);
+}
+
+.aulyckanban-nav-item-active:hover,
+.aulyckanban-nav-item-active:focus:hover,
+.aulyckanban-nav-item-active:focus-visible:hover {
+	background: var(--interactive-accent-hover);
 }
 
 .aulyckanban-nav-item:focus,

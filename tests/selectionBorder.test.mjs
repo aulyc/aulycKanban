@@ -54,15 +54,19 @@ test('each of the four keyboard zones draws white only from actual focus', () =>
 	}
 });
 
-test('focused active quadrant keeps its selected fill and adds the white focus border', () => {
-	const activeHover = rule('.aulyckanban-nav-item-active:hover');
-	assert.equal(declarationValue(activeHover, 'background'), 'var(--interactive-accent)');
-
+test('active quadrant keeps its selected fill, exposes hover feedback, and adds the white focus border', () => {
 	const activeFocus = combinedRule([
 		'.aulyckanban-nav-item-active:focus',
 		'.aulyckanban-nav-item-active:focus-visible',
 	]);
 	assert.equal(declarationValue(activeFocus, 'background'), 'var(--interactive-accent)');
+
+	const activeHover = combinedRule([
+		'.aulyckanban-nav-item-active:hover',
+		'.aulyckanban-nav-item-active:focus:hover',
+		'.aulyckanban-nav-item-active:focus-visible:hover',
+	]);
+	assert.equal(declarationValue(activeHover, 'background'), 'var(--interactive-accent-hover)');
 
 	const focus = combinedRule([
 		'.aulyckanban-nav-item:focus',
