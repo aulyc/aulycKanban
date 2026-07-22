@@ -152,6 +152,12 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	flex: 0 0 auto;
 }
 
+.aulyckanban-toolbar
+	.aulyckanban-tab:not(.aulyckanban-tab-active):not(.aulyckanban-view-add-btn):hover {
+	background: var(--interactive-hover);
+	border-color: var(--background-modifier-border-hover);
+}
+
 .aulyckanban-view-add-btn {
 	display: grid;
 	place-items: center;

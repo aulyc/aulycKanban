@@ -94,6 +94,22 @@ test('keyboard navigation targets update instantly without visual trails', () =>
 	assert.match(rule('.aulyckanban-task:focus'), /box-shadow:\s*none/);
 });
 
+test('inactive task type controls use a stronger toolbar-only hover treatment', () => {
+	const taskTypeHover = rule(
+		'.aulyckanban-toolbar ' +
+			'.aulyckanban-tab:not(.aulyckanban-tab-active):not(.aulyckanban-view-add-btn):hover',
+	);
+	assert.equal(declarationValue(taskTypeHover, 'background'), 'var(--interactive-hover)');
+	assert.equal(
+		declarationValue(taskTypeHover, 'border-color'),
+		'var(--background-modifier-border-hover)',
+	);
+	assert.equal(
+		declarationValue(rule('.aulyckanban-tab:hover'), 'background'),
+		'var(--background-modifier-hover)',
+	);
+});
+
 test('archive control is unfilled while inactive and gains fill plus white border when active', () => {
 	const button = rule('.aulyckanban-kanban-container .aulyckanban-tab.aulyckanban-archive-btn');
 	assert.equal(declarationValue(button, 'background'), 'transparent');
