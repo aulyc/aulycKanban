@@ -103,16 +103,18 @@ export class KanbanSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName(t('settings.backup.name'))
 			.setDesc(t('settings.backup.desc'))
-			.addButton((btn) =>
+			.addButton((btn) => {
+				btn.buttonEl.classList.add('aulyckanban-settings-action-button');
 				btn.setButtonText(t('settings.backup.button')).onClick(async () => {
 					await this.backupService.exportBackup();
-				}),
-			);
+				});
+			});
 
 		new Setting(containerEl)
 			.setName(t('settings.import.name'))
 			.setDesc(t('settings.import.desc'))
-			.addButton((btn) =>
+			.addButton((btn) => {
+				btn.buttonEl.classList.add('aulyckanban-settings-action-button');
 				btn.setButtonText(t('settings.import.button')).onClick(() => {
 					new ConfirmModal(this.app, {
 						message: t('settings.import.confirm'),
@@ -120,13 +122,14 @@ export class KanbanSettingTab extends PluginSettingTab {
 							void this.backupService.importBackup();
 						},
 					}).open();
-				}),
-			);
+				});
+			});
 
 		new Setting(containerEl)
 			.setName(t('settings.clear.name'))
 			.setDesc(t('settings.clear.desc'))
-			.addButton((btn) =>
+			.addButton((btn) => {
+				btn.buttonEl.classList.add('aulyckanban-settings-action-button');
 				btn
 					.setButtonText(t('settings.clear.button'))
 					.setWarning()
@@ -139,8 +142,8 @@ export class KanbanSettingTab extends PluginSettingTab {
 								void this.clearAllDataAndSave();
 							},
 						}).open();
-					}),
-			);
+					});
+			});
 
 		// ==================== 笔记同步 ====================
 		new Setting(containerEl).setHeading().setName(t('settings.sync'));
@@ -181,6 +184,7 @@ export class KanbanSettingTab extends PluginSettingTab {
 			.setName(t('settings.sync.force.name'))
 			.setDesc(t('settings.sync.force.desc'))
 			.addButton((btn) => {
+				btn.buttonEl.classList.add('aulyckanban-settings-action-button');
 				const idleText = t('settings.sync.force.button');
 				const runForceSync = async (): Promise<void> => {
 					btn.setDisabled(true).setButtonText(t('settings.sync.force.running'));
@@ -212,6 +216,7 @@ export class KanbanSettingTab extends PluginSettingTab {
 			.setName(t('settings.about.name'))
 			.setDesc(t('settings.about.desc'))
 			.addButton((btn) => {
+				btn.buttonEl.classList.add('aulyckanban-settings-action-button');
 				btn.setIcon('info');
 				btn.buttonEl.createSpan({
 					cls: 'aulyckanban-accessible-label',

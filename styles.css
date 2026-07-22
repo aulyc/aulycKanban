@@ -284,6 +284,14 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	padding-left: 16px;
 }
 
+.aulyckanban-settings-action-button {
+	box-sizing: border-box;
+	width: 80px;
+	min-width: 80px;
+	max-width: 80px;
+	justify-content: center;
+}
+
 .aulyckanban-sync-folder-input:focus {
 	border-color: var(--background-modifier-border-focus);
 	outline: none;

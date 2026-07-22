@@ -69,13 +69,16 @@ class MockSetting {
 		return this;
 	}
 	addButton(callback) {
+		const classes = new Set();
 		const button = {
 			buttonEl: {
+				classList: { add: (value) => classes.add(value) },
 				createSpan: (options) => {
 					button.accessibleLabel = options;
 					return {};
 				},
 			},
+			classes,
 			setIcon: (value) => {
 				button.icon = value;
 				return button;
@@ -291,6 +294,32 @@ test('about setting opens an information card using current manifest metadata', 
 	assert.equal(modal.version, '2.8.1-beta.6');
 	assert.equal(modal.minAppVersion, '1.5.0');
 	assert.equal(modal.opened, true);
+});
+
+test('settings action buttons share one fixed width', () => {
+	const { tab } = createHarness();
+	const start = renderedSettings.length;
+	tab.display();
+	const settings = renderedSettings.slice(start);
+	const actionNames = [
+		'settings.backup.name',
+		'settings.import.name',
+		'settings.clear.name',
+		'settings.sync.force.name',
+		'settings.about.name',
+	];
+
+	for (const name of actionNames) {
+		const setting = settings.find((item) => item.name === name);
+		assert.ok(setting);
+		assert.equal(setting.controls[0].classes.has('aulyckanban-settings-action-button'), true);
+	}
+
+	const rule = styles.match(/\.aulyckanban-settings-action-button\s*\{([^}]*)\}/)?.[1] ?? '';
+	assert.match(rule, /width:\s*80px/);
+	assert.match(rule, /min-width:\s*80px/);
+	assert.match(rule, /max-width:\s*80px/);
+	assert.match(rule, /justify-content:\s*center/);
 });
 
 test('settings expose one automatic sync folder without layout or per-note controls', async () => {

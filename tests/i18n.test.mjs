@@ -15,7 +15,7 @@ test('simplified Chinese settings use localized section headings and clear-data 
 		'自动创建并管理每个任务类型及归档任务的 Markdown 笔记',
 	);
 	assert.equal(t('settings.sync.force.name'), '强制刷新同步');
-	assert.equal(t('settings.sync.force.button'), '立即同步');
+	assert.equal(t('settings.sync.force.button'), '同步');
 	assert.match(t('settings.sync.force.confirm'), /覆盖全部自动同步笔记/);
 	assert.equal(t('settings.clear.name'), '清除数据');
 	assert.equal(t('settings.clear.button'), '清除');
@@ -35,7 +35,7 @@ test('English settings retain their localized copy', async () => {
 	assert.equal(t('settings.sync'), 'Note synchronization');
 	assert.equal(t('settings.sync.folder.name'), 'Sync folder');
 	assert.equal(t('settings.sync.force.name'), 'Force refresh synchronization');
-	assert.equal(t('settings.sync.force.button'), 'Sync now');
+	assert.equal(t('settings.sync.force.button'), 'Sync');
 	assert.equal(t('settings.clear.button'), 'Clear data');
 	assert.equal(t('settings.about.name'), 'About aulycKanban');
 	assert.equal(t('about.version'), 'Plugin version');

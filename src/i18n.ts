@@ -101,7 +101,7 @@ const zh = {
 	'settings.sync.folder.placeholder': 'X-aulyc看板',
 	'settings.sync.force.name': '强制刷新同步',
 	'settings.sync.force.desc': '以当前看板数据重新生成所有任务类型和归档笔记',
-	'settings.sync.force.button': '立即同步',
+	'settings.sync.force.button': '同步',
 	'settings.sync.force.running': '正在同步…',
 	'settings.sync.force.confirm':
 		'将以当前看板数据覆盖全部自动同步笔记。旧版残留内容会移入“历史同步内容”，是否继续？',
@@ -247,7 +247,7 @@ const en: Record<I18nKey, string> = {
 	'settings.sync.force.name': 'Force refresh synchronization',
 	'settings.sync.force.desc':
 		'Regenerate every task-type and archive note from the current kanban data',
-	'settings.sync.force.button': 'Sync now',
+	'settings.sync.force.button': 'Sync',
 	'settings.sync.force.running': 'Synchronizing…',
 	'settings.sync.force.confirm':
 		'This will overwrite every managed synchronization note with the current kanban data. Legacy content will be moved to “Historical synchronization content”. Continue?',
