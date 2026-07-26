@@ -8,6 +8,9 @@ import { createInlineInput } from './InlineInput';
 export class UtilityBar {
 	private readonly el: HTMLElement;
 	private readonly store: KanbanStore;
+	private isEditingSearch = false;
+	private searchDraft = '';
+	private shouldFocusSearchInput = false;
 
 	constructor(parentEl: HTMLElement, store: KanbanStore) {
 		this.store = store;
@@ -32,8 +35,12 @@ export class UtilityBar {
 		this.el.empty();
 		const searchShellEl = this.el.createDiv({ cls: 'aulyckanban-task-search-shell' });
 		const keyword = this.store.getSearchKeyword();
+		if (!keyword) this.resetSearchEditing();
+		const focusSearchAfterRender = this.consumeSearchFocusRequest();
 		const searchTarget = keyword
-			? this.renderSearchTag(searchShellEl, keyword)
+			? this.isEditingSearch
+				? this.renderSearchEditInput(searchShellEl, keyword)
+				: this.renderSearchTag(searchShellEl, keyword)
 			: this.renderSearchInput(searchShellEl);
 		searchTarget.addEventListener('focus', () => {
 			if (this.store.isShowingArchive()) {
@@ -65,7 +72,7 @@ export class UtilityBar {
 			activateArchive();
 		});
 
-		if (restoreSearchFocus) searchTarget.focus({ preventScroll: true });
+		if (focusSearchAfterRender || restoreSearchFocus) searchTarget.focus({ preventScroll: true });
 		else if (restoreArchiveFocus) archiveBtn.focus({ preventScroll: true });
 	}
 
@@ -101,12 +108,59 @@ export class UtilityBar {
 			this.store.dispatch({ type: 'SET_SEARCH_QUERY', payload: { keyword: '' } });
 		};
 		clearBtn.addEventListener('click', clear);
+		tagEl.addEventListener('dblclick', (event: MouseEvent) => {
+			if (event.target && clearBtn.contains(event.target as Node)) return;
+			event.preventDefault();
+			event.stopPropagation();
+			this.isEditingSearch = true;
+			this.searchDraft = keyword;
+			this.shouldFocusSearchInput = true;
+			this.render();
+		});
 		tagEl.addEventListener('keydown', (event: KeyboardEvent) => {
 			if (event.key === 'Escape' || event.key === 'Backspace' || event.key === 'Delete') {
 				clear(event);
 			}
 		});
 		return tagEl;
+	}
+
+	private renderSearchEditInput(
+		parentEl: HTMLElement,
+		currentKeyword: string,
+	): HTMLInputElement | HTMLTextAreaElement {
+		return createInlineInput(parentEl, {
+			cls: 'aulyckanban-task-search-input',
+			initialValue: this.searchDraft,
+			blurBehavior: 'commit',
+			stopClickPropagation: true,
+			onInput: (value) => {
+				this.searchDraft = value;
+			},
+			onCommit: (value) => {
+				const keyword = value.trim();
+				this.resetSearchEditing();
+				if (keyword === currentKeyword) this.render();
+				else this.store.dispatch({ type: 'SET_SEARCH_QUERY', payload: { keyword } });
+				return true;
+			},
+			onCancel: () => {
+				this.resetSearchEditing();
+				this.render();
+			},
+		});
+	}
+
+	private consumeSearchFocusRequest(): boolean {
+		const shouldFocus = this.shouldFocusSearchInput;
+		this.shouldFocusSearchInput = false;
+		return shouldFocus;
+	}
+
+	private resetSearchEditing(): void {
+		this.isEditingSearch = false;
+		this.searchDraft = '';
+		this.shouldFocusSearchInput = false;
 	}
 
 	getEl(): HTMLElement {

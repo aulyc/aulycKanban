@@ -155,6 +155,73 @@ test('committed search becomes a removable tag', () => {
 	assert.equal(store.actions.at(-1).payload.keyword, '');
 });
 
+test('double-clicking a search tag edits its current query inline', () => {
+	const { documentRef, parent, store } = createHarness({ keyword: '人员和现金流预算' });
+	const tag = find(parent, 'aulyckanban-task-search-tag');
+	let defaultPrevented = false;
+	let propagationStopped = false;
+	tag.listeners.get('dblclick')[0]({
+		target: tag,
+		preventDefault() {
+			defaultPrevented = true;
+		},
+		stopPropagation() {
+			propagationStopped = true;
+		},
+	});
+
+	const input = find(parent, 'aulyckanban-task-search-input');
+	assert.equal(defaultPrevented, true);
+	assert.equal(propagationStopped, true);
+	assert.ok(input);
+	assert.equal(documentRef.activeElement, input);
+	assert.equal(input.inputOptions.initialValue, '人员和现金流预算');
+	assert.equal(input.inputOptions.blurBehavior, 'commit');
+	assert.equal(input.inputOptions.stopClickPropagation, true);
+
+	input.inputOptions.onInput('  已更新的搜索  ');
+	assert.equal(input.inputOptions.onCommit('  已更新的搜索  ', 'enter'), true);
+	assert.deepEqual(store.actions.at(-1), {
+		type: 'SET_SEARCH_QUERY',
+		payload: { keyword: '已更新的搜索' },
+	});
+});
+
+test('search tag editing can be cancelled or cleared without changing clear-button behavior', () => {
+	const { parent, store } = createHarness({ keyword: '原搜索' });
+	const tag = find(parent, 'aulyckanban-task-search-tag');
+	const clear = find(parent, 'aulyckanban-task-search-clear');
+	tag.listeners.get('dblclick')[0]({
+		target: clear,
+		preventDefault() {
+			throw new Error('clear-button double click should not edit');
+		},
+		stopPropagation() {},
+	});
+	assert.equal(find(parent, 'aulyckanban-task-search-input'), undefined);
+
+	tag.listeners.get('dblclick')[0]({
+		target: tag,
+		preventDefault() {},
+		stopPropagation() {},
+	});
+	find(parent, 'aulyckanban-task-search-input').inputOptions.onCancel();
+	assert.equal(find(parent, 'aulyckanban-task-search-tag').children[0].textContent, '原搜索');
+	assert.equal(store.actions.length, 0);
+
+	const restoredTag = find(parent, 'aulyckanban-task-search-tag');
+	restoredTag.listeners.get('dblclick')[0]({
+		target: restoredTag,
+		preventDefault() {},
+		stopPropagation() {},
+	});
+	assert.equal(
+		find(parent, 'aulyckanban-task-search-input').inputOptions.onCommit('   ', 'blur'),
+		true,
+	);
+	assert.equal(store.actions.at(-1).payload.keyword, '');
+});
+
 test('archive focus activates immediately and remains idempotent for click or rerender', () => {
 	const { parent, store, utilityBar } = createHarness();
 	const archive = find(parent, 'aulyckanban-archive-btn');
@@ -182,6 +249,20 @@ test('search focus leaves the temporary archive view', () => {
 
 	assert.equal(store.archive, false);
 	assert.equal(store.actions.at(-1).type, 'TOGGLE_ARCHIVE_VIEW');
+});
+
+test('editing a committed search also leaves the temporary archive view', () => {
+	const { parent, store } = createHarness({ archive: true, keyword: '归档搜索' });
+	const tag = find(parent, 'aulyckanban-task-search-tag');
+	tag.listeners.get('dblclick')[0]({
+		target: tag,
+		preventDefault() {},
+		stopPropagation() {},
+	});
+
+	assert.equal(store.archive, false);
+	assert.equal(store.actions.at(-1).type, 'TOGGLE_ARCHIVE_VIEW');
+	assert.ok(find(parent, 'aulyckanban-task-search-input'));
 });
 
 test('utility rerender restores real search or archive focus', () => {
