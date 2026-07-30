@@ -3,13 +3,19 @@
   "schemaVersion": 1,
   "projectId": "aulyckanban",
   "applicability": "applicable",
-  "coreVersion": "2.0.1",
+  "coreVersion": "2.1.0",
   "artifacts": [
     {
       "id": "aulyckanban-obsidian-plugin",
       "type": "obsidian-plugin",
       "profile": "obsidian-plugin",
       "profileVersion": "1.0.0"
+    }
+  ],
+  "releasePolicies": [
+    {
+      "id": "aulyc-dual-mirror-v1",
+      "version": "1.1.0"
     }
   ],
   "ruleBindings": [
@@ -108,6 +114,38 @@
       ]
     },
     {
+      "ruleId": "REL-015",
+      "evidence": ["AGENTS.md#dual-mirror-release-policy", "DUAL_MIRROR_RELEASE.md"]
+    },
+    {
+      "ruleId": "DMR-001",
+      "evidence": ["DUAL_MIRROR_RELEASE.md"]
+    },
+    {
+      "ruleId": "DMR-002",
+      "evidence": ["DUAL_MIRROR_RELEASE.md", "scripts/dual-mirror-release.sh"]
+    },
+    {
+      "ruleId": "DMR-003",
+      "evidence": ["AGENTS.md#dual-mirror-release-policy", "DUAL_MIRROR_RELEASE.md"]
+    },
+    {
+      "ruleId": "DMR-004",
+      "evidence": ["DUAL_MIRROR_RELEASE.md"]
+    },
+    {
+      "ruleId": "DMR-005",
+      "evidence": ["AGENTS.md#data-credentials-and-sensitive-information", "scripts/dual-mirror-release.sh"]
+    },
+    {
+      "ruleId": "DMR-006",
+      "evidence": ["DUAL_MIRROR_RELEASE.md", "scripts/dual-mirror-release.sh"]
+    },
+    {
+      "ruleId": "DMR-007",
+      "evidence": ["AGENTS.md#dual-mirror-release-policy", "scripts/dual-mirror-release.sh"]
+    },
+    {
       "ruleId": "OBS-001",
       "evidence": [
         "AGENTS.md#versioning-and-release-profile"
@@ -160,7 +198,7 @@
   "trackedFiles": [
     {
       "path": "AGENTS.md",
-      "sha256": "48b38b2708f17e14eb25a370e921c8fd7beda60cec6b39ae1be4b7954fa094b1"
+      "sha256": "6603964b4531d619f77927f71b8324d4187ccd9684b8c9482fc69cb5caa942ef"
     },
     {
       "path": "VERSIONING.md",
@@ -217,6 +255,14 @@
     {
       "path": "scripts/zip.mjs",
       "sha256": "333e09b8e83cf3980b873eb43f5712f8fb76d2880db1b566ad9ff00291012979"
+    },
+    {
+      "path": "DUAL_MIRROR_RELEASE.md",
+      "sha256": "4a11001790b2cf53e863fd9ce3dc89fcf4f4a1dce5b4cdfe4b52f2bfd287680a"
+    },
+    {
+      "path": "scripts/dual-mirror-release.sh",
+      "sha256": "966d567a82030bc3d9f080bc500177fc6dab620a41932cf886fd7b3fe16a62bd"
     }
   ],
   "releaseSignals": {
@@ -226,11 +272,13 @@
     "releaseFiles": [
       "AGENTS.md",
       "CHANGELOG.md",
+      "DUAL_MIRROR_RELEASE.md",
       "VERSIONING.md",
       "package.json",
       "version-bump.mjs",
       "scripts/artifact.mjs",
       "scripts/build-dist.mjs",
+      "scripts/dual-mirror-release.sh",
       "scripts/git-release.mjs",
       "scripts/formal-git.mjs",
       "scripts/install-plugin.mjs",

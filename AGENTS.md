@@ -93,7 +93,8 @@
 - Release profile: `obsidian-plugin`
 - Project type: Obsidian plugin
 - Supported release targets: Obsidian 桌面端和移动端兼容插件文件
-- Distribution identity: `local-vault`
+- Distribution identity: `local-vault` installation plus optional
+  `aulyc-dual-mirror-v1` public release distribution
 - Authoritative version source: `release-version.json`
 - Build-number source: `release-version.json#buildNumber`
 - Product/package metadata: `manifest.json`、`package.json`、`package-lock.json`、`versions.json`
@@ -128,6 +129,24 @@ metadata. After exact-tag ZIP verification, installation, and Obsidian smoke,
 remote refs back, and finalizes the GitHub source fields in release provenance.
 正式 Git 包装器通过 `AULYC_STANDARDS_ROOT` 定位中央受控脚本；中央仓库未交付或路径无效时 fail closed，不得降级为非原子手工 push。
 
+### Dual-mirror release policy
+
+- Explicit policy: `aulyc-dual-mirror-v1` `1.1.0`; it does not change the
+  `obsidian-plugin` Profile.
+- Private source authority: `aulyc/aulycKanban`; public release mirrors:
+  `aulyc/aulycKanban-releases` on GitHub and Gitee.
+- Project adapter: `bash scripts/dual-mirror-release.sh
+  <prepare|preflight|publish|verify> ...`; it only binds `projectId` and must
+  not duplicate the central publication client.
+- Full mapping, language, retry and command contract:
+  `DUAL_MIRROR_RELEASE.md`.
+- Updater: `N/A`; this plugin has no independent update downloader. Any future
+  updater must implement GitHub-first/Gitee-fallback plus the same
+  Profile-aware verification before it can ship.
+- `publish` requires separate explicit authorization. A missing public mirror,
+  one-sided failure or conflict must fail/record partial state; never push
+  source to Gitee, overwrite an old version or bypass the central preflight.
+
 ### Required release gates
 
 - `npm run version:check`、`npm run format:check`、`npm run lint`、`npm run typecheck`、全部测试、production bundle 和三文件白名单验证。
@@ -140,7 +159,10 @@ remote refs back, and finalizes the GitHub source fields in release provenance.
 ### Project-specific adaptations
 
 - Build number: 本项目显式使用独立 `buildNumber`。规范迁移保持 `2.1.19` 和 `buildNumber: 0`，不为历史版本伪造构建号；第一个未来测试或正式发布必须使用正整数，之后跨测试/正式渠道严格递增、不得重复或倒退。
-- Distribution: `local-vault`，没有 GitHub Release 附件或社区插件渠道上传步骤；正式发版仍必须把源码分支和 annotated tag 发布到中央绑定的 GitHub 仓库。版本化 ZIP、独立 provenance、目标 Vault 安装哈希和实际加载身份继续作为插件渠道验证。
+- Distribution: 真实安装仍为 `local-vault`；正式 ZIP 另按显式
+  `aulyc-dual-mirror-v1` 发布到两个公开镜像。源码分支和 annotated tag 只发布到
+  中央绑定的私有 GitHub 源码仓库。版本化 ZIP、独立 provenance、目标 Vault
+  安装哈希和实际加载身份继续作为插件渠道验证。
 - Historical tags: 历史 lightweight 与 annotated tags 均为只读遗留记录；不得移动、删除或重建。新规则从 `2.1.19` 之后的第一个版本开始执行。
 - CI: 当前没有远端 CI 配置；以 `npm run ci` 作为本地等价门禁。
 - macOS trust fields: N/A；本仓库不发布原生 macOS artifact。
@@ -152,7 +174,8 @@ remote refs back, and finalizes the GitHub source fields in release provenance.
 - CI signals: `package.json`；仓库当前没有远端 CI workflow。
 - Tracked drift evidence: `AGENTS.md`、`VERSIONING.md`、`version-bump.mjs` 和稳定发布控制脚本；复核后的 SHA-256 记录在 `.codex/standards.json`。
 - Active exceptions: none。
-- Release-process feedback classification: `project-only`；项目采用 core `2.0.1` 并配置中央仓库路径解析，不修改公共核心或 `obsidian-plugin` Profile。
+- Release-process feedback classification: `project-only`；项目采用 core
+  `2.1.0` 和可选双镜像 Policy，不修改 `obsidian-plugin` Profile。
 
 ### Release documentation and invariants
 
