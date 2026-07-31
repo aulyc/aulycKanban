@@ -12,6 +12,7 @@ export default [
 			'audit-output/',
 			'release-artifacts/',
 			'coverage/',
+			'test-bundles/',
 			'.cache/',
 		],
 	},
