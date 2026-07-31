@@ -1,6 +1,6 @@
 # 双发布源接入
 
-本项目显式采用中央可选策略 `aulyc-dual-mirror-v1` `1.1.0`，Release Profile
+本项目显式采用中央可选策略 `aulyc-dual-mirror-v1` `1.2.0`，Release Profile
 仍是 `obsidian-plugin`。私有 GitHub 仓库 `aulyc/aulycKanban` 是唯一源码
 权威；不得向 Gitee 推送源码。
 
@@ -13,10 +13,10 @@
 
 当前插件没有独立的应用内更新下载器，`updater: N/A`。采用策略不会虚构该能力；
 未来新增更新器前，必须先实现 GitHub `latest.json` 优先、Gitee fallback，并对
-任一来源执行相同的版本、Commit、plugin ID、ZIP 白名单、SHA-256、provenance
-与实际加载验证。
+任一来源执行相同的版本、Commit、plugin ID、ZIP 白名单、SHA-256 和 provenance
+验证；实际加载只在明确请求安装时验证。
 
-正式 ZIP、最终 provenance、Changelog 和真实 Vault 安装验证仍由项目现有流程
+正式 ZIP、最终 provenance、Changelog 和发布产物验证仍由项目现有流程
 负责。源码 branch/tag 已按中央正式 Git gate 推送并回写最终 provenance 后，
 准备中英文正文并运行：
 
@@ -41,3 +41,7 @@ bash scripts/dual-mirror-release.sh verify \
 计划；`preflight` 只读；只有明确授权的 `publish` 才会写远端。任何一端失败都
 保留无凭据的 partial/failed 状态，重试必须复用同一计划且不得覆盖旧版本。
 公开镜像仓库未建好时，正式预检必须失败；不得绕过或临时改用源码仓库。
+
+纯正式发版不写入 Vault、不重载插件，完成时报告
+`installationStatus: not-requested`。只有“正式发版安装”才在双端发布完整成功
+后执行安装与真实加载验证。

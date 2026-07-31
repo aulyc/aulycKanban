@@ -159,7 +159,30 @@ test('detached build fails if its production command dirties tagged source and s
 	}
 });
 
-test('test release orchestrates tagged build, verified install, and mocked post-install smoke', async () => {
+test('pure test release builds the tagged artifact without installing or running smoke', async () => {
+	const fixture = await createReleaseFixture();
+	const outputDir = await mkdtemp(path.join(os.tmpdir(), 'aulycKanban-release-only-'));
+	const calls = [];
+	try {
+		const result = await runRelease({
+			repoDir: fixture.rootDir,
+			channel: 'test',
+			outputDir,
+			runner: (...args) => {
+				calls.push(args);
+				throw new Error('pure release must not call a live-target runner');
+			},
+		});
+		assert.equal(result.installed, null);
+		assert.match(result.artifact.zipPath, /aulycKanban-2\.1\.20-beta\.1\.zip$/u);
+		assert.deepEqual(calls, []);
+	} finally {
+		await cleanupFixture(fixture.rootDir);
+		await rm(outputDir, { recursive: true, force: true });
+	}
+});
+
+test('explicit test release-install performs verified install and post-install smoke', async () => {
 	const fixture = await createReleaseFixture();
 	const outputDir = await mkdtemp(path.join(os.tmpdir(), 'aulycKanban-release-output-'));
 	const vaultPath = await mkdtemp(path.join(os.tmpdir(), 'aulycKanban-release-vault-'));
@@ -192,6 +215,7 @@ test('test release orchestrates tagged build, verified install, and mocked post-
 				OBSIDIAN_VAULT_NAME: 'Fixture Vault',
 			},
 			runner,
+			install: true,
 		});
 		assert.equal(result.installed.manifest.version, fixture.version);
 		assert.equal(await readFile(path.join(pluginDir, 'data.json'), 'utf8'), 'preserve-me');

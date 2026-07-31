@@ -115,22 +115,38 @@ provenance 从真实 Git、tag 和 ZIP 提取并交叉验证：Profile、渠道�
 测试版必须使用 `alpha.N`、`beta.N` 或 `rc.N`：
 
 ```bash
-npm run release:test -- --vault <test-vault-path>
+npm run release:test
 ```
 
 正式版必须使用稳定 SemVer：
 
 ```bash
-npm run release:formal -- --vault <vault-path>
+npm run release:formal
 ```
 
-两条命令都要求已有精确合规标签，从隔离 tag 重新构建，生成独立产物，安装到目标 Vault 并执行真实加载 smoke。测试 ZIP 不能改名冒充正式 ZIP。本项目 Distribution 为 `local-vault`，不上传 GitHub Release 附件或社区渠道；但正式发版在 smoke 通过后必须将 `main` 和 annotated tag 原子推送到中央绑定的 `aulyc/aulycKanban`，回读远端两个 ref，并把远端源码身份写入最终 provenance。测试发版不推送。
+两条命令都要求已有精确合规标签，从隔离 tag 重新构建并验证独立产物，但不写入
+Vault、不重载插件。测试 ZIP 不能改名冒充正式 ZIP。本项目正式发版将 `main` 和
+annotated tag 原子推送到中央绑定的 `aulyc/aulycKanban`，回读远端两个 ref，
+并把远端源码身份写入最终 provenance；测试发版不推送。纯发版安装状态为
+`not-requested`。
+
+只有明确要求“测试发版安装”或“正式发版安装”时，分别运行：
+
+```bash
+npm run release:test:install -- --vault <test-vault-path>
+npm run release:formal:install -- --vault <vault-path>
+```
+
+这两个入口在对应发布完成后安装本次精确 ZIP 并执行真实加载 smoke。
 
 `npm run version:set` 在改动权威版本源前执行中央 GitHub preflight；认证、仓库访问、remote fetch/push URL、正式分支或工作区状态无法验证时不会修改版本文件。
 
 中央受控发版脚本所在仓库通过 `AULYC_STANDARDS_ROOT` 配置；当前主机默认 `/Users/crp/Projects/Codex 开发规范`。在其他主机或全新克隆环境执行 `version:set`、`formal-git:preflight` 或 `release:formal` 前，必须先交付中央规范仓库并设置该变量。路径缺失时流程 fail closed，不允许以分步 push 替代原子发布与远端回读。
 
 ## 9. 正式安装与数据保护
+
+本节只在用户明确要求安装时执行。“安装测试版”或“安装正式版”只消费既有
+ZIP/provenance，不创建新版本、标签或远端 Release。
 
 正式安装器不接受当前工作区 `dist/`，也没有静默 fallback。必须显式提供版本化 ZIP 和对应 provenance：
 

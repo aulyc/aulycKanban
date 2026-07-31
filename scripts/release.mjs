@@ -9,10 +9,12 @@ import { buildFromExactTag } from './release-from-tag.mjs';
 import { runFormalGit } from './formal-git.mjs';
 
 function parseArguments(argv) {
-	const [channel, ...rest] = argv;
-	if (!['test', 'formal'].includes(channel))
-		throw new Error('Release channel must be test or formal');
-	const values = { channel };
+	const [operation, ...rest] = argv;
+	if (!['test', 'formal', 'test-install', 'formal-install'].includes(operation))
+		throw new Error('Release operation must be test, formal, test-install, or formal-install');
+	const install = operation.endsWith('-install');
+	const channel = operation.replace(/-install$/u, '');
+	const values = { channel, install };
 	const allowed = new Set(['output-dir', 'vault']);
 	for (let index = 0; index < rest.length; index += 1) {
 		const argument = rest[index];
@@ -34,7 +36,11 @@ export async function runRelease({
 	vaultPath,
 	env = process.env,
 	runner,
+	install = false,
 } = {}) {
+	if (!install && vaultPath) {
+		throw new Error('Pure release does not accept --vault; use test-install or formal-install');
+	}
 	assertCleanGit(repoDir, 'calling worktree before release');
 	const releaseVersion = await readReleaseVersion(repoDir);
 	const actualChannel = getReleaseChannel(releaseVersion.version)?.channel;
@@ -53,21 +59,6 @@ export async function runRelease({
 		outputDir: path.resolve(outputDir),
 		expectedChannel: channel,
 	});
-	const installed = await installReleaseArtifact({
-		repoDir,
-		zipPath: artifact.zipPath,
-		provenancePath: artifact.provenancePath,
-		expectedChannel: channel,
-		vaultPath,
-		env,
-		runner,
-	});
-	runInstalledObsidianSmoke({
-		manifestPath: installed.manifestPath,
-		runner,
-		cli: env.OBSIDIAN_CLI?.trim() || 'obsidian',
-		vaultName: env.OBSIDIAN_VAULT_NAME?.trim() || '',
-	});
 	if (channel === 'formal') {
 		runFormalGit({
 			repoDir,
@@ -82,6 +73,24 @@ export async function runRelease({
 			provenancePath: artifact.provenancePath,
 		});
 	}
+	let installed = null;
+	if (install) {
+		installed = await installReleaseArtifact({
+			repoDir,
+			zipPath: artifact.zipPath,
+			provenancePath: artifact.provenancePath,
+			expectedChannel: channel,
+			vaultPath,
+			env,
+			runner,
+		});
+		runInstalledObsidianSmoke({
+			manifestPath: installed.manifestPath,
+			runner,
+			cli: env.OBSIDIAN_CLI?.trim() || 'obsidian',
+			vaultName: env.OBSIDIAN_VAULT_NAME?.trim() || '',
+		});
+	}
 	assertCleanGit(repoDir, 'calling worktree after release');
 	return { artifact, installed };
 }
@@ -92,9 +101,10 @@ async function main() {
 		channel: args.channel,
 		outputDir: args['output-dir'],
 		vaultPath: args.vault,
+		install: args.install,
 	});
 	console.log(
-		`[release] Completed ${result.installed.provenance.releaseChannel} local-vault release`,
+		`[release] releaseStatus=complete installationStatus=${result.installed ? 'complete' : 'not-requested'}`,
 	);
 }
 

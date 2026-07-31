@@ -115,8 +115,10 @@
 - Version logic tests: `npm run version:test`
 - Pre-tag production candidate gate: `npm run release:check`
 - Create or verify release tag: `npm run release:tag`
-- Test release: `npm run release:test -- --vault <test-vault-path>`
-- Formal release: `npm run release:formal -- --vault <vault-path>`
+- Test release: `npm run release:test`
+- Test release and installation: `npm run release:test:install -- --vault <test-vault-path>`
+- Formal release: `npm run release:formal`
+- Formal release and installation: `npm run release:formal:install -- --vault <vault-path>`
 - Formal GitHub preflight: `npm run formal-git:preflight`
 - Verify candidate files: `npm run artifact:verify`
 - Install an explicit formal artifact: `npm run install:formal -- --zip <zip> --provenance <file> --vault <vault-path>`
@@ -124,19 +126,24 @@
 
 Central GitHub source identity is `aulyc/aulycKanban`, remote `origin`, branch
 `main`. `version:set` runs the central preflight before changing release
-metadata. After exact-tag ZIP verification, installation, and Obsidian smoke,
-`release:formal` atomically pushes the branch and annotated tag, reads both
+metadata. After exact-tag ZIP verification, `release:formal` atomically pushes
+the branch and annotated tag, reads both
 remote refs back, and finalizes the GitHub source fields in release provenance.
 正式 Git 包装器通过 `AULYC_STANDARDS_ROOT` 定位中央受控脚本；中央仓库未交付或路径无效时 fail closed，不得降级为非原子手工 push。
 
+`测试发版`和`正式发版`只发布，不写入 Vault 或重载插件；`完整发版`等同纯正式
+发版。只有`测试发版安装`和`正式发版安装`使用带 `:install` 的入口。`安装测试版`
+或`安装正式版`只调用显式 installer 消费既有 ZIP/provenance，不创建新发布。
+纯发版报告 `installationStatus: not-requested`。
+
 ### Dual-mirror release policy
 
-- Explicit policy: `aulyc-dual-mirror-v1` `1.1.0`; it does not change the
+- Explicit policy: `aulyc-dual-mirror-v1` `1.2.0`; it does not change the
   `obsidian-plugin` Profile.
 - Private source authority: `aulyc/aulycKanban`; public release mirrors:
   `aulyc/aulycKanban-releases` on GitHub and Gitee.
 - Project adapter: `bash scripts/dual-mirror-release.sh
-  <prepare|preflight|publish|verify> ...`; it only binds `projectId` and must
+<prepare|preflight|publish|verify> ...`; it only binds `projectId` and must
   not duplicate the central publication client.
 - Full mapping, language, retry and command contract:
   `DUAL_MIRROR_RELEASE.md`.
@@ -154,7 +161,8 @@ remote refs back, and finalizes the GitHub source fields in release provenance.
 - 新发布只接受名称等于权威版本、指向独立发布元数据提交的 annotated tag。
 - 最终测试/正式 ZIP 从精确 tag 的 detached worktree 构建，构建前后均须 clean。
 - provenance 的 profile、channel、version、buildNumber、tag、commit、`dirty:false`、插件元数据、distribution 和所有 SHA-256 必须与真实 Git、ZIP 和文件交叉验证。
-- 安装后逐文件复算 SHA-256，再用实际安装 manifest 驱动 Obsidian CLI smoke。
+- 纯发版验证 ZIP 白名单和逐文件 SHA-256，不写入 Vault；显式安装后才用实际安装
+  manifest 驱动 Obsidian CLI smoke。
 
 ### Project-specific adaptations
 
@@ -175,7 +183,7 @@ remote refs back, and finalizes the GitHub source fields in release provenance.
 - Tracked drift evidence: `AGENTS.md`、`VERSIONING.md`、`version-bump.mjs` 和稳定发布控制脚本；复核后的 SHA-256 记录在 `.codex/standards.json`。
 - Active exceptions: none。
 - Release-process feedback classification: `project-only`；项目采用 core
-  `2.1.0` 和可选双镜像 Policy，不修改 `obsidian-plugin` Profile。
+  `3.0.0`、`obsidian-plugin` `2.0.0` 和可选双镜像 Policy。
 
 ### Release documentation and invariants
 

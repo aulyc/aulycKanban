@@ -3,19 +3,25 @@
   "schemaVersion": 1,
   "projectId": "aulyckanban",
   "applicability": "applicable",
-  "coreVersion": "2.1.0",
+  "coreVersion": "3.0.0",
   "artifacts": [
     {
       "id": "aulyckanban-obsidian-plugin",
       "type": "obsidian-plugin",
       "profile": "obsidian-plugin",
-      "profileVersion": "1.0.0"
+      "profileVersion": "2.0.0",
+      "operations": {
+        "testRelease": "release-only",
+        "testReleaseInstall": "release-and-live-target",
+        "formalRelease": "release-only",
+        "formalReleaseInstall": "release-and-live-target"
+      }
     }
   ],
   "releasePolicies": [
     {
       "id": "aulyc-dual-mirror-v1",
-      "version": "1.1.0"
+      "version": "1.2.0"
     }
   ],
   "ruleBindings": [
@@ -118,6 +124,10 @@
       "evidence": ["AGENTS.md#dual-mirror-release-policy", "DUAL_MIRROR_RELEASE.md"]
     },
     {
+      "ruleId": "REL-016",
+      "evidence": ["AGENTS.md#release-command-mapping", "VERSIONING.md"]
+    },
+    {
       "ruleId": "DMR-001",
       "evidence": ["DUAL_MIRROR_RELEASE.md"]
     },
@@ -144,6 +154,10 @@
     {
       "ruleId": "DMR-007",
       "evidence": ["AGENTS.md#dual-mirror-release-policy", "scripts/dual-mirror-release.sh"]
+    },
+    {
+      "ruleId": "DMR-008",
+      "evidence": ["AGENTS.md#release-command-mapping", "DUAL_MIRROR_RELEASE.md"]
     },
     {
       "ruleId": "OBS-001",
@@ -192,17 +206,25 @@
         "AGENTS.md#obsidian-cli",
         "scripts/obsidian-smoke.mjs"
       ]
+    },
+    {
+      "ruleId": "OBS-008",
+      "evidence": [
+        "VERSIONING.md",
+        "scripts/artifact.mjs",
+        "scripts/release.mjs"
+      ]
     }
   ],
   "exceptions": [],
   "trackedFiles": [
     {
       "path": "AGENTS.md",
-      "sha256": "6603964b4531d619f77927f71b8324d4187ccd9684b8c9482fc69cb5caa942ef"
+      "sha256": "ffeee369409f9efc95710567a36ba24296ebf9f1a1e855668009d16e144bbe08"
     },
     {
       "path": "VERSIONING.md",
-      "sha256": "38c2ccaca01486ca8f104f16a18acbc71367f4346c0f8d8eafb91a12907c8913"
+      "sha256": "0061a1d463969d0bf6ae4eef7ee566ed3ca56f35350849eece3f52f34fbb9a7e"
     },
     {
       "path": "version-bump.mjs",
@@ -250,7 +272,7 @@
     },
     {
       "path": "scripts/release.mjs",
-      "sha256": "025b00a5901e6c7e20e6b4f1243607c373b91713cc57311dc3b6375c23df2f88"
+      "sha256": "767055e08e4b316c509a2bd255d5018878ab2e2ef154d9c92f7d1b3417bc0dd8"
     },
     {
       "path": "scripts/zip.mjs",
@@ -258,7 +280,7 @@
     },
     {
       "path": "DUAL_MIRROR_RELEASE.md",
-      "sha256": "4a11001790b2cf53e863fd9ce3dc89fcf4f4a1dce5b4cdfe4b52f2bfd287680a"
+      "sha256": "b68e20074b9d95aa4386494b14ab04cd60cb080f707495dc1296382fca7dade8"
     },
     {
       "path": "scripts/dual-mirror-release.sh",
