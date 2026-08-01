@@ -21,7 +21,7 @@
   "releasePolicies": [
     {
       "id": "aulyc-dual-mirror-v1",
-      "version": "1.2.0"
+      "version": "1.4.0"
     }
   ],
   "ruleBindings": [
@@ -220,7 +220,7 @@
   "trackedFiles": [
     {
       "path": "AGENTS.md",
-      "sha256": "72ed4a3710ba2105735a66b1750b4817f12ca2a2376806e4135af8d1ab17caca"
+      "sha256": "3edfa0cb28f41e1e3a2025a998e8647e2aca0773ed0769248b71a8be24ffb4cc"
     },
     {
       "path": "VERSIONING.md",
@@ -280,7 +280,7 @@
     },
     {
       "path": "DUAL_MIRROR_RELEASE.md",
-      "sha256": "c567b04ab7692c3559faaafd82122867ae0b4802b28936f7f4e4c283c6a33cd5"
+      "sha256": "19068bc37e97b51989ef7952df628a5ae1a66baefba383e54625d10de1c46317"
     },
     {
       "path": "scripts/dual-mirror-release.sh",

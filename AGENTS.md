@@ -138,7 +138,7 @@ remote refs back, and finalizes the GitHub source fields in release provenance.
 
 ### Dual-mirror release policy
 
-- Explicit policy: `aulyc-dual-mirror-v1` `1.2.0`; it does not change the
+- Explicit policy: `aulyc-dual-mirror-v1` `1.4.0`; it does not change the
   `obsidian-plugin` Profile.
 - Private source authority: `aulyc/aulycKanban`; public release mirrors:
   `aulyc/aulycKanban-releases` on GitHub and Gitee.
@@ -150,9 +150,10 @@ remote refs back, and finalizes the GitHub source fields in release provenance.
 - Updater: project-integrated check-and-link only. It reads GitHub `latest.json`
   first with Gitee fallback, validates the formal release identity and opens the
   official download page only after explicit user action. It does not download,
-  install, reload, or replace plugin files. Digital signing is recorded as a
-  future security enhancement for any later in-app installer; it is not a
-  prerequisite or blocking gate for the current formal release flow.
+  install, reload, or replace plugin files. Digital signing is `N/A` for this
+  check-and-link flow because the plugin never consumes release artifacts. If
+  an in-app installer is added later, signing becomes a separate pre-launch
+  security gate; it is not an outstanding item or release gate today.
 - `publish` requires separate explicit authorization. A missing public mirror,
   one-sided failure or conflict must fail/record partial state; never push
   source to Gitee, overwrite an old version or bypass the central preflight.

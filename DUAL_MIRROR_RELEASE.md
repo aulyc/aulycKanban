@@ -1,6 +1,6 @@
 # 双发布源接入
 
-本项目显式采用中央可选策略 `aulyc-dual-mirror-v1` `1.2.0`，Release Profile
+本项目显式采用中央可选策略 `aulyc-dual-mirror-v1` `1.4.0`，Release Profile
 仍是 `obsidian-plugin`。私有 GitHub 仓库 `aulyc/aulycKanban` 是唯一源码
 权威；不得向 Gitee 推送源码。
 
@@ -16,9 +16,10 @@
 新版本后仅由用户明确点击打开官方下载页，插件不下载 ZIP/provenance、不安装、
 不重载，也不替换 `main.js`、`manifest.json`、`styles.css` 或 `data.json`。
 
-数字签名登记为未来应用内下载/安装能力的安全增强方向。它不属于当前“检查更新并
-打开下载页面”功能，也不是当前测试或正式发版的前置条件、门禁或阻断项；当前发版
-继续执行既有 Profile、双镜像一致性、checksum、provenance 和产物验证规则。
+数字签名对当前“检查更新并打开下载页面”流程明确为 `N/A`：插件不消费发布产物，
+因此它不是当前待办、测试或正式发版门禁。若未来新增应用内下载/安装器，再单独建立
+签名与安装安全门禁；当前发版继续执行既有 Profile、双镜像一致性、checksum、
+provenance 和产物验证规则。
 
 正式 ZIP、最终 provenance、Changelog 和发布产物验证仍由项目现有流程
 负责。源码 branch/tag 已按中央正式 Git gate 推送并回写最终 provenance 后，
