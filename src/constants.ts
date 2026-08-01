@@ -36,7 +36,7 @@ export const COLUMN_DEFINITIONS: ReadonlyArray<{ id: string; titleKey: I18nKey; 
 ];
 
 /** 当前数据 schema 版本 */
-export const CURRENT_SCHEMA_VERSION = 6;
+export const CURRENT_SCHEMA_VERSION = 7;
 
 /** 默认设置 */
 export const DEFAULT_SETTINGS: PluginSettings = {
@@ -53,6 +53,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 	schemaVersion: CURRENT_SCHEMA_VERSION,
 	saveDebounce: PERFORMANCE.SAVE_DEBOUNCE,
 	syncDebounce: PERFORMANCE.SYNC_DEBOUNCE,
+	autoCheckUpdates: false,
 };
 
 /** 生成默认看板数据 */

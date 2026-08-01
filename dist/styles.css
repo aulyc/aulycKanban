@@ -1412,6 +1412,79 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	text-decoration: underline;
 }
 
+.modal.aulyckanban-update-modal {
+	width: min(520px, calc(100vw - 32px));
+	max-width: 520px;
+	max-height: calc(100vh - 32px);
+}
+
+.modal.aulyckanban-update-modal .modal-title {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-size: 20px;
+	line-height: 1.3;
+}
+
+.modal.aulyckanban-update-modal .aulyckanban-update-title-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	flex: 0 0 22px;
+}
+
+.modal.aulyckanban-update-modal .aulyckanban-update-content {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	padding: 18px 4px 4px;
+}
+
+.modal.aulyckanban-update-modal .aulyckanban-update-metadata {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.modal.aulyckanban-update-modal .aulyckanban-update-metadata-row {
+	display: grid;
+	grid-template-columns: 96px minmax(0, 1fr);
+	gap: 12px;
+	font-size: 15px;
+}
+
+.modal.aulyckanban-update-modal .aulyckanban-update-metadata-label {
+	font-weight: 600;
+}
+
+.modal.aulyckanban-update-modal .aulyckanban-update-metadata-value {
+	color: var(--text-muted);
+	overflow-wrap: anywhere;
+}
+
+.modal.aulyckanban-update-modal .aulyckanban-update-status {
+	margin: 0;
+	padding: 12px 14px;
+	border-radius: var(--radius-s);
+	background: var(--background-secondary);
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+	line-height: 1.5;
+}
+
+.modal.aulyckanban-update-modal .aulyckanban-update-actions .setting-item {
+	padding: 0;
+	border: 0;
+}
+
+.modal.aulyckanban-update-modal .aulyckanban-update-actions .setting-item-control {
+	width: 100%;
+	justify-content: flex-end;
+	flex-wrap: wrap;
+}
+
 @media (max-width: 500px) {
 	.modal.aulyckanban-about-modal .aulyckanban-about-content {
 		gap: 14px;
@@ -1423,6 +1496,18 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	}
 
 	.modal.aulyckanban-about-modal .aulyckanban-about-metadata-row {
+		grid-template-columns: 84px minmax(0, 1fr);
+	}
+
+	.modal.aulyckanban-update-modal .modal-title {
+		font-size: 18px;
+	}
+
+	.modal.aulyckanban-update-modal .aulyckanban-update-content {
+		padding: 16px 0 0;
+	}
+
+	.modal.aulyckanban-update-modal .aulyckanban-update-metadata-row {
 		grid-template-columns: 84px minmax(0, 1fr);
 	}
 }

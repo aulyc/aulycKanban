@@ -147,9 +147,12 @@ remote refs back, and finalizes the GitHub source fields in release provenance.
   not duplicate the central publication client.
 - Full mapping, language, retry and command contract:
   `DUAL_MIRROR_RELEASE.md`.
-- Updater: `N/A`; this plugin has no independent update downloader. Any future
-  updater must implement GitHub-first/Gitee-fallback plus the same
-  Profile-aware verification before it can ship.
+- Updater: project-integrated check-and-link only. It reads GitHub `latest.json`
+  first with Gitee fallback, validates the formal release identity and opens the
+  official download page only after explicit user action. It does not download,
+  install, reload, or replace plugin files. Digital signing is recorded as a
+  future security enhancement for any later in-app installer; it is not a
+  prerequisite or blocking gate for the current formal release flow.
 - `publish` requires separate explicit authorization. A missing public mirror,
   one-sided failure or conflict must fail/record partial state; never push
   source to Gitee, overwrite an old version or bypass the central preflight.

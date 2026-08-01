@@ -11,6 +11,7 @@ const zh = {
 	'command.openBoard': '打开看板',
 	'command.focusWork': '聚焦：工作任务',
 	'command.focusPersonal': '聚焦：个人任务',
+	'command.checkUpdates': '检查插件更新',
 
 	// 视图
 	'view.displayName': 'aulycKanban',
@@ -107,6 +108,13 @@ const zh = {
 		'将以当前看板数据覆盖全部自动同步笔记。旧版残留内容会移入“历史同步内容”，是否继续？',
 	'settings.sync.force.success': '已强制刷新 {count} 个同步笔记',
 	'settings.sync.force.fail': '强制刷新失败',
+	'settings.updates': '插件更新',
+	'settings.updates.auto.name': '启动后自动检查',
+	'settings.updates.auto.desc': 'Obsidian 启动后，在布局完成时检查正式版本；默认关闭，只提示更新',
+	'settings.updates.check.name': '手动检查更新',
+	'settings.updates.check.desc': '优先从 GitHub 检查，失败时切换到 Gitee；发现更新后可打开下载页面',
+	'settings.updates.check.button': '检查更新',
+	'settings.updates.check.running': '检查中…',
 	'settings.about.name': '关于 aulycKanban',
 	'settings.about.desc': '查看插件说明与致谢信息。',
 
@@ -126,6 +134,18 @@ const zh = {
 	'about.acknowledgements.line3': '3. 感谢 Obsidian 提供开放的插件平台；',
 	'about.acknowledgements.line4': '4. 感谢四象限时间管理方法提供的灵感；',
 	'about.acknowledgements.line5': '5. 感谢 aulyc 带来的坚持和灵感。',
+
+	// 更新
+	'update.title': 'aulycKanban 更新',
+	'update.currentVersion': '当前版本',
+	'update.availableVersion': '可用版本',
+	'update.source': '检查来源',
+	'update.source.github': 'GitHub',
+	'update.source.gitee': 'Gitee（备用镜像）',
+	'update.downloadHint': '发现新版本，可前往正式下载页面手动下载安装。',
+	'update.openDownloadPage': '打开下载页面',
+	'update.upToDate': 'aulycKanban 已是最新版本',
+	'update.checkFailed': '检查更新失败，请稍后重试',
 
 	// 保存
 	'save.fail': '看板数据保存失败，请检查磁盘空间或权限',
@@ -159,6 +179,7 @@ const en: Record<I18nKey, string> = {
 	'command.openBoard': 'Open kanban board',
 	'command.focusWork': 'Focus: Work tasks',
 	'command.focusPersonal': 'Focus: Personal tasks',
+	'command.checkUpdates': 'Check for plugin updates',
 
 	'view.displayName': 'aulycKanban',
 	'view.work': '💼 Work',
@@ -253,6 +274,15 @@ const en: Record<I18nKey, string> = {
 		'This will overwrite every managed synchronization note with the current kanban data. Legacy content will be moved to “Historical synchronization content”. Continue?',
 	'settings.sync.force.success': 'Force-refreshed {count} synchronization notes',
 	'settings.sync.force.fail': 'Force refresh failed',
+	'settings.updates': 'Plugin updates',
+	'settings.updates.auto.name': 'Check after startup',
+	'settings.updates.auto.desc':
+		'Check for formal releases after Obsidian finishes loading; off by default and only shows a notification',
+	'settings.updates.check.name': 'Check manually',
+	'settings.updates.check.desc':
+		'Check GitHub first, fall back to Gitee, and offer the download page when an update is found',
+	'settings.updates.check.button': 'Check for updates',
+	'settings.updates.check.running': 'Checking…',
 	'settings.about.name': 'About aulycKanban',
 	'settings.about.desc': 'View the plugin overview and acknowledgements.',
 
@@ -274,6 +304,18 @@ const en: Record<I18nKey, string> = {
 	'about.acknowledgements.line4':
 		'4. Thank you to the four-quadrant time-management method for its inspiration;',
 	'about.acknowledgements.line5': '5. Thank you to aulyc for the persistence and inspiration.',
+
+	'update.title': 'aulycKanban update',
+	'update.currentVersion': 'Current version',
+	'update.availableVersion': 'Available version',
+	'update.source': 'Checked via',
+	'update.source.github': 'GitHub',
+	'update.source.gitee': 'Gitee (fallback mirror)',
+	'update.downloadHint':
+		'A new version is available. Open the formal download page to install it manually.',
+	'update.openDownloadPage': 'Open download page',
+	'update.upToDate': 'aulycKanban is up to date',
+	'update.checkFailed': 'Could not check for updates. Try again later.',
 
 	'save.fail': 'Failed to save kanban data. Check disk space or permissions.',
 

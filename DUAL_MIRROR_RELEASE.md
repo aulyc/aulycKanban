@@ -11,10 +11,14 @@
 - 两端必须发布同一 ZIP、ZIP checksum、最终 provenance、provenance checksum
   和 `latest.json`。
 
-当前插件没有独立的应用内更新下载器，`updater: N/A`。采用策略不会虚构该能力；
-未来新增更新器前，必须先实现 GitHub `latest.json` 优先、Gitee fallback，并对
-任一来源执行相同的版本、Commit、plugin ID、ZIP 白名单、SHA-256 和 provenance
-验证；实际加载只在明确请求安装时验证。
+插件已内置项目级更新检查：GitHub `latest.json` 优先、Gitee fallback，并校验
+正式渠道、版本、Commit、plugin ID 和官方下载页身份。自动检查默认关闭；发现
+新版本后仅由用户明确点击打开官方下载页，插件不下载 ZIP/provenance、不安装、
+不重载，也不替换 `main.js`、`manifest.json`、`styles.css` 或 `data.json`。
+
+数字签名登记为未来应用内下载/安装能力的安全增强方向。它不属于当前“检查更新并
+打开下载页面”功能，也不是当前测试或正式发版的前置条件、门禁或阻断项；当前发版
+继续执行既有 Profile、双镜像一致性、checksum、provenance 和产物验证规则。
 
 正式 ZIP、最终 provenance、Changelog 和发布产物验证仍由项目现有流程
 负责。源码 branch/tag 已按中央正式 Git gate 推送并回写最终 provenance 后，

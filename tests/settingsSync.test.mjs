@@ -165,6 +165,21 @@ class MockSetting {
 		this.text = text;
 		return this;
 	}
+	addToggle(callback) {
+		const toggle = {
+			setValue: (value) => {
+				toggle.value = value;
+				return toggle;
+			},
+			onChange: (handler) => {
+				toggle.onChangeHandler = handler;
+				return toggle;
+			},
+		};
+		callback(toggle);
+		this.toggle = toggle;
+		return this;
+	}
 }
 
 class MockAboutModal {
@@ -231,14 +246,18 @@ function createHarness() {
 		syncFolder: 'X-aulyc看板',
 		viewSyncTargets: { work: { filePath: '旧/工作.md' } },
 		archive: { filePath: '旧/归档.md' },
+		autoCheckUpdates: false,
 	};
-	const syncCalls = { all: 0, force: 0 };
+	const syncCalls = { all: 0, force: 0, checks: 0 };
 	const store = {
 		getSettings: () => settings,
 		getTaskViews: () => [{ id: 'work', title: '工作任务' }],
 		dispatch(action) {
 			if (action.type !== 'UPDATE_SETTINGS') return;
 			if (action.payload.syncFolder !== undefined) settings.syncFolder = action.payload.syncFolder;
+			if (action.payload.autoCheckUpdates !== undefined) {
+				settings.autoCheckUpdates = action.payload.autoCheckUpdates;
+			}
 		},
 		async saveNow() {},
 	};
@@ -253,6 +272,9 @@ function createHarness() {
 				syncCalls.force += 1;
 				return { syncedCount: 3, totalCount: 3 };
 			},
+		},
+		async checkForUpdates() {
+			syncCalls.checks += 1;
 		},
 	};
 	const app = {
@@ -306,6 +328,7 @@ test('settings action buttons share one fixed width', () => {
 		'settings.import.name',
 		'settings.clear.name',
 		'settings.sync.force.name',
+		'settings.updates.check.name',
 		'settings.about.name',
 	];
 
@@ -323,6 +346,24 @@ test('settings action buttons share one fixed width', () => {
 	const enabledRule =
 		styles.match(/\.aulyckanban-settings-action-button:not\(:disabled\)\s*\{([^}]*)\}/)?.[1] ?? '';
 	assert.match(enabledRule, /cursor:\s*pointer/);
+});
+
+test('settings expose a manual update check and an opt-in automatic check', async () => {
+	const { tab, settings, syncCalls } = createHarness();
+	const start = renderedSettings.length;
+	tab.display();
+	const rendered = renderedSettings.slice(start);
+
+	const auto = rendered.find((item) => item.name === 'settings.updates.auto.name');
+	assert.ok(auto);
+	assert.equal(auto.toggle.value, false);
+	await auto.toggle.onChangeHandler(true);
+	assert.equal(settings.autoCheckUpdates, true);
+
+	const manual = rendered.find((item) => item.name === 'settings.updates.check.name');
+	assert.ok(manual);
+	await manual.controls[0].onClickHandler();
+	assert.equal(syncCalls.checks, 1);
 });
 
 test('settings expose one automatic sync folder without layout or per-note controls', async () => {

@@ -211,6 +211,42 @@ export class KanbanSettingTab extends PluginSettingTab {
 				});
 			});
 
+		// ==================== 插件更新 ====================
+		new Setting(containerEl).setHeading().setName(t('settings.updates'));
+
+		new Setting(containerEl)
+			.setName(t('settings.updates.auto.name'))
+			.setDesc(t('settings.updates.auto.desc'))
+			.addToggle((toggle) => {
+				toggle.setValue(settings.autoCheckUpdates).onChange(async (value) => {
+					this.plugin.store.dispatch({
+						type: 'UPDATE_SETTINGS',
+						payload: { autoCheckUpdates: value },
+					});
+					try {
+						await this.plugin.store.saveNow();
+					} catch {
+						// persistData 已提示用户并安排重试
+					}
+				});
+			});
+
+		new Setting(containerEl)
+			.setName(t('settings.updates.check.name'))
+			.setDesc(t('settings.updates.check.desc'))
+			.addButton((btn) => {
+				btn.buttonEl.classList.add('aulyckanban-settings-action-button');
+				const idleText = t('settings.updates.check.button');
+				btn.setButtonText(idleText).onClick(async () => {
+					btn.setDisabled(true).setButtonText(t('settings.updates.check.running'));
+					try {
+						await this.plugin.checkForUpdates(true);
+					} finally {
+						btn.setDisabled(false).setButtonText(idleText);
+					}
+				});
+			});
+
 		// ==================== 关于 ====================
 		new Setting(containerEl)
 			.setName(t('settings.about.name'))
