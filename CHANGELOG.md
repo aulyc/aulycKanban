@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+## [2.9.3] - 2026-08-02
+
 - 为 Obsidian Community 页面补充完整英文 README 概览、功能、安装和隐私说明。
 - 移除只读 `localStorage` 语言回退；语言无法从 Obsidian 配置或文档语言取得时直接
   使用英文，避免社区审查把它误判为插件数据持久化。
