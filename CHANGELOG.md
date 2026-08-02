@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+## [2.9.2] - 2026-08-02
+
 - 将 GitHub 源码、GitHub Release 与 Obsidian Community canonical repository
   统一为 `aulyc/aulycKanban`，保留 Gitee Release 作为第二公开分发源。
 - 正式双源发布为 Community 渠道补充独立 `main.js`、`manifest.json` 和
