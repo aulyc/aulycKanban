@@ -19,6 +19,9 @@ test('textarea grows from one content line when input wraps onto more lines', ()
 	const listeners = new Map();
 	const textarea = {
 		style: { height: '' },
+		setCssStyles(styles) {
+			Object.assign(this.style, styles);
+		},
 		scrollHeight: 36,
 		computedStyle: { borderTopWidth: '1px', borderBottomWidth: '1px' },
 		addEventListener(name, listener) {

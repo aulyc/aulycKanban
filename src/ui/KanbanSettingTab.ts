@@ -1,4 +1,5 @@
 import { AbstractInputSuggest, App, Notice, PluginSettingTab, Setting } from 'obsidian';
+import type { TFolder } from 'obsidian';
 import { t } from '../i18n';
 import type KanbanPlugin from '../main';
 import { BackupService } from '../services/backupService';
@@ -10,7 +11,8 @@ import { ConfirmModal } from './ConfirmModal';
 export function filterVaultFolders(app: App, query: string): string[] {
 	const normalizedQuery = query.trim().toLocaleLowerCase();
 	return app.vault
-		.getAllFolders()
+		.getAllLoadedFiles()
+		.filter((file): file is TFolder => 'children' in file)
 		.map((folder) => folder.path)
 		.filter(
 			(path) =>

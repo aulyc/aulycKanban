@@ -4,6 +4,11 @@
 
 ## Unreleased
 
+- 改用与最低版本 `1.5.0` 兼容的公开 Vault/Workspace API，修复 Community
+  自动审查的最低版本阻断项，同时保持文件夹建议与看板激活行为。
+- 使用 Obsidian 的 CSS helper 更新任务编辑框高度，并从当前 Workspace 文档读取
+  语言，修复静态样式赋值阻断项并改善弹出窗口兼容性。
+
 ## [2.9.3] - 2026-08-02
 
 - 为 Obsidian Community 页面补充完整英文 README 概览、功能、安装和隐私说明。

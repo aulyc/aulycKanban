@@ -258,12 +258,13 @@ function createHarness() {
 	const app = {
 		containerEl: new MockElement(),
 		vault: {
-			getAllFolders: () => [
-				{ path: 'Alpha' },
-				{ path: 'Beta' },
-				{ path: '工作' },
-				{ path: '项目' },
-				{ path: '项目/a计划' },
+			getAllLoadedFiles: () => [
+				{ path: 'Alpha', children: [] },
+				{ path: 'Beta', children: [] },
+				{ path: '工作', children: [] },
+				{ path: '项目', children: [] },
+				{ path: '项目/a计划', children: [] },
+				{ path: 'Alpha/task.md' },
 			],
 		},
 	};

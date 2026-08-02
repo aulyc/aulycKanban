@@ -45,14 +45,16 @@ export function getTextareaBorderBoxHeight(
 
 export function autoResizeTextarea(textarea: HTMLTextAreaElement): () => void {
 	const resize = (): void => {
-		textarea.style.height = 'auto';
+		textarea.setCssStyles({ height: 'auto' });
 		const style = getComputedStyle(textarea);
-		textarea.style.height =
-			getTextareaBorderBoxHeight(
-				textarea.scrollHeight,
-				style.borderTopWidth,
-				style.borderBottomWidth,
-			) + 'px';
+		textarea.setCssStyles({
+			height:
+				getTextareaBorderBoxHeight(
+					textarea.scrollHeight,
+					style.borderTopWidth,
+					style.borderBottomWidth,
+				) + 'px',
+		});
 	};
 	requestAnimationFrame(resize);
 	textarea.addEventListener('input', resize);

@@ -200,7 +200,7 @@ function createLeaf() {
 	};
 }
 
-function createHarness({ configLocale = 'zh-CN', htmlLocale = '' } = {}) {
+function createHarness({ htmlLocale = 'zh-CN' } = {}) {
 	const setup = {
 		initializedLocales: [],
 		loadResult: {
@@ -217,8 +217,8 @@ function createHarness({ configLocale = 'zh-CN', htmlLocale = '' } = {}) {
 		saveError: null,
 	};
 	activeSetup = setup;
-	globalThis.document = { documentElement: { lang: htmlLocale } };
 	const workspace = {
+		containerEl: { ownerDocument: { documentElement: { lang: htmlLocale } } },
 		leaves: [],
 		rightLeaf: null,
 		tabLeaf: null,
@@ -233,14 +233,13 @@ function createHarness({ configLocale = 'zh-CN', htmlLocale = '' } = {}) {
 			workspace.getLeafCalls.push(mode);
 			return workspace.tabLeaf;
 		},
-		async revealLeaf(leaf) {
+		setActiveLeaf(leaf, options) {
 			workspace.revealed.push(leaf);
+			workspace.activeLeafOptions = options;
 		},
 	};
 	const app = {
-		vault: {
-			getConfig: () => configLocale,
-		},
+		vault: {},
 		workspace,
 	};
 	return { app, plugin: new KanbanPlugin(app), setup, workspace };
@@ -302,7 +301,7 @@ test('plugin load contains managed-note initialization failures and keeps comman
 });
 
 test('registered controls activate existing or new board leaves and select explicit task types', async () => {
-	const harness = createHarness({ configLocale: null, htmlLocale: 'en-GB' });
+	const harness = createHarness({ htmlLocale: 'en-GB' });
 	await harness.plugin.onload();
 	assert.deepEqual(harness.setup.initializedLocales, ['en-GB']);
 
@@ -311,6 +310,7 @@ test('registered controls activate existing or new board leaves and select expli
 	harness.workspace.leaves = [existingLeaf];
 	await harness.plugin.ribbonItems[0].callback();
 	assert.equal(harness.workspace.revealed.at(-1), existingLeaf);
+	assert.deepEqual(harness.workspace.activeLeafOptions, { focus: true });
 	assert.equal(existingLeaf.view.focusCount, 1);
 
 	const fallbackLeaf = createLeaf();
@@ -334,7 +334,7 @@ test('registered controls activate existing or new board leaves and select expli
 });
 
 test('persist failures notify once while silent retries still reject', async () => {
-	const harness = createHarness({ configLocale: null });
+	const harness = createHarness({ htmlLocale: '' });
 	await harness.plugin.onload();
 	assert.deepEqual(harness.setup.initializedLocales, ['en']);
 	harness.setup.saveError = new Error('disk full');

@@ -109,16 +109,7 @@ export default class KanbanPlugin extends Plugin {
 	 * 获取当前 Obsidian 语言环境
 	 */
 	private getLocale(): string {
-		const appWithConfig = this.app as unknown as {
-			vault?: { getConfig?: (key: string) => unknown };
-		};
-		const configLocale =
-			appWithConfig.vault?.getConfig?.('language') ?? appWithConfig.vault?.getConfig?.('locale');
-		if (typeof configLocale === 'string' && configLocale) {
-			return configLocale;
-		}
-
-		const htmlLocale = globalThis.document?.documentElement?.lang;
+		const htmlLocale = this.app.workspace.containerEl.ownerDocument.documentElement.lang;
 		if (htmlLocale) {
 			return htmlLocale;
 		}
@@ -153,7 +144,7 @@ export default class KanbanPlugin extends Plugin {
 			}
 
 			if (leaf) {
-				await workspace.revealLeaf(leaf);
+				workspace.setActiveLeaf(leaf, { focus: true });
 				if (leaf.view instanceof KanbanView) {
 					leaf.view.focusBoard();
 				}
