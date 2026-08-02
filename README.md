@@ -1,5 +1,37 @@
 # aulycKanban（Obsidian 插件）
 
+## English
+
+`aulycKanban` is a lightweight task board for Obsidian. It organizes tasks by
+custom task types and a shared set of quadrants, while keeping the data inside
+your current vault. You can create, rename, and remove task types or quadrants;
+search across the current scope; edit, archive, restore, sort, and batch-delete
+tasks; and navigate the board with the keyboard.
+
+### Key features
+
+- Custom task types with independent task collections.
+- Shared quadrants that keep the same structure across every task type.
+- Search, archive filtering, restore, sorting, and batch deletion.
+- Automatic Markdown mirrors for each task type and the archive.
+- Local persistence through Obsidian's plugin data API.
+- Desktop and mobile-compatible plugin metadata.
+
+### Installation and updates
+
+After Community review, install and update `aulycKanban` from Obsidian's
+Community plugins directory. For manual installation, download `main.js`,
+`manifest.json`, and `styles.css` from the matching GitHub Release and place
+them in `.obsidian/plugins/aulyckanban/` inside your vault.
+
+The plugin does not contain its own update checker, downloader, installer, or
+telemetry. It does not contact GitHub, Gitee, or another publishing service at
+runtime. Board data and generated Markdown notes remain in the current vault.
+GitHub is the canonical source and Community release channel; Gitee is retained
+only as a public manual-download and release-audit mirror.
+
+## 中文说明
+
 `aulycKanban` 是一个面向 Obsidian 的任务看板插件，核心目标是用轻量、清晰的方式管理多个任务类型，并支持归档、筛选与 Markdown 同步。
 
 ## 主要功能

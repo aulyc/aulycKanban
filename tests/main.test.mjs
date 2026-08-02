@@ -200,7 +200,7 @@ function createLeaf() {
 	};
 }
 
-function createHarness({ configLocale = 'zh-CN', htmlLocale = '', storedLocale = null } = {}) {
+function createHarness({ configLocale = 'zh-CN', htmlLocale = '' } = {}) {
 	const setup = {
 		initializedLocales: [],
 		loadResult: {
@@ -218,7 +218,6 @@ function createHarness({ configLocale = 'zh-CN', htmlLocale = '', storedLocale =
 	};
 	activeSetup = setup;
 	globalThis.document = { documentElement: { lang: htmlLocale } };
-	globalThis.localStorage = { getItem: () => storedLocale };
 	const workspace = {
 		leaves: [],
 		rightLeaf: null,
@@ -335,9 +334,9 @@ test('registered controls activate existing or new board leaves and select expli
 });
 
 test('persist failures notify once while silent retries still reject', async () => {
-	const harness = createHarness({ configLocale: null, storedLocale: 'zh-TW' });
+	const harness = createHarness({ configLocale: null });
 	await harness.plugin.onload();
-	assert.deepEqual(harness.setup.initializedLocales, ['zh-TW']);
+	assert.deepEqual(harness.setup.initializedLocales, ['en']);
 	harness.setup.saveError = new Error('disk full');
 
 	const errors = await captureConsoleErrors(async () => {

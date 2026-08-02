@@ -123,8 +123,7 @@ export default class KanbanPlugin extends Plugin {
 			return htmlLocale;
 		}
 
-		const localStorageLocale = globalThis.localStorage.getItem('language');
-		return localStorageLocale ?? 'en';
+		return 'en';
 	}
 
 	/**
