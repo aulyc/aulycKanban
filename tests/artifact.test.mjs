@@ -31,7 +31,7 @@ test('versioned ZIP and release provenance are derived from real Git and artifac
 			sourceDir: fixture.rootDir,
 		});
 		assert.equal(result.provenance.releaseProfile, 'obsidian-plugin');
-		assert.equal(result.provenance.distribution, 'local-vault');
+		assert.equal(result.provenance.distribution, 'community-plugin-channel');
 		assert.equal(result.provenance.commit, fixture.releaseCommit);
 		assert.equal(result.provenance.dirty, false);
 		assert.equal(result.manifest.name, 'aulycKanban');

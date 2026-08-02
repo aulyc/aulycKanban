@@ -2,7 +2,9 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 
 export const RELEASE_PROFILE = 'obsidian-plugin';
-export const DISTRIBUTION = 'local-vault';
+export const DISTRIBUTION = 'community-plugin-channel';
+export const LEGACY_DISTRIBUTION = 'local-vault';
+export const LEGACY_DISTRIBUTION_MAX_VERSION = '2.9.1';
 export const PLUGIN_ID = 'aulyckanban';
 export const PRODUCT_NAME = 'aulycKanban';
 export const RELEASE_ARTIFACT_BASENAME = 'aulycKanban';

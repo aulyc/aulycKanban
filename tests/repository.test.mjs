@@ -50,14 +50,12 @@ test('settings without note paths use the default automatic sync folder', async 
 
 	assert.equal(settings.syncFolder, 'X-aulyc看板');
 	assert.equal(settings.viewSyncTargets.work.filePath, '');
-	assert.equal(settings.schemaVersion, 7);
-	assert.equal(settings.autoCheckUpdates, false);
+	assert.equal(settings.schemaVersion, 8);
+	assert.equal('autoCheckUpdates' in settings, false);
 });
 
-test('update checks are opt-in and preserve an explicit saved preference', async () => {
-	assert.equal((await loadSettings({ autoCheckUpdates: true })).autoCheckUpdates, true);
-	assert.equal((await loadSettings({ autoCheckUpdates: false })).autoCheckUpdates, false);
-	assert.equal((await loadSettings({ autoCheckUpdates: 'yes' })).autoCheckUpdates, false);
+test('legacy project update preferences are retired during settings migration', async () => {
+	assert.equal('autoCheckUpdates' in (await loadSettings({ autoCheckUpdates: true })), false);
 });
 
 test('legacy aggregate settings contribute only their folder and leave the old note untouched', async () => {

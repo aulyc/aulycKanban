@@ -83,10 +83,6 @@ export class PluginDataRepository {
 					typeof rawSettings['syncDebounce'] === 'number'
 						? rawSettings['syncDebounce']
 						: DEFAULT_SETTINGS.syncDebounce,
-				autoCheckUpdates:
-					typeof rawSettings['autoCheckUpdates'] === 'boolean'
-						? rawSettings['autoCheckUpdates']
-						: DEFAULT_SETTINGS.autoCheckUpdates,
 			};
 
 			return { settings, board };

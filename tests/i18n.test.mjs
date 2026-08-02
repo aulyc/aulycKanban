@@ -17,11 +17,6 @@ test('simplified Chinese settings use localized section headings and clear-data 
 	assert.equal(t('settings.sync.force.name'), '强制刷新同步');
 	assert.equal(t('settings.sync.force.button'), '同步');
 	assert.match(t('settings.sync.force.confirm'), /覆盖全部自动同步笔记/);
-	assert.equal(t('settings.updates'), '插件更新');
-	assert.equal(t('settings.updates.check.button'), '检查更新');
-	assert.match(t('settings.updates.auto.desc'), /启动后/);
-	assert.equal(t('update.openDownloadPage'), '打开下载页面');
-	assert.match(t('update.downloadHint'), /手动下载安装/);
 	assert.equal(t('settings.clear.name'), '清除数据');
 	assert.equal(t('settings.clear.button'), '清除');
 	assert.equal(t('settings.clear.desc'), '不可恢复的删除所有数据');
@@ -41,9 +36,6 @@ test('English settings retain their localized copy', async () => {
 	assert.equal(t('settings.sync.folder.name'), 'Sync folder');
 	assert.equal(t('settings.sync.force.name'), 'Force refresh synchronization');
 	assert.equal(t('settings.sync.force.button'), 'Sync');
-	assert.equal(t('settings.updates'), 'Plugin updates');
-	assert.equal(t('settings.updates.check.button'), 'Check for updates');
-	assert.equal(t('update.openDownloadPage'), 'Open download page');
 	assert.equal(t('settings.clear.button'), 'Clear data');
 	assert.equal(t('settings.about.name'), 'About aulycKanban');
 	assert.equal(t('about.version'), 'Plugin version');

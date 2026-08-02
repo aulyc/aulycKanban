@@ -74,8 +74,6 @@ export interface PluginSettings {
 	saveDebounce: number;
 	/** 同步防抖时间（毫秒） */
 	syncDebounce: number;
-	/** 是否在 Obsidian 启动并完成布局后检查正式更新（默认关闭） */
-	autoCheckUpdates: boolean;
 }
 
 /** 持久化数据（settings + board 合并存储） */

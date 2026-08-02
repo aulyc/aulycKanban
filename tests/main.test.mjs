@@ -154,29 +154,6 @@ class MockSettingTab {
 	}
 }
 
-class MockUpdateService {
-	constructor(fetcher) {
-		this.fetcher = fetcher;
-		activeSetup.updateServices.push(this);
-	}
-
-	async check() {
-		return activeSetup.updateResult;
-	}
-}
-
-class MockUpdateModal {
-	constructor(app, options) {
-		this.app = app;
-		this.options = options;
-		activeSetup.updateModals.push(this);
-	}
-
-	open() {
-		this.opened = true;
-	}
-}
-
 const { default: KanbanPlugin } = await loadSourceModule(
 	new URL('../src/main.ts', import.meta.url),
 	{
@@ -189,7 +166,6 @@ const { default: KanbanPlugin } = await loadSourceModule(
 					}
 				},
 				Plugin: MockPlugin,
-				requestUrl: async () => ({ status: 200, arrayBuffer: new ArrayBuffer(1) }),
 				WorkspaceLeaf: class {},
 			},
 			'./constants': { VIEW_TYPE_KANBAN: 'aulyckanban-view' },
@@ -202,8 +178,6 @@ const { default: KanbanPlugin } = await loadSourceModule(
 			'./store': { KanbanStore: MockStore },
 			'./services/syncService': { VaultSyncService: MockSyncService },
 			'./services/repository': { PluginDataRepository: MockRepository },
-			'./services/updateService': { UpdateService: MockUpdateService },
-			'./ui/UpdateModal': { UpdateModal: MockUpdateModal },
 			'./utils/syncTarget': {
 				getMutationSyncTarget(actionType, currentView, mutatedView) {
 					return actionType === 'CLEAR_ALL_DATA'
@@ -230,7 +204,7 @@ function createHarness({ configLocale = 'zh-CN', htmlLocale = '', storedLocale =
 	const setup = {
 		initializedLocales: [],
 		loadResult: {
-			settings: { currentView: 'work', autoCheckUpdates: false },
+			settings: { currentView: 'work' },
 			board: { views: [], archives: {} },
 		},
 		notices: [],
@@ -238,13 +212,6 @@ function createHarness({ configLocale = 'zh-CN', htmlLocale = '', storedLocale =
 		saves: [],
 		stores: [],
 		syncServices: [],
-		updateServices: [],
-		updateModals: [],
-		updateResult: {
-			status: 'up-to-date',
-			source: 'github',
-			manifest: { version: '2.8.2' },
-		},
 		unsubscribeCount: 0,
 		syncInitializeError: null,
 		saveError: null,
@@ -304,7 +271,7 @@ test('plugin load registers entry points and routes only data mutations to manag
 	assert.ok(harness.plugin.registeredViews[0].factory({}) instanceof MockKanbanView);
 	assert.deepEqual(
 		harness.plugin.commands.map((command) => command.id),
-		['open-board', 'focus-work', 'focus-personal', 'check-for-updates'],
+		['open-board', 'focus-work', 'focus-personal'],
 	);
 	assert.equal(harness.plugin.ribbonItems[0].icon, 'list-todo');
 	assert.ok(harness.plugin.settingTabs[0] instanceof MockSettingTab);
@@ -331,34 +298,8 @@ test('plugin load contains managed-note initialization failures and keeps comman
 
 	assert.equal(errors.length, 1);
 	assert.match(String(errors[0][0]), /Failed to initialize managed notes/);
-	assert.equal(harness.plugin.commands.length, 4);
+	assert.equal(harness.plugin.commands.length, 3);
 	harness.plugin.onunload();
-});
-
-test('manual and opt-in startup checks only expose the formal release page', async () => {
-	const manual = createHarness();
-	manual.setup.updateResult = {
-		status: 'update-available',
-		source: 'github',
-		manifest: { version: '2.9.0', releasePageURL: 'https://example.test/release' },
-	};
-	await manual.plugin.onload();
-	assert.equal(manual.workspace.layoutReadyCallback, undefined);
-	await manual.plugin.commands.find((command) => command.id === 'check-for-updates').callback();
-	assert.equal(manual.setup.updateModals.length, 1);
-	assert.equal(manual.setup.updateModals[0].opened, true);
-	assert.equal(
-		manual.setup.updateModals[0].options.manifest.releasePageURL,
-		'https://example.test/release',
-	);
-	assert.equal('downloadAndVerify' in manual.setup.updateModals[0].options, false);
-
-	const automatic = createHarness();
-	automatic.setup.loadResult.settings.autoCheckUpdates = true;
-	await automatic.plugin.onload();
-	assert.equal(typeof automatic.workspace.layoutReadyCallback, 'function');
-	await automatic.workspace.layoutReadyCallback();
-	assert.deepEqual(automatic.setup.notices, []);
 });
 
 test('registered controls activate existing or new board leaves and select explicit task types', async () => {

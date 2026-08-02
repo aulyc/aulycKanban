@@ -93,8 +93,8 @@
 - Release profile: `obsidian-plugin`
 - Project type: Obsidian plugin
 - Supported release targets: Obsidian 桌面端和移动端兼容插件文件
-- Distribution identity: `local-vault` installation plus optional
-  `aulyc-dual-mirror-v1` public release distribution
+- Distribution identity: `community-plugin-channel` and `repository-release`,
+  plus explicit `local-vault` installation
 - Authoritative version source: `release-version.json`
 - Build-number source: `release-version.json#buildNumber`
 - Product/package metadata: `manifest.json`、`package.json`、`package-lock.json`、`versions.json`
@@ -138,23 +138,26 @@ remote refs back, and finalizes the GitHub source fields in release provenance.
 
 ### Dual-mirror release policy
 
-- Explicit policy: `aulyc-dual-mirror-v1` `1.4.0`; it does not change the
+- Explicit policy: `aulyc-dual-mirror-v1` `1.5.0`; it does not change the
   `obsidian-plugin` Profile.
-- Private source authority: `aulyc/aulycKanban`; public release mirrors:
-  `aulyc/aulycKanban-releases` on GitHub and Gitee.
+- Public GitHub source, Release and Obsidian Community authority:
+  `aulyc/aulycKanban`; Gitee Release mirror:
+  `aulyc/aulycKanban-releases`. Source is never pushed to Gitee.
 - Project adapter: `bash scripts/dual-mirror-release.sh
 <prepare|preflight|publish|verify> ...`; it only binds `projectId` and must
   not duplicate the central publication client.
 - Full mapping, language, retry and command contract:
   `DUAL_MIRROR_RELEASE.md`.
-- Updater: project-integrated check-and-link only. It reads GitHub `latest.json`
-  first with Gitee fallback, validates the formal release identity and opens the
-  official download page only after explicit user action. It does not download,
-  install, reload, or replace plugin files. Digital signing is `N/A` for this
-  check-and-link flow because the plugin never consumes release artifacts. If
-  an in-app installer is added later, signing becomes a separate pre-launch
-  security gate; it is not an outstanding item or release gate today.
-- `publish` requires separate explicit authorization. A missing public mirror,
+- Updater: N/A. Obsidian Community owns runtime update discovery and downloads;
+  the plugin must not expose startup/manual update checks or consume
+  `latest.json`. Digital signing remains N/A unless a future project-owned
+  downloader/installer is separately designed and authorized.
+- Community releases publish the formal ZIP/checksum/provenance/latest set plus
+  independently downloadable `main.js`, `manifest.json`, and `styles.css` to
+  both GitHub and Gitee. The GitHub Release must reuse the authoritative source
+  annotated tag; the mirror tool cannot create a missing source tag.
+- `publish` requires separate explicit authorization. A private GitHub source,
+  missing Gitee mirror,
   one-sided failure or conflict must fail/record partial state; never push
   source to Gitee, overwrite an old version or bypass the central preflight.
 
@@ -171,9 +174,10 @@ remote refs back, and finalizes the GitHub source fields in release provenance.
 ### Project-specific adaptations
 
 - Build number: 本项目显式使用独立 `buildNumber`。规范迁移保持 `2.1.19` 和 `buildNumber: 0`，不为历史版本伪造构建号；第一个未来测试或正式发布必须使用正整数，之后跨测试/正式渠道严格递增、不得重复或倒退。
-- Distribution: 真实安装仍为 `local-vault`；正式 ZIP 另按显式
-  `aulyc-dual-mirror-v1` 发布到两个公开镜像。源码分支和 annotated tag 只发布到
-  中央绑定的私有 GitHub 源码仓库。版本化 ZIP、独立 provenance、目标 Vault
+- Distribution: 正式 provenance 使用 `community-plugin-channel`；同一正式版本
+  另按 `aulyc-dual-mirror-v1` 发布到 GitHub 主仓和 Gitee 镜像。源码分支和
+  annotated tag 只发布到中央绑定的公共 GitHub 主仓；显式安装仍为
+  `local-vault`。版本化 ZIP、独立 provenance、Community 原始附件、目标 Vault
   安装哈希和实际加载身份继续作为插件渠道验证。
 - Historical tags: 历史 lightweight 与 annotated tags 均为只读遗留记录；不得移动、删除或重建。新规则从 `2.1.19` 之后的第一个版本开始执行。
 - CI: 当前没有远端 CI 配置；以 `npm run ci` 作为本地等价门禁。
@@ -186,7 +190,9 @@ remote refs back, and finalizes the GitHub source fields in release provenance.
 - CI signals: `package.json`；仓库当前没有远端 CI workflow。
 - Tracked drift evidence: `AGENTS.md`、`VERSIONING.md`、`version-bump.mjs` 和稳定发布控制脚本；复核后的 SHA-256 记录在 `.codex/standards.json`。
 - Active exceptions: none。
-- Release-process feedback classification: `project-only`；项目采用 core
+- Release-process feedback classification: `core-candidate` for the shared
+  Policy 1.5.0 extension and `project-only` for the aulycKanban runtime/docs
+  migration；项目采用 core
   `3.0.0`、`obsidian-plugin` `2.0.0` 和可选双镜像 Policy。
 
 ### Release documentation and invariants

@@ -21,7 +21,7 @@
   "releasePolicies": [
     {
       "id": "aulyc-dual-mirror-v1",
-      "version": "1.4.0"
+      "version": "1.5.0"
     }
   ],
   "ruleBindings": [
@@ -160,6 +160,10 @@
       "evidence": ["AGENTS.md#release-command-mapping", "DUAL_MIRROR_RELEASE.md"]
     },
     {
+      "ruleId": "DMR-009",
+      "evidence": ["AGENTS.md#dual-mirror-release-policy", "DUAL_MIRROR_RELEASE.md"]
+    },
+    {
       "ruleId": "OBS-001",
       "evidence": [
         "AGENTS.md#versioning-and-release-profile"
@@ -220,11 +224,11 @@
   "trackedFiles": [
     {
       "path": "AGENTS.md",
-      "sha256": "3edfa0cb28f41e1e3a2025a998e8647e2aca0773ed0769248b71a8be24ffb4cc"
+      "sha256": "387d85af0230242dff9af19b8fdc902a69c4b464a02ba2f083b9cf8bb95dd3c2"
     },
     {
       "path": "VERSIONING.md",
-      "sha256": "0061a1d463969d0bf6ae4eef7ee566ed3ca56f35350849eece3f52f34fbb9a7e"
+      "sha256": "8d2784b94d224fccfe1039b9c02d925e5a335c6af075a5feaabad54b47b2d22c"
     },
     {
       "path": "version-bump.mjs",
@@ -232,7 +236,7 @@
     },
     {
       "path": "scripts/artifact.mjs",
-      "sha256": "af59345de36e133761402ba72fdb4c497a39b139a0d24db23a58d51c9ff59fc2"
+      "sha256": "9c51c25c218040e6fb8610932e47ea96f0da9bbbeb3761fb8d6b586ebd1f540c"
     },
     {
       "path": "scripts/build-dist.mjs",
@@ -260,7 +264,7 @@
     },
     {
       "path": "scripts/release-constants.mjs",
-      "sha256": "d5ca057afefc5e717a62b6f84ea0dd6cca8af1180b3c103c40c99a73bc225332"
+      "sha256": "adbfaef650095977f05a7693cf159ec67ca7e67e38d641a873ed288042680dd6"
     },
     {
       "path": "scripts/release-from-tag.mjs",
@@ -280,7 +284,7 @@
     },
     {
       "path": "DUAL_MIRROR_RELEASE.md",
-      "sha256": "19068bc37e97b51989ef7952df628a5ae1a66baefba383e54625d10de1c46317"
+      "sha256": "ac70ca5159ba75f2216a10487a41a8f123e261552e6e0ba6277de099e864696c"
     },
     {
       "path": "scripts/dual-mirror-release.sh",

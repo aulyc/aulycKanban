@@ -3,7 +3,7 @@
 	"name": "aulycKanban",
 	"version": "2.9.1",
 	"minAppVersion": "1.5.0",
-	"description": "基于象限和任务类型管理的看板工具，支持任务管理、归档、搜索和 Markdown 笔记同步",
+	"description": "Manage tasks with custom types, shared quadrants, archives, search, and Markdown note synchronization.",
 	"author": "AULYC",
 	"authorUrl": "https://github.com/AULYC",
 	"isDesktopOnly": false

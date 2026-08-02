@@ -7,6 +7,8 @@ import { assertCleanGit, runGit, verifyAnnotatedTag } from './git-release.mjs';
 import {
 	assertExactKeys,
 	DISTRIBUTION,
+	LEGACY_DISTRIBUTION,
+	LEGACY_DISTRIBUTION_MAX_VERSION,
 	LEGACY_ARTIFACT_BASENAME,
 	LEGACY_ARTIFACT_MAX_VERSION,
 	PLUGIN_ID,
@@ -157,12 +159,18 @@ export async function verifyReleaseArtifact({
 		pluginId: manifest.id,
 		minAppVersion: manifest.minAppVersion,
 		isDesktopOnly: manifest.isDesktopOnly,
-		distribution: DISTRIBUTION,
 	};
 	for (const [field, expected] of Object.entries(expectedFields)) {
 		if (provenance[field] !== expected) {
 			throw new Error(`Release provenance mismatch: ${field}`);
 		}
+	}
+	const acceptedDistributions = [DISTRIBUTION];
+	if (compareSemVer(releaseVersion.version, LEGACY_DISTRIBUTION_MAX_VERSION) <= 0) {
+		acceptedDistributions.push(LEGACY_DISTRIBUTION);
+	}
+	if (!acceptedDistributions.includes(provenance.distribution)) {
+		throw new Error('Release provenance mismatch: distribution');
 	}
 	if (hasRemoteProvenance) {
 		if (channel !== 'formal')

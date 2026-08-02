@@ -1,6 +1,6 @@
 # 版本与发版规范
 
-本项目采用 `obsidian-plugin` Release Profile、标准 SemVer、严格递增构建号、不可变 annotated tag、精确 tag 隔离构建和独立 release provenance。Distribution 为 `local-vault`。
+本项目采用 `obsidian-plugin` Release Profile、标准 SemVer、严格递增构建号、不可变 annotated tag、精确 tag 隔离构建和独立 release provenance。Distribution 为 `community-plugin-channel`、`repository-release` 和显式 `local-vault` 安装。
 
 ## 1. 迁移边界
 
@@ -108,6 +108,11 @@ ZIP 根目录只允许：
 
 provenance 从真实 Git、tag 和 ZIP 提取并交叉验证：Profile、渠道、版本、构建号、tag、Commit、`dirty:false`、插件 ID、最低 Obsidian 版本、`isDesktopOnly`、Distribution、ZIP 文件名/SHA-256，以及三个文件的 SHA-256。它不得包含 Vault 路径、用户数据、Token、凭据或本机身份。
 
+采用双源 Policy 1.5.0 后，中央工具还会从这个精确标签 ZIP 中校验并提取
+`main.js`、`manifest.json`、`styles.css`，作为 GitHub/Gitee 两端同字节的独立
+Release 附件。GitHub Release 位于唯一主仓 `aulyc/aulycKanban`，并复用已经原子
+推送和回读的权威 annotated tag；工具不得从其他分支补造标签。
+
 新构建只能生成 `aulycKanban-<version>` 前缀的 ZIP 和 provenance。当前验证器为只读历史兼容，可继续验证 `2.3.5` 及以前使用 `aulyckanban-<version>` 前缀的既有产物；该兼容分支不能用于生成新产物，也不能重写历史文件。
 
 ## 8. 测试与正式发版命令
@@ -129,6 +134,11 @@ Vault、不重载插件。测试 ZIP 不能改名冒充正式 ZIP。本项目正
 annotated tag 原子推送到中央绑定的 `aulyc/aulycKanban`，回读远端两个 ref，
 并把远端源码身份写入最终 provenance；测试发版不推送。纯发版安装状态为
 `not-requested`。
+
+正式源码发布完成后，只有取得独立双源 `publish` 授权，才按
+[DUAL_MIRROR_RELEASE.md](DUAL_MIRROR_RELEASE.md) 在同一 GitHub 主仓创建或复用
+Release，并同步 Gitee。Community 收录后，Obsidian 直接从同版本 GitHub Release
+获取原始插件附件；插件内不保留重复的更新设置或检查命令。
 
 只有明确要求“测试发版安装”或“正式发版安装”时，分别运行：
 
@@ -181,3 +191,6 @@ npm run smoke:obsidian -- --manifest <目标插件目录/manifest.json>
 - 不得把 `manifest.json` 称为 release provenance。
 - 不得把 macOS App 的签名、公证、Gatekeeper、架构或 Apple 构建号规则用于本插件。
 - 不得在 ZIP、provenance、日志或测试 fixture 中写入真实 Vault 数据、凭据或本机身份。
+- 不得让双源工具在公共 GitHub 主仓缺少正式标签时创建替代标签，也不得向 Gitee
+  推送源码。
+- 不得在 Community 渠道之外保留项目自有启动更新检查、手动更新设置或文件替换器。

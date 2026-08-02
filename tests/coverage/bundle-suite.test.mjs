@@ -14,6 +14,3 @@ import '../taskControls.test.mjs';
 import '../taskList.test.mjs';
 import '../toolbarFocus.test.mjs';
 import '../utilityBar.test.mjs';
-import '../updateModal.test.mjs';
-import '../updateManifest.test.mjs';
-import '../updateService.test.mjs';

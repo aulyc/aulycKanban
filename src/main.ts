@@ -1,4 +1,4 @@
-import { Notice, Plugin, requestUrl, WorkspaceLeaf } from 'obsidian';
+import { Notice, Plugin, WorkspaceLeaf } from 'obsidian';
 import { VIEW_TYPE_KANBAN } from './constants';
 import { initI18n, t } from './i18n';
 import { KanbanView } from './ui/KanbanView';
@@ -7,15 +7,11 @@ import { KanbanStore } from './store';
 import { VaultSyncService } from './services/syncService';
 import { PluginDataRepository } from './services/repository';
 import { getMutationSyncTarget } from './utils/syncTarget';
-import { UpdateService } from './services/updateService';
-import { UpdateModal } from './ui/UpdateModal';
 
 export default class KanbanPlugin extends Plugin {
 	store!: KanbanStore;
 	syncService!: VaultSyncService;
 	private repository!: PluginDataRepository;
-	private updateService!: UpdateService;
-	private updateCheckPromise: Promise<void> | null = null;
 	private unsubscribeSync: (() => void) | null = null;
 
 	async onload(): Promise<void> {
@@ -28,12 +24,6 @@ export default class KanbanPlugin extends Plugin {
 
 		// 初始化 Store
 		this.store = new KanbanStore(settings, board, this);
-		this.updateService = new UpdateService(async (url) => {
-			const response = await requestUrl({ url, method: 'GET', throw: false });
-			if (response.status !== 200)
-				throw new Error(`Update request failed with HTTP ${response.status}`);
-			return response.arrayBuffer;
-		});
 
 		// 初始化同步服务
 		this.syncService = new VaultSyncService(this.app.vault, this.store);
@@ -96,19 +86,8 @@ export default class KanbanPlugin extends Plugin {
 			},
 		});
 
-		this.addCommand({
-			id: 'check-for-updates',
-			name: t('command.checkUpdates'),
-			callback: () => this.checkForUpdates(true),
-		});
-
 		// 注册设置页
 		this.addSettingTab(new KanbanSettingTab(this.app, this));
-
-		// 自动检查是显式 opt-in；只检查清单，不会自动下载或安装。
-		if (settings.autoCheckUpdates) {
-			this.app.workspace.onLayoutReady(() => this.checkForUpdates(false));
-		}
 	}
 
 	onunload(): void {
@@ -196,36 +175,6 @@ export default class KanbanPlugin extends Plugin {
 			// 同一轮自动重试只在首次失败时提示，避免重复 Notice 干扰用户。
 			if (notifyFailure) new Notice(t('save.fail'));
 			throw error;
-		}
-	}
-
-	/** 检查正式更新；手动检查会反馈“已是最新”或错误，自动检查保持安静。 */
-	async checkForUpdates(manual = true): Promise<void> {
-		if (this.updateCheckPromise) return this.updateCheckPromise;
-		const operation = this.runUpdateCheck(manual);
-		this.updateCheckPromise = operation;
-		try {
-			await operation;
-		} finally {
-			if (this.updateCheckPromise === operation) this.updateCheckPromise = null;
-		}
-	}
-
-	private async runUpdateCheck(manual: boolean): Promise<void> {
-		try {
-			const result = await this.updateService.check(this.manifest.version);
-			if (result.status === 'up-to-date') {
-				if (manual) new Notice(t('update.upToDate'));
-				return;
-			}
-			new UpdateModal(this.app, {
-				currentVersion: this.manifest.version,
-				manifest: result.manifest,
-				source: result.source,
-			}).open();
-		} catch (error) {
-			console.error('[aulycKanban] Failed to check for updates:', error);
-			if (manual) new Notice(t('update.checkFailed'));
 		}
 	}
 }

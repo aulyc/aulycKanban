@@ -4,6 +4,15 @@
 
 ## Unreleased
 
+- 将 GitHub 源码、GitHub Release 与 Obsidian Community canonical repository
+  统一为 `aulyc/aulycKanban`，保留 Gitee Release 作为第二公开分发源。
+- 正式双源发布为 Community 渠道补充独立 `main.js`、`manifest.json` 和
+  `styles.css` 附件，并继续发布 ZIP、校验和、provenance 与 `latest.json`。
+- 移除项目内更新设置、启动检查、手动检查命令和更新弹窗；社区收录后由
+  Obsidian 官方更新机制直接消费 GitHub Release。
+- 将设置数据 schema 升级到 8，加载旧数据时安全移除已废弃的
+  `autoCheckUpdates` 偏好，不改变看板、同步配置或用户任务数据。
+
 ## [2.9.1] - 2026-08-02
 
 - 将 `aulyc-dual-mirror-v1` 采用与中央渠道登记同步升级到 `1.4.0`。
