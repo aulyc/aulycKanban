@@ -5,39 +5,39 @@
     "downloads": [
       {
         "source": "github",
-        "url": "https://github.com/aulyc/aulycKanban/releases/download/2.9.3/aulycKanban-2.9.3.zip"
+        "url": "https://github.com/aulyc/aulycKanban/releases/download/2.9.4/aulycKanban-2.9.4.zip"
       },
       {
         "source": "gitee",
-        "url": "https://gitee.com/aulyc/aulycKanban-releases/releases/download/2.9.3/aulycKanban-2.9.3.zip"
+        "url": "https://gitee.com/aulyc/aulycKanban-releases/releases/download/2.9.4/aulycKanban-2.9.4.zip"
       }
     ],
-    "file": "aulycKanban-2.9.3.zip",
-    "sha256": "e9ea70376eba109f27d9ece5817578d1d4035de600e557ce05f0e7d2b8c3f4ab"
+    "file": "aulycKanban-2.9.4.zip",
+    "sha256": "438ad98cb7aa3541e1bc9e5718af46176588b681e82acdd76bcfc7ac648faf19"
   },
-  "buildNumber": 42,
+  "buildNumber": 43,
   "bundleIdentifier": null,
-  "commit": "9d0095228e81acc6a997870038ef48b74f9dee78",
+  "commit": "30edb97329b2e9783700651633844667baed00b5",
   "pluginIdentifier": "aulyckanban",
   "policy": "aulyc-dual-mirror-v1",
   "provenance": {
     "downloads": [
       {
         "source": "github",
-        "url": "https://github.com/aulyc/aulycKanban/releases/download/2.9.3/aulycKanban-2.9.3.release-provenance.json"
+        "url": "https://github.com/aulyc/aulycKanban/releases/download/2.9.4/aulycKanban-2.9.4.release-provenance.json"
       },
       {
         "source": "gitee",
-        "url": "https://gitee.com/aulyc/aulycKanban-releases/releases/download/2.9.3/aulycKanban-2.9.3.release-provenance.json"
+        "url": "https://gitee.com/aulyc/aulycKanban-releases/releases/download/2.9.4/aulycKanban-2.9.4.release-provenance.json"
       }
     ],
-    "file": "aulycKanban-2.9.3.release-provenance.json",
-    "sha256": "e9ec5b194ad62ef48ce7a4fb063084364440f1a2d13ffa19fb70b313978a6b8c"
+    "file": "aulycKanban-2.9.4.release-provenance.json",
+    "sha256": "583ed15b6ab81910f4b8fc589230f7fc9043ecec7ebdeb3c5428e4b5cc065dc1"
   },
   "releaseChannel": "formal",
-  "releasePageURL": "https://github.com/aulyc/aulycKanban/releases/tag/2.9.3",
+  "releasePageURL": "https://github.com/aulyc/aulycKanban/releases/tag/2.9.4",
   "releaseProfile": "obsidian-plugin",
   "schemaVersion": 1,
-  "tag": "2.9.3",
-  "version": "2.9.3"
+  "tag": "2.9.4",
+  "version": "2.9.4"
 }
