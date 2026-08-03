@@ -8,6 +8,8 @@ import { appendAccessibleLabel } from '../utils/dom';
 import { Menu, setIcon } from 'obsidian';
 import type { App } from 'obsidian';
 
+const TRANSIENT_FOCUS_CLASS = 'aulyckanban-add-control-focused';
+
 /** 任务类型栏：固定全部任务 + 可滚动任务类型 + 固定新增入口。 */
 export class Toolbar {
 	private readonly el: HTMLElement;
@@ -26,13 +28,17 @@ export class Toolbar {
 	}
 
 	render(): void {
-		const focusedEl = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+		const ownerWindow = this.el.ownerDocument.defaultView;
+		const activeElement = this.el.ownerDocument.activeElement;
+		const focusedEl =
+			ownerWindow && activeElement instanceof ownerWindow.HTMLElement ? activeElement : null;
 		const restoreSelectedFocus =
 			!!focusedEl &&
 			this.el.contains(focusedEl) &&
 			(focusedEl.classList.contains('aulyckanban-view-tab') ||
 				focusedEl.classList.contains('aulyckanban-all-tasks-btn'));
 
+		this.el.toggleClass(TRANSIENT_FOCUS_CLASS, false);
 		this.el.empty();
 		const currentView = this.store.getCurrentView();
 		const isAllTasks = this.store.isShowingAllTasks();
@@ -79,6 +85,7 @@ export class Toolbar {
 			});
 			addBtn.createSpan({ text: '+', attr: { 'aria-hidden': 'true' } });
 			appendAccessibleLabel(addBtn, t('view.add'));
+			this.bindTransientControlFocus(addBtn);
 			addBtn.addEventListener('click', (event: MouseEvent) => {
 				event.preventDefault();
 				event.stopPropagation();
@@ -117,7 +124,8 @@ export class Toolbar {
 			},
 			onCancel: () => this.cancelAdd(),
 		});
-		requestAnimationFrame(() => revealTaskTypeItem(inputEl));
+		this.bindTransientControlFocus(inputEl);
+		inputEl.win.requestAnimationFrame(() => revealTaskTypeItem(inputEl));
 	}
 
 	private renderRenameInput(parentEl: HTMLElement, viewId: ViewKind, currentTitle: string): void {
@@ -141,7 +149,8 @@ export class Toolbar {
 			},
 			onCancel: () => this.cancelRename(),
 		});
-		requestAnimationFrame(() => revealTaskTypeItem(inputEl));
+		this.bindTransientControlFocus(inputEl);
+		inputEl.win.requestAnimationFrame(() => revealTaskTypeItem(inputEl));
 	}
 
 	private cancelAdd(): void {
@@ -196,8 +205,9 @@ export class Toolbar {
 			event.preventDefault();
 			event.stopPropagation();
 			const rect = button.getBoundingClientRect();
+			const MouseEventConstructor = button.ownerDocument.defaultView?.MouseEvent ?? MouseEvent;
 			this.showViewMenu(
-				new MouseEvent('contextmenu', {
+				new MouseEventConstructor('contextmenu', {
 					clientX: rect.left + rect.width / 2,
 					clientY: rect.bottom,
 				}),
@@ -206,6 +216,15 @@ export class Toolbar {
 			);
 		});
 		return button;
+	}
+
+	private bindTransientControlFocus(element: HTMLElement): void {
+		const update = (focused: boolean): void => {
+			this.el.toggleClass(TRANSIENT_FOCUS_CLASS, focused);
+		};
+		element.addEventListener('focus', () => update(true));
+		element.addEventListener('blur', () => update(false));
+		if (this.el.doc.activeElement === element) update(true);
 	}
 
 	private showViewMenu(event: MouseEvent, viewId: ViewKind, currentTitle: string): void {

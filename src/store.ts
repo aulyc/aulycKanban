@@ -30,7 +30,7 @@ export class KanbanStore {
 	private board: BoardData;
 	private readonly plugin: KanbanPlugin;
 	private readonly listeners = new Set<Listener>();
-	private saveTimeout: ReturnType<typeof setTimeout> | null = null;
+	private saveTimeout: number | null = null;
 	private saveFailureCount = 0;
 	private destroyed = false;
 	private _lastActionMutatedData = false;
@@ -608,9 +608,9 @@ export class KanbanStore {
 	private scheduleSave(isRetry = false): void {
 		if (this.destroyed) return;
 		if (!isRetry) this.saveFailureCount = 0;
-		if (this.saveTimeout) clearTimeout(this.saveTimeout);
+		if (this.saveTimeout) window.clearTimeout(this.saveTimeout);
 		const debounce = this.settings.saveDebounce ?? PERFORMANCE.SAVE_DEBOUNCE;
-		this.saveTimeout = setTimeout(() => {
+		this.saveTimeout = window.setTimeout(() => {
 			this.saveTimeout = null;
 			this.plugin.persistData(!isRetry).then(
 				() => {
@@ -629,7 +629,7 @@ export class KanbanStore {
 
 	async saveNow(): Promise<void> {
 		if (this.saveTimeout) {
-			clearTimeout(this.saveTimeout);
+			window.clearTimeout(this.saveTimeout);
 			this.saveTimeout = null;
 		}
 		this.saveFailureCount = 0;
@@ -647,7 +647,7 @@ export class KanbanStore {
 		this.destroyed = true;
 		this.listeners.clear();
 		const hasPendingSave = this.saveTimeout !== null;
-		if (this.saveTimeout) clearTimeout(this.saveTimeout);
+		if (this.saveTimeout) window.clearTimeout(this.saveTimeout);
 		this.saveTimeout = null;
 		// Obsidian 的 onunload 不等待异步清理；这里先同步发起最后一次写入，避免丢失防抖窗口内的数据。
 		if (hasPendingSave) void this.plugin.persistData().catch(() => undefined);

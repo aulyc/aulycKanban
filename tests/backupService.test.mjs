@@ -49,13 +49,9 @@ function createBoard() {
 	};
 }
 
-function installDocument(elementFactory) {
-	const originalDocument = globalThis.document;
-	globalThis.document = {
-		createElement: elementFactory,
-	};
-	return () => {
-		globalThis.document = originalDocument;
+function createHost(elementFactory) {
+	return {
+		createEl: elementFactory,
 	};
 }
 
@@ -83,7 +79,7 @@ test('export serializes the current board and revokes the temporary download URL
 			revoked.push(url);
 		},
 	};
-	const restoreDocument = installDocument((tagName) => {
+	const host = createHost((tagName) => {
 		assert.equal(tagName, 'a');
 		const anchor = {
 			href: '',
@@ -92,6 +88,7 @@ test('export serializes the current board and revokes the temporary download URL
 			click() {
 				this.clickCount += 1;
 			},
+			detach() {},
 		};
 		anchors.push(anchor);
 		return anchor;
@@ -100,7 +97,7 @@ test('export serializes the current board and revokes the temporary download URL
 	try {
 		const board = createBoard();
 		const service = new BackupService({ getBoardData: () => board });
-		await service.exportBackup();
+		service.exportBackup(host);
 
 		assert.equal(blobs.length, 1);
 		assert.deepEqual(blobs[0].options, { type: 'application/json' });
@@ -115,7 +112,6 @@ test('export serializes the current board and revokes the temporary download URL
 		assert.deepEqual(revoked, ['blob:backup']);
 		assert.deepEqual(notices, []);
 	} finally {
-		restoreDocument();
 		globalThis.Blob = originalBlob;
 		globalThis.URL = originalURL;
 	}
@@ -125,23 +121,19 @@ test('export reports store failures without creating a download', async () => {
 	const notices = [];
 	const BackupService = await loadBackupService(notices);
 	let createElementCalls = 0;
-	const restoreDocument = installDocument(() => {
+	const host = createHost(() => {
 		createElementCalls += 1;
 	});
 
-	try {
-		const service = new BackupService({
-			getBoardData() {
-				throw new Error('store unavailable');
-			},
-		});
-		await service.exportBackup();
-		assert.equal(createElementCalls, 0);
-		assert.equal(notices.length, 1);
-		assert.match(notices[0], /store unavailable/);
-	} finally {
-		restoreDocument();
-	}
+	const service = new BackupService({
+		getBoardData() {
+			throw new Error('store unavailable');
+		},
+	});
+	service.exportBackup(host);
+	assert.equal(createElementCalls, 0);
+	assert.equal(notices.length, 1);
+	assert.match(notices[0], /store unavailable/);
 });
 
 function createImportHarness() {
@@ -158,12 +150,14 @@ function createImportHarness() {
 		click() {
 			this.clickCount += 1;
 		},
+		detach() {},
 	};
 	return {
 		input,
 		async dispatchFile(file) {
 			input.files = file ? [file] : [];
-			await changeListener({ target: input });
+			changeListener({ target: input });
+			await new Promise((resolve) => setImmediate(resolve));
 		},
 	};
 }
@@ -174,7 +168,7 @@ async function prepareImport(overrides = {}) {
 	let saveCalls = 0;
 	const BackupService = await loadBackupService(notices);
 	const harness = createImportHarness();
-	const restoreDocument = installDocument((tagName) => {
+	const host = createHost((tagName) => {
 		assert.equal(tagName, 'input');
 		return harness.input;
 	});
@@ -186,12 +180,12 @@ async function prepareImport(overrides = {}) {
 		...overrides,
 	};
 	const service = new BackupService(store);
-	await service.importBackup();
+	service.importBackup(host);
 	return {
 		actions,
 		harness,
 		notices,
-		restoreDocument,
+		restoreDocument: () => {},
 		getSaveCalls: () => saveCalls,
 	};
 }

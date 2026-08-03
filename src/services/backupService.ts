@@ -18,7 +18,7 @@ export class BackupService {
 	/**
 	 * 导出备份（JSON 文件下载）
 	 */
-	async exportBackup(): Promise<void> {
+	exportBackup(hostEl: HTMLElement): void {
 		try {
 			const boardData = this.store.getBoardData();
 			const dataToBackup = {
@@ -35,7 +35,8 @@ export class BackupService {
 			const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
 			const filename = `aulycKanban-backup-${timestamp}.json`;
 
-			const a = document.createElement('a');
+			const a = hostEl.createEl('a');
+			a.detach();
 			a.href = url;
 			a.download = filename;
 			a.click();
@@ -50,47 +51,51 @@ export class BackupService {
 	/**
 	 * 导入备份（JSON 文件上传 + 解析 + 校验）
 	 */
-	async importBackup(): Promise<void> {
-		const input = document.createElement('input');
+	importBackup(hostEl: HTMLElement): void {
+		const input = hostEl.createEl('input');
+		input.detach();
 		input.type = 'file';
 		input.accept = '.json';
 
-		input.addEventListener('change', async (e: Event) => {
-			const target = e.target as HTMLInputElement;
-			const file = target.files?.[0];
-			if (!file) return;
-
-			try {
-				const text = await file.text();
-				const importedData: unknown = JSON.parse(text);
-				const duplicate = findImportedBoardDuplicateId(importedData);
-				if (duplicate) {
-					new Notice(`${t('settings.import.duplicateId')}：${duplicate.field}=${duplicate.id}`);
-					return;
-				}
-
-				// 整份备份先完成深层校验，避免部分坏数据覆盖当前看板。
-				const validBoard = this.validateAndMigrate(importedData);
-				if (!validBoard) {
-					new Notice(t('settings.import.invalidFormat'));
-					return;
-				}
-
-				this.store.dispatch({
-					type: 'SET_BOARD_DATA',
-					payload: { board: validBoard },
-				});
-
-				await this.store.saveNow();
-
-				new Notice(t('settings.import.success'));
-			} catch (error) {
-				const msg = error instanceof Error ? error.message : String(error);
-				new Notice(`${t('settings.import.fail')}：${msg}`);
-			}
+		input.addEventListener('change', () => {
+			void this.importSelectedFile(input);
 		});
 
 		input.click();
+	}
+
+	private async importSelectedFile(input: HTMLInputElement): Promise<void> {
+		const file = input.files?.[0];
+		if (!file) return;
+
+		try {
+			const text = await file.text();
+			const importedData: unknown = JSON.parse(text);
+			const duplicate = findImportedBoardDuplicateId(importedData);
+			if (duplicate) {
+				new Notice(`${t('settings.import.duplicateId')}：${duplicate.field}=${duplicate.id}`);
+				return;
+			}
+
+			// 整份备份先完成深层校验，避免部分坏数据覆盖当前看板。
+			const validBoard = this.validateAndMigrate(importedData);
+			if (!validBoard) {
+				new Notice(t('settings.import.invalidFormat'));
+				return;
+			}
+
+			this.store.dispatch({
+				type: 'SET_BOARD_DATA',
+				payload: { board: validBoard },
+			});
+
+			await this.store.saveNow();
+
+			new Notice(t('settings.import.success'));
+		} catch (error) {
+			const msg = error instanceof Error ? error.message : String(error);
+			new Notice(`${t('settings.import.fail')}：${msg}`);
+		}
 	}
 
 	/**

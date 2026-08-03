@@ -18,7 +18,9 @@ class MockAbstractInputSuggest {
 		this.suggestStyles = new Map();
 		this.suggestEl = {
 			classList: { add: (value) => this.suggestClasses.add(value) },
-			style: { setProperty: (name, value) => this.suggestStyles.set(name, value) },
+			setCssStyles: (values) => {
+				for (const [name, value] of Object.entries(values)) this.suggestStyles.set(name, value);
+			},
 		};
 		inputEl.addEventListener('input', () => {
 			this.lastSuggestions = this.getSuggestions(inputEl.value);
@@ -92,6 +94,10 @@ class MockSetting {
 				return button;
 			},
 			setWarning: () => button,
+			setDestructive: () => {
+				button.destructive = true;
+				return button;
+			},
 			onClick: (handler) => {
 				button.onClickHandler = handler;
 				return button;
@@ -130,11 +136,13 @@ class MockSetting {
 				classList: { add: (value) => classes.add(value) },
 				getBoundingClientRect: () => ({ width: 248 }),
 				ownerDocument: {
-					createEvent: () => ({
-						initEvent(type) {
-							this.type = type;
+					defaultView: {
+						Event: class {
+							constructor(type) {
+								this.type = type;
+							}
 						},
-					}),
+					},
 				},
 				addEventListener: (name, listener) => listeners.set(name, listener),
 				removeEventListener: (name, listener) => {
@@ -258,19 +266,64 @@ function createHarness() {
 	const app = {
 		containerEl: new MockElement(),
 		vault: {
-			getAllLoadedFiles: () => [
-				{ path: 'Alpha', children: [] },
-				{ path: 'Beta', children: [] },
-				{ path: '工作', children: [] },
-				{ path: '项目', children: [] },
-				{ path: '项目/a计划', children: [] },
-				{ path: 'Alpha/task.md' },
-			],
+			getRoot: () => ({
+				children: [
+					{ path: 'Alpha', children: [] },
+					{ path: 'Beta', children: [] },
+					{ path: '工作', children: [] },
+					{ path: '项目', children: [] },
+					{ path: 'Alpha/task.md' },
+				],
+			}),
+			getAllLoadedFiles: () => {
+				throw new Error('folder suggestions must not enumerate the whole vault');
+			},
 		},
 	};
 	const tab = new KanbanSettingTab(app, plugin);
 	return { tab, settings, syncCalls };
 }
+
+test('declarative settings index every visible setting while legacy display remains available', () => {
+	const { tab } = createHarness();
+	const definitions = tab.getSettingDefinitions();
+	const names = definitions.flatMap((definition) =>
+		definition.type === 'group'
+			? [definition.heading, ...(definition.items ?? []).map((item) => item.name)]
+			: [definition.name],
+	);
+
+	assert.deepEqual(names, [
+		'settings.dataManagement',
+		'settings.backup.name',
+		'settings.import.name',
+		'settings.clear.name',
+		'settings.sync',
+		'settings.sync.folder.name',
+		'settings.sync.force.name',
+		'settings.about.name',
+	]);
+	assert.equal(typeof tab.display, 'function');
+});
+
+test('declarative setting renderers construct every indexed control', () => {
+	const { tab } = createHarness();
+	const definitions = tab.getSettingDefinitions();
+	const items = definitions.flatMap((definition) =>
+		definition.type === 'group' ? (definition.items ?? []) : [definition],
+	);
+	const rendered = items.map((item) => {
+		const setting = new MockSetting();
+		item.render(setting);
+		return setting;
+	});
+
+	assert.equal(rendered.length, 6);
+	assert.deepEqual(
+		rendered.map((setting) => setting.controls.length + (setting.text ? 1 : 0)),
+		[1, 1, 1, 1, 1, 1],
+	);
+});
 
 test('about setting opens an information card using current manifest metadata', () => {
 	const { tab } = createHarness();
@@ -423,12 +476,9 @@ test('sync folder suggestion popover matches the input width', () => {
 
 	assert.equal(suggest.opened, true);
 	assert.equal(suggest.suggestClasses.has('aulyckanban-folder-suggest'), true);
-	assert.equal(suggest.suggestStyles.get('--aulyckanban-folder-suggest-width'), '248px');
-	const rule =
-		styles.match(/\.suggestion-container\.aulyckanban-folder-suggest\s*\{([^}]*)\}/)?.[1] ?? '';
-	assert.match(rule, /width:\s*var\(--aulyckanban-folder-suggest-width\) !important/);
-	assert.match(rule, /min-width:\s*var\(--aulyckanban-folder-suggest-width\) !important/);
-	assert.match(rule, /max-width:\s*var\(--aulyckanban-folder-suggest-width\) !important/);
+	assert.equal(suggest.suggestStyles.get('width'), '248px');
+	assert.equal(suggest.suggestStyles.get('minWidth'), '248px');
+	assert.equal(suggest.suggestStyles.get('maxWidth'), '248px');
 });
 
 test('sync folder focus adds one pixel inside without an outward focus ring', () => {
@@ -444,8 +494,9 @@ test('sync folder focus adds one pixel inside without an outward focus ring', ()
 	assert.match(focusRule, /border-color:\s*var\(--background-modifier-border-focus\)/);
 	assert.match(
 		focusRule,
-		/box-shadow:\s*inset 0 0 0 1px var\(--background-modifier-border-focus\) !important/,
+		/box-shadow:\s*inset 0 0 0 1px var\(--background-modifier-border-focus\)/,
 	);
+	assert.doesNotMatch(focusRule, /!important/);
 	assert.match(focusRule, /outline:\s*none/);
 });
 

@@ -25,6 +25,8 @@ class MockElement {
 			add: (value) => this.classes.add(value),
 			remove: (value) => this.classes.delete(value),
 		};
+		this.doc = ownerDocument;
+		this.win = ownerDocument.defaultView;
 	}
 
 	append(child) {
@@ -306,7 +308,7 @@ function createHarness() {
 	globalThis.document = documentRef;
 	globalThis.HTMLElement = MockElement;
 	globalThis.HTMLTextAreaElement = MockTextAreaElement;
-	globalThis.requestAnimationFrame = (callback) => {
+	windowRef.requestAnimationFrame = (callback) => {
 		animationFrames.push(callback);
 		return animationFrames.length;
 	};

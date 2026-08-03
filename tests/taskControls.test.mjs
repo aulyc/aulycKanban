@@ -16,10 +16,21 @@ class MockElement {
 		this.textContent = options.text ?? '';
 		this.listeners = new Map();
 		this.value = '';
-		this.ownerDocument = { activeElement: null };
+		this.ownerDocument = {
+			activeElement: null,
+			defaultView: { requestAnimationFrame: (callback) => callback() },
+		};
 		this.classList = {
 			contains: (value) => this.classes.has(value),
 		};
+	}
+
+	get doc() {
+		return this.ownerDocument;
+	}
+
+	get win() {
+		return this.ownerDocument.defaultView;
 	}
 
 	append(child) {
@@ -95,8 +106,6 @@ const { TaskControls } = await loadSourceModule(
 );
 
 function createHarness(overrides = {}) {
-	globalThis.requestAnimationFrame = (callback) => callback();
-
 	const store = {
 		actions: [],
 		keyword: '',

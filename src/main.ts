@@ -56,7 +56,7 @@ export default class KanbanPlugin extends Plugin {
 
 		// 添加 Ribbon 图标（左侧栏）
 		this.addRibbonIcon('list-todo', t('plugin.ribbonTip'), () => {
-			this.activateView();
+			void this.activateView();
 		});
 
 		// 注册命令（不设默认快捷键，遵守 Obsidian 规范）
@@ -64,7 +64,7 @@ export default class KanbanPlugin extends Plugin {
 			id: 'open-board',
 			name: t('command.openBoard'),
 			callback: () => {
-				this.activateView();
+				void this.activateView();
 			},
 		});
 

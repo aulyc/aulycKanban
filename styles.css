@@ -9,12 +9,12 @@
 }
 
 .workspace-leaf-content[data-type='aulyckanban-view'] .view-content {
-	padding: 0 !important;
+	padding: 0;
 }
 
 /* 保留 Obsidian 原生分栏拖动，只约束看板可缩小到的最小宽度。 */
 body:not(.is-mobile) .aulyckanban-resize-host {
-	min-width: 450px !important;
+	min-width: 450px;
 }
 
 /* 容器 */
@@ -93,7 +93,6 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	min-width: 0;
 	overflow-x: hidden;
 	overflow-y: hidden;
-	scrollbar-width: none;
 }
 
 .aulyckanban-view-strip::-webkit-scrollbar {
@@ -115,7 +114,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	background: var(--interactive-normal);
 	background-image: none;
 	color: var(--text-normal);
-	box-shadow: none !important;
+	box-shadow: none;
 	cursor: pointer;
 	font-size: 13px;
 	font-weight: 500;
@@ -143,9 +142,9 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 
 .aulyckanban-tab:focus,
 .aulyckanban-tab:focus-visible {
-	border: 1px solid var(--aulyckanban-selection-border) !important;
-	outline: none !important;
-	box-shadow: none !important;
+	border: 1px solid var(--aulyckanban-selection-border);
+	outline: none;
+	box-shadow: none;
 }
 
 .aulyckanban-view-tab {
@@ -172,11 +171,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 }
 
 /* 新增控件接管工具栏的视觉选中，避免与当前任务类型同时呈紫色。 */
-.aulyckanban-toolbar:has(.aulyckanban-view-add-btn:focus) .aulyckanban-tab.aulyckanban-tab-active,
-.aulyckanban-toolbar:has(.aulyckanban-view-add-btn:focus-visible)
-	.aulyckanban-tab.aulyckanban-tab-active,
-.aulyckanban-toolbar:has(.aulyckanban-view-inline-input:focus)
-	.aulyckanban-tab.aulyckanban-tab-active {
+.aulyckanban-toolbar.aulyckanban-add-control-focused .aulyckanban-tab.aulyckanban-tab-active {
 	background: var(--interactive-normal);
 	color: var(--text-normal);
 	border-color: var(--background-modifier-border);
@@ -253,7 +248,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 .aulyckanban-content-area {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr) var(--aulyckanban-nav-width);
-	column-gap: var(--aulyckanban-content-gap);
+	gap: var(--aulyckanban-content-gap);
 	flex: 1;
 	min-height: 0;
 	padding: var(--aulyckanban-content-padding-y) var(--aulyckanban-content-padding-right)
@@ -302,17 +297,23 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	cursor: pointer;
 }
 
+.aulyckanban-settings-danger-button:not(:disabled) {
+	background: var(--background-modifier-error);
+	color: var(--text-on-accent);
+}
+
+.aulyckanban-settings-danger-button:not(:disabled):hover {
+	background: var(--background-modifier-error-hover);
+}
+
 .aulyckanban-sync-folder-input:focus {
 	border-color: var(--background-modifier-border-focus);
 	outline: none;
-	box-shadow: inset 0 0 0 1px var(--background-modifier-border-focus) !important;
+	box-shadow: inset 0 0 0 1px var(--background-modifier-border-focus);
 }
 
 .suggestion-container.aulyckanban-folder-suggest {
 	box-sizing: border-box;
-	width: var(--aulyckanban-folder-suggest-width) !important;
-	min-width: var(--aulyckanban-folder-suggest-width) !important;
-	max-width: var(--aulyckanban-folder-suggest-width) !important;
 }
 
 /* ==================== 搜索与新增任务 ==================== */
@@ -583,7 +584,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 
 .aulyckanban-nav-item:focus,
 .aulyckanban-nav-item:focus-visible {
-	border: 1px solid var(--aulyckanban-selection-border) !important;
+	border: 1px solid var(--aulyckanban-selection-border);
 	outline: none;
 	box-shadow: none;
 }
@@ -658,21 +659,13 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 }
 
 /* 新增控件接管象限区的视觉选中，原业务选中只保留在数据状态中。 */
-.aulyckanban-category-nav:has(.aulyckanban-nav-add-btn:focus) .aulyckanban-nav-item-active,
-.aulyckanban-category-nav:has(.aulyckanban-nav-add-btn:focus-visible) .aulyckanban-nav-item-active,
-.aulyckanban-category-nav:has(.aulyckanban-nav-inline-input:focus) .aulyckanban-nav-item-active {
+.aulyckanban-category-nav.aulyckanban-add-control-focused .aulyckanban-nav-item-active {
 	background: transparent;
 	color: var(--text-normal);
 	border-color: transparent;
 }
 
-.aulyckanban-category-nav:has(.aulyckanban-nav-add-btn:focus)
-	.aulyckanban-nav-item-active
-	.aulyckanban-nav-item-count,
-.aulyckanban-category-nav:has(.aulyckanban-nav-add-btn:focus-visible)
-	.aulyckanban-nav-item-active
-	.aulyckanban-nav-item-count,
-.aulyckanban-category-nav:has(.aulyckanban-nav-inline-input:focus)
+.aulyckanban-category-nav.aulyckanban-add-control-focused
 	.aulyckanban-nav-item-active
 	.aulyckanban-nav-item-count {
 	color: var(--text-muted);
@@ -1166,7 +1159,6 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	margin: -1px;
 	overflow: hidden;
 	clip: rect(0, 0, 0, 0);
-	clip-path: inset(50%);
 	white-space: nowrap;
 	border: 0;
 }

@@ -4,9 +4,6 @@ import domModule from '../src/utils/dom.ts';
 
 const { autoResizeTextarea, getTextareaBorderBoxHeight } = domModule;
 
-globalThis.requestAnimationFrame = (callback) => callback();
-globalThis.getComputedStyle = (element) => element.computedStyle;
-
 test('textarea border-box height includes both borders', () => {
 	assert.equal(getTextareaBorderBoxHeight(37, '1px', '1px'), 39);
 });
@@ -24,6 +21,10 @@ test('textarea grows from one content line when input wraps onto more lines', ()
 		},
 		scrollHeight: 36,
 		computedStyle: { borderTopWidth: '1px', borderBottomWidth: '1px' },
+		win: {
+			requestAnimationFrame: (callback) => callback(),
+			getComputedStyle: (element) => element.computedStyle,
+		},
 		addEventListener(name, listener) {
 			listeners.set(name, listener);
 		},

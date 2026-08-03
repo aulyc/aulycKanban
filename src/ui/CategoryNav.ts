@@ -6,6 +6,8 @@ import { ConfirmModal } from './ConfirmModal';
 import { createInlineInput } from './InlineInput';
 import { appendAccessibleLabel } from '../utils/dom';
 
+const TRANSIENT_FOCUS_CLASS = 'aulyckanban-add-control-focused';
+
 /**
  * 右侧分类导航组件
  * 垂直排列分类按钮，底部有添加按钮
@@ -28,6 +30,7 @@ export class CategoryNav {
 	}
 
 	render(): void {
+		this.el.toggleClass(TRANSIENT_FOCUS_CLASS, false);
 		this.el.empty();
 
 		const columns = this.store.getCurrentColumns();
@@ -118,7 +121,7 @@ export class CategoryNav {
 		});
 		if (this.isAdding) {
 			addBtn.addClass('aulyckanban-nav-item-editing');
-			createInlineInput(addBtn, {
+			const inputEl = createInlineInput(addBtn, {
 				cls: 'aulyckanban-nav-inline-input',
 				placeholder: t('column.addPrompt'),
 				initialValue: this.draftTitle,
@@ -133,6 +136,7 @@ export class CategoryNav {
 				},
 				onCancel: () => this.cancelEditing(),
 			});
+			this.bindTransientControlFocus(inputEl);
 		} else {
 			addBtn.createSpan({
 				text: '+',
@@ -140,6 +144,7 @@ export class CategoryNav {
 				attr: { 'aria-hidden': 'true' },
 			});
 			appendAccessibleLabel(addBtn, t('column.addPrompt'));
+			this.bindTransientControlFocus(addBtn);
 			addBtn.addEventListener('click', (e: MouseEvent) => {
 				e.preventDefault();
 				e.stopPropagation();
@@ -227,7 +232,7 @@ export class CategoryNav {
 		itemEl.removeAttribute('tabindex');
 		itemEl.removeAttribute('role');
 		itemEl.empty();
-		createInlineInput(itemEl, {
+		const inputEl = createInlineInput(itemEl, {
 			cls: 'aulyckanban-nav-inline-input',
 			initialValue: this.draftTitle || currentTitle,
 			focusOnMount: this.consumeFocusRequest(),
@@ -242,6 +247,16 @@ export class CategoryNav {
 			},
 			onCancel: () => this.cancelEditing(),
 		});
+		this.bindTransientControlFocus(inputEl);
+	}
+
+	private bindTransientControlFocus(element: HTMLElement): void {
+		const update = (focused: boolean): void => {
+			this.el.toggleClass(TRANSIENT_FOCUS_CLASS, focused);
+		};
+		element.addEventListener('focus', () => update(true));
+		element.addEventListener('blur', () => update(false));
+		if (this.el.doc.activeElement === element) update(true);
 	}
 
 	private commitRename(columnId: string, currentTitle: string): void {

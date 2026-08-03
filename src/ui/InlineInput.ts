@@ -55,17 +55,17 @@ export function createInlineInput(
 	if (el instanceof HTMLTextAreaElement) autoResizeTextarea(el);
 
 	let composing = false;
-	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+	let debounceTimer: ReturnType<typeof el.win.setTimeout> | null = null;
 	const clearDebounce = (): void => {
 		if (debounceTimer) {
-			clearTimeout(debounceTimer);
+			el.win.clearTimeout(debounceTimer);
 			debounceTimer = null;
 		}
 	};
 	const scheduleDebounce = (): void => {
 		if (!options.onDebounced || options.debounceMs === undefined) return;
 		clearDebounce();
-		debounceTimer = setTimeout(() => {
+		debounceTimer = el.win.setTimeout(() => {
 			debounceTimer = null;
 			// 输入框可能在等待期间随重渲染被移除，此时不再回调
 			if (!el.isConnected) return;

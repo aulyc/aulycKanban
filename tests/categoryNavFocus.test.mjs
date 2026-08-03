@@ -5,7 +5,11 @@ import { loadSourceModule } from './helpers/load-source-module.mjs';
 
 class MockElement {
 	constructor(options = {}) {
-		this.ownerDocument = options.ownerDocument ?? { activeElement: null };
+		this.ownerDocument = options.ownerDocument ?? { activeElement: null, defaultView: {} };
+		this.ownerDocument.defaultView.HTMLElement = MockElement;
+		this.ownerDocument.defaultView.requestAnimationFrame ??= (callback) => callback();
+		this.doc = this.ownerDocument;
+		this.win = this.ownerDocument.defaultView;
 		this.children = [];
 		this.dataset = {};
 		this.attributes = { ...(options.attr ?? {}) };
@@ -21,6 +25,7 @@ class MockElement {
 
 	createDiv(options = {}) {
 		const child = new MockElement({ ...options, ownerDocument: this.ownerDocument });
+		child.parentElement = this;
 		this.children.push(child);
 		return child;
 	}
@@ -62,6 +67,12 @@ class MockElement {
 
 	focus() {
 		this.ownerDocument.activeElement = this;
+		for (const listener of this.listeners.get('focus') ?? []) listener();
+	}
+
+	blur() {
+		if (this.ownerDocument.activeElement === this) this.ownerDocument.activeElement = null;
+		for (const listener of this.listeners.get('blur') ?? []) listener();
 	}
 
 	querySelectorAll(selector) {
@@ -229,13 +240,26 @@ test('category add control has an accessible name without tooltip attributes', (
 	);
 });
 
-test('transient editor focus suppresses only the visual selection without a JS state class', () => {
+test('transient editor focus suppresses only the visual selection through a scoped state class', () => {
 	const css = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
 	assert.match(
 		css,
-		/\.aulyckanban-category-nav:has\(\.aulyckanban-nav-inline-input:focus\)\s+\.aulyckanban-nav-item-active/,
+		/\.aulyckanban-category-nav\.aulyckanban-add-control-focused\s+\.aulyckanban-nav-item-active/,
 	);
-	assert.doesNotMatch(source, /aulyckanban-category-nav-editing/);
+	assert.match(source, /aulyckanban-add-control-focused/);
+});
+
+test('quadrant add focus toggles the scoped visual state class', () => {
+	const { parent } = createCategoryNavHarness();
+	const nav = parent.children[0];
+	const addButton = descendants(nav).find((element) =>
+		element.classList.contains('aulyckanban-nav-add-btn'),
+	);
+
+	addButton.focus();
+	assert.equal(nav.classList.contains('aulyckanban-add-control-focused'), true);
+	addButton.blur();
+	assert.equal(nav.classList.contains('aulyckanban-add-control-focused'), false);
 });
 
 test('inline quadrant input uses the same one-pixel accent border as task editing', () => {

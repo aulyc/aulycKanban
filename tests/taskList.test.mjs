@@ -45,8 +45,8 @@ const { TaskList } = await loadSourceModule(new URL('../src/ui/TaskList.ts', imp
 		},
 		'./TaskCard': {
 			TaskCard: class {
-				constructor(_app, _store, viewId, columnId, task, sourceLabel) {
-					this.el = new MockElement({ cls: 'aulyckanban-task' });
+				constructor(parent, _app, _store, viewId, columnId, task, sourceLabel) {
+					this.el = parent.createDiv({ cls: 'aulyckanban-task' });
 					this.el.dataset.viewId = viewId;
 					this.el.dataset.columnId = columnId;
 					this.el.dataset.taskId = task.id;

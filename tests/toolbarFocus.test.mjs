@@ -7,6 +7,7 @@ class MockElement {
 	constructor(tagName, options, documentRef) {
 		this.tagName = tagName;
 		this.documentRef = documentRef;
+		this.ownerDocument = documentRef;
 		this.parentElement = null;
 		this.children = [];
 		this.dataset = {};
@@ -21,6 +22,8 @@ class MockElement {
 		this.classList = {
 			contains: (value) => this.classes.has(value),
 		};
+		this.doc = documentRef;
+		this.win = documentRef.defaultView;
 	}
 
 	append(child) {
@@ -72,6 +75,12 @@ class MockElement {
 
 	focus() {
 		this.documentRef.activeElement = this;
+		for (const listener of this.listeners.get('focus') ?? []) listener();
+	}
+
+	blur() {
+		if (this.documentRef.activeElement === this) this.documentRef.activeElement = null;
+		for (const listener of this.listeners.get('blur') ?? []) listener();
 	}
 }
 
@@ -101,10 +110,17 @@ const { Toolbar } = await loadSourceModule(new URL('../src/ui/Toolbar.ts', impor
 });
 
 function createToolbarHarness() {
-	const documentRef = { activeElement: null };
+	const documentRef = { activeElement: null, defaultView: {} };
+	documentRef.defaultView.HTMLElement = MockElement;
+	documentRef.defaultView.MouseEvent = class {
+		constructor(type, options) {
+			this.type = type;
+			Object.assign(this, options);
+		}
+	};
+	documentRef.defaultView.requestAnimationFrame = (callback) => callback();
 	globalThis.document = documentRef;
 	globalThis.HTMLElement = MockElement;
-	globalThis.requestAnimationFrame = (callback) => callback();
 
 	const store = {
 		currentView: 'work',
@@ -267,8 +283,22 @@ test('toolbar rerender moves an existing task type focus to the selected task ty
 	assert.equal(documentRef.activeElement.classList.contains('aulyckanban-tab-active'), true);
 });
 
-test('task type focus does not create a second board-level focus state', () => {
+test('task type add focus uses one transient compatibility class instead of CSS :has', () => {
+	assert.match(source, /aulyckanban-add-control-focused/);
 	assert.doesNotMatch(source, /aulyckanban-(?:view-add-focused|toolbar-editing)/);
+});
+
+test('task type add focus toggles the scoped visual state class', () => {
+	const { parent } = createToolbarHarness();
+	const toolbarEl = parent.children[0];
+	const addButton = descendants(parent).find((element) =>
+		element.classList.contains('aulyckanban-view-add-btn'),
+	);
+
+	addButton.focus();
+	assert.equal(toolbarEl.classList.contains('aulyckanban-add-control-focused'), true);
+	addButton.blur();
+	assert.equal(toolbarEl.classList.contains('aulyckanban-add-control-focused'), false);
 });
 
 test('task type tabs expose rename and delete management actions', () => {

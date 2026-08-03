@@ -6,6 +6,8 @@ import storeModule from '../src/store.ts';
 const { migrateBoardData } = boardMigrationModule;
 const { KanbanStore } = storeModule;
 
+globalThis.window = globalThis;
+
 function task(id, content = id) {
 	return { id, content, completed: false, createdAt: '2026-01-01T00:00:00.000Z' };
 }

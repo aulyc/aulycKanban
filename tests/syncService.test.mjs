@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { loadSourceModule } from './helpers/load-source-module.mjs';
 
+globalThis.window = globalThis;
+
 class MockTFile {
 	constructor(path, content = '') {
 		this.path = path;

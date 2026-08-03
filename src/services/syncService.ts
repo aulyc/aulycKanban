@@ -28,7 +28,7 @@ export interface ForceSyncResult {
 }
 
 export class VaultSyncService {
-	private syncTimeout: ReturnType<typeof setTimeout> | null = null;
+	private syncTimeout: number | null = null;
 	private pendingAllViews = false;
 	private pendingArchive = false;
 	private readonly pendingViewIds = new Set<ViewKind>();
@@ -80,8 +80,8 @@ export class VaultSyncService {
 	}
 
 	private scheduleSync(): void {
-		if (this.syncTimeout) clearTimeout(this.syncTimeout);
-		this.syncTimeout = setTimeout(() => {
+		if (this.syncTimeout) window.clearTimeout(this.syncTimeout);
+		this.syncTimeout = window.setTimeout(() => {
 			this.syncTimeout = null;
 			void this.flushPending();
 		}, this.store.getSettings().syncDebounce ?? PERFORMANCE.SYNC_DEBOUNCE);
@@ -179,7 +179,7 @@ export class VaultSyncService {
 	}
 
 	private discardPendingSchedule(): void {
-		if (this.syncTimeout) clearTimeout(this.syncTimeout);
+		if (this.syncTimeout) window.clearTimeout(this.syncTimeout);
 		this.syncTimeout = null;
 		this.pendingAllViews = false;
 		this.pendingArchive = false;
@@ -524,7 +524,7 @@ export class VaultSyncService {
 
 	flush(): void {
 		const pending = this.syncTimeout !== null;
-		if (this.syncTimeout) clearTimeout(this.syncTimeout);
+		if (this.syncTimeout) window.clearTimeout(this.syncTimeout);
 		this.syncTimeout = null;
 		if (pending) void this.flushPending();
 	}

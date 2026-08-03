@@ -19,7 +19,10 @@ export class UtilityBar {
 	}
 
 	render(): void {
-		const focusedEl = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+		const ownerWindow = this.el.ownerDocument.defaultView;
+		const activeElement = this.el.ownerDocument.activeElement;
+		const focusedEl =
+			ownerWindow && activeElement instanceof ownerWindow.HTMLElement ? activeElement : null;
 		const isArchive = this.store.isShowingArchive();
 		const restoreSearchFocus =
 			!!focusedEl &&

@@ -72,10 +72,7 @@ test('active quadrant keeps its selected fill, exposes hover feedback, and adds 
 		'.aulyckanban-nav-item:focus',
 		'.aulyckanban-nav-item:focus-visible',
 	]);
-	assert.equal(
-		declarationValue(focus, 'border'),
-		'1px solid var(--aulyckanban-selection-border) !important',
-	);
+	assert.equal(declarationValue(focus, 'border'), '1px solid var(--aulyckanban-selection-border)');
 });
 
 test('keyboard navigation targets update instantly without visual trails', () => {
@@ -214,10 +211,9 @@ test('add buttons use hover-like focus while editors keep the white selection bo
 });
 
 test('task type add focus owns the only purple selection in the toolbar', () => {
-	const suppressionRule =
-		css.match(
-			/\.aulyckanban-toolbar:has\(\.aulyckanban-view-add-btn:focus\)\s+\.aulyckanban-tab\.aulyckanban-tab-active,[\s\S]*?\.aulyckanban-toolbar:has\(\.aulyckanban-view-inline-input:focus\)\s+\.aulyckanban-tab\.aulyckanban-tab-active\s*\{([^}]*)\}/,
-		)?.[1] ?? '';
+	const suppressionRule = rule(
+		'.aulyckanban-toolbar.aulyckanban-add-control-focused .aulyckanban-tab.aulyckanban-tab-active',
+	);
 
 	assert.notEqual(suppressionRule, '');
 	assert.match(suppressionRule, /background:\s*var\(--interactive-normal\)/);
@@ -226,10 +222,9 @@ test('task type add focus owns the only purple selection in the toolbar', () => 
 });
 
 test('quadrant add focus owns the only purple selection in category navigation', () => {
-	const suppressionRule =
-		css.match(
-			/\.aulyckanban-category-nav:has\(\.aulyckanban-nav-add-btn:focus\)\s+\.aulyckanban-nav-item-active,[\s\S]*?\.aulyckanban-category-nav:has\(\.aulyckanban-nav-inline-input:focus\)\s+\.aulyckanban-nav-item-active\s*\{([^}]*)\}/,
-		)?.[1] ?? '';
+	const suppressionRule = rule(
+		'.aulyckanban-category-nav.aulyckanban-add-control-focused .aulyckanban-nav-item-active',
+	);
 
 	assert.notEqual(suppressionRule, '');
 	assert.match(suppressionRule, /background:\s*transparent/);

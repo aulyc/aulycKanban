@@ -24,6 +24,7 @@ export class TaskCard {
 	private readonly sourceLabel?: string;
 
 	constructor(
+		parentEl: HTMLElement,
 		app: App,
 		store: KanbanStore,
 		viewId: string,
@@ -38,8 +39,9 @@ export class TaskCard {
 		this.task = task;
 		this.sourceLabel = sourceLabel;
 
-		this.el = document.createElement('div');
-		this.el.className = `aulyckanban-task${task.completed ? ' aulyckanban-task-completed' : ''}`;
+		this.el = parentEl.createDiv({
+			cls: `aulyckanban-task${task.completed ? ' aulyckanban-task-completed' : ''}`,
+		});
 		this.el.tabIndex = -1;
 		this.el.setAttribute('role', 'button');
 		this.el.dataset['viewId'] = viewId;
@@ -65,7 +67,7 @@ export class TaskCard {
 
 		this.el.addEventListener('click', (e: MouseEvent) => {
 			e.stopPropagation();
-			if (document.activeElement !== this.el) {
+			if (this.el.doc.activeElement !== this.el) {
 				this.el.focus({ preventScroll: true });
 			}
 		});
@@ -190,7 +192,7 @@ export class TaskCard {
 
 	private focusCardAfterRender(): void {
 		const boardEl = this.el.closest<HTMLElement>('.aulyckanban-kanban-container');
-		requestAnimationFrame(() => {
+		this.el.win.requestAnimationFrame(() => {
 			const card = Array.from(
 				boardEl?.querySelectorAll<HTMLElement>('.aulyckanban-task') ?? [],
 			).find(

@@ -18,6 +18,8 @@ class MockElement {
 		this.classList = {
 			contains: (value) => this.classes.has(value),
 		};
+		this.doc = documentRef;
+		this.win = documentRef.defaultView;
 	}
 
 	set className(value) {
@@ -113,16 +115,19 @@ const { TaskCard } = await loadSourceModule(new URL('../src/ui/TaskCard.ts', imp
 function createHarness() {
 	const documentRef = {
 		activeElement: null,
-		createElement: () => new MockElement(documentRef),
+		defaultView: {
+			requestAnimationFrame: (callback) => callback(),
+		},
 	};
+	documentRef.defaultView.HTMLElement = MockElement;
 	const inlineInputs = [];
 	const icons = [];
 	activeInlineInputs = inlineInputs;
 	activeIcons = icons;
-	globalThis.document = documentRef;
-
 	const actions = [];
+	const parent = new MockElement(documentRef);
 	const card = new TaskCard(
+		parent,
 		{},
 		{ dispatch: (action) => actions.push(action) },
 		'work',

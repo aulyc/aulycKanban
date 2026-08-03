@@ -1,6 +1,6 @@
 import { AbstractInputSuggest, App, Notice, PluginSettingTab, Setting } from 'obsidian';
-import type { TFolder } from 'obsidian';
-import { t } from '../i18n';
+import type { SettingDefinitionItem, TFolder } from 'obsidian';
+import { t, type I18nKey } from '../i18n';
 import type KanbanPlugin from '../main';
 import { BackupService } from '../services/backupService';
 import { normalizeSyncFolder } from '../utils/noteSync';
@@ -11,8 +11,8 @@ import { ConfirmModal } from './ConfirmModal';
 export function filterVaultFolders(app: App, query: string): string[] {
 	const normalizedQuery = query.trim().toLocaleLowerCase();
 	return app.vault
-		.getAllLoadedFiles()
-		.filter((file): file is TFolder => 'children' in file)
+		.getRoot()
+		.children.filter((file): file is TFolder => 'children' in file)
 		.map((folder) => folder.path)
 		.filter(
 			(path) =>
@@ -36,8 +36,8 @@ class VaultFolderSuggest extends AbstractInputSuggest<string> {
 	}
 
 	open(): void {
-		this.syncWidthToInput();
 		super.open();
+		this.syncWidthToInput();
 	}
 
 	protected getSuggestions(query: string): string[] {
@@ -63,8 +63,8 @@ class VaultFolderSuggest extends AbstractInputSuggest<string> {
 
 	private readonly handleFocus = (): void => {
 		this.showAllOnNextQuery = true;
-		const inputEvent = this.inputEl.ownerDocument.createEvent('Event');
-		inputEvent.initEvent('input', true, false);
+		const EventConstructor = this.inputEl.ownerDocument.defaultView?.Event ?? Event;
+		const inputEvent = new EventConstructor('input', { bubbles: true });
 		this.inputEl.dispatchEvent(inputEvent);
 	};
 
@@ -74,7 +74,11 @@ class VaultFolderSuggest extends AbstractInputSuggest<string> {
 		const suggestEl = (this as unknown as { suggestEl?: HTMLElement }).suggestEl;
 		if (!suggestEl) return;
 		suggestEl.classList.add('aulyckanban-folder-suggest');
-		suggestEl.style.setProperty('--aulyckanban-folder-suggest-width', `${width}px`);
+		suggestEl.setCssStyles({
+			width: `${width}px`,
+			minWidth: `${width}px`,
+			maxWidth: `${width}px`,
+		});
 	}
 }
 
@@ -93,151 +97,213 @@ export class KanbanSettingTab extends PluginSettingTab {
 		this.backupService = new BackupService(plugin.store);
 	}
 
+	getSettingDefinitions(): SettingDefinitionItem[] {
+		return [
+			{
+				type: 'group',
+				heading: t('settings.dataManagement'),
+				items: [
+					{
+						name: t('settings.backup.name'),
+						desc: t('settings.backup.desc'),
+						render: (setting) => this.renderBackupSetting(setting),
+					},
+					{
+						name: t('settings.import.name'),
+						desc: t('settings.import.desc'),
+						render: (setting) => this.renderImportSetting(setting),
+					},
+					{
+						name: t('settings.clear.name'),
+						desc: t('settings.clear.desc'),
+						render: (setting) => this.renderClearSetting(setting),
+					},
+				],
+			},
+			{
+				type: 'group',
+				heading: t('settings.sync'),
+				items: [
+					{
+						name: t('settings.sync.folder.name'),
+						desc: t('settings.sync.folder.desc'),
+						render: (setting) => this.renderSyncFolderSetting(setting),
+					},
+					{
+						name: t('settings.sync.force.name'),
+						desc: t('settings.sync.force.desc'),
+						render: (setting) => this.renderForceSyncSetting(setting),
+					},
+				],
+			},
+			{
+				name: t('settings.about.name'),
+				desc: t('settings.about.desc'),
+				render: (setting) => this.renderAboutSetting(setting),
+			},
+		];
+	}
+
 	display(): void {
 		const { containerEl } = this;
-		this.folderSuggest?.destroy();
-		this.folderSuggest = null;
+		this.destroyFolderSuggest();
 		containerEl.empty();
 
-		// ==================== 数据管理 ====================
 		new Setting(containerEl).setHeading().setName(t('settings.dataManagement'));
+		this.renderBackupSetting(
+			this.createLegacySetting('settings.backup.name', 'settings.backup.desc'),
+		);
+		this.renderImportSetting(
+			this.createLegacySetting('settings.import.name', 'settings.import.desc'),
+		);
+		this.renderClearSetting(this.createLegacySetting('settings.clear.name', 'settings.clear.desc'));
 
-		new Setting(containerEl)
-			.setName(t('settings.backup.name'))
-			.setDesc(t('settings.backup.desc'))
-			.addButton((btn) => {
-				btn.buttonEl.classList.add('aulyckanban-settings-action-button');
-				btn.setButtonText(t('settings.backup.button')).onClick(async () => {
-					await this.backupService.exportBackup();
-				});
-			});
-
-		new Setting(containerEl)
-			.setName(t('settings.import.name'))
-			.setDesc(t('settings.import.desc'))
-			.addButton((btn) => {
-				btn.buttonEl.classList.add('aulyckanban-settings-action-button');
-				btn.setButtonText(t('settings.import.button')).onClick(() => {
-					new ConfirmModal(this.app, {
-						message: t('settings.import.confirm'),
-						onConfirm: () => {
-							void this.backupService.importBackup();
-						},
-					}).open();
-				});
-			});
-
-		new Setting(containerEl)
-			.setName(t('settings.clear.name'))
-			.setDesc(t('settings.clear.desc'))
-			.addButton((btn) => {
-				btn.buttonEl.classList.add('aulyckanban-settings-action-button');
-				btn
-					.setButtonText(t('settings.clear.button'))
-					.setWarning()
-					.onClick(() => {
-						new ClearDataModal(this.app, {
-							onBackup: () => {
-								void this.backupService.exportBackup();
-							},
-							onConfirmClear: () => {
-								void this.clearAllDataAndSave();
-							},
-						}).open();
-					});
-			});
-
-		// ==================== 笔记同步 ====================
 		new Setting(containerEl).setHeading().setName(t('settings.sync'));
+		this.renderSyncFolderSetting(
+			this.createLegacySetting('settings.sync.folder.name', 'settings.sync.folder.desc'),
+		);
+		this.renderForceSyncSetting(
+			this.createLegacySetting('settings.sync.force.name', 'settings.sync.force.desc'),
+		);
+		this.renderAboutSetting(this.createLegacySetting('settings.about.name', 'settings.about.desc'));
+	}
 
+	private createLegacySetting(nameKey: I18nKey, descKey: I18nKey): Setting {
+		return new Setting(this.containerEl).setName(t(nameKey)).setDesc(t(descKey));
+	}
+
+	private renderBackupSetting(setting: Setting): void {
+		setting.addButton((btn) => {
+			btn.buttonEl.classList.add('aulyckanban-settings-action-button');
+			btn.setButtonText(t('settings.backup.button')).onClick(() => {
+				this.backupService.exportBackup(btn.buttonEl);
+			});
+		});
+	}
+
+	private renderImportSetting(setting: Setting): void {
+		setting.addButton((btn) => {
+			btn.buttonEl.classList.add('aulyckanban-settings-action-button');
+			btn.setButtonText(t('settings.import.button')).onClick(() => {
+				new ConfirmModal(this.app, {
+					message: t('settings.import.confirm'),
+					onConfirm: () => this.backupService.importBackup(btn.buttonEl),
+				}).open();
+			});
+		});
+	}
+
+	private renderClearSetting(setting: Setting): void {
+		setting.addButton((btn) => {
+			btn.buttonEl.classList.add(
+				'aulyckanban-settings-action-button',
+				'aulyckanban-settings-danger-button',
+			);
+			btn.setButtonText(t('settings.clear.button')).onClick(() => {
+				new ClearDataModal(this.app, {
+					onBackup: () => this.backupService.exportBackup(btn.buttonEl),
+					onConfirmClear: () => {
+						void this.clearAllDataAndSave();
+					},
+				}).open();
+			});
+		});
+	}
+
+	private renderSyncFolderSetting(setting: Setting): () => void {
 		const settings = this.plugin.store.getSettings();
-		new Setting(containerEl)
-			.setName(t('settings.sync.folder.name'))
-			.setDesc(t('settings.sync.folder.desc'))
-			.addText((text) => {
-				let latestFolder = settings.syncFolder;
-				const persistFolder = async (value: string): Promise<void> => {
-					latestFolder = normalizeSyncFolder(value);
-					this.plugin.store.dispatch({
-						type: 'UPDATE_SETTINGS',
-						payload: { syncFolder: latestFolder },
-					});
-					try {
-						await this.plugin.store.saveNow();
-					} catch {
-						// persistData 已提示用户并安排重试
-					}
-				};
-				text
-					.setPlaceholder(t('settings.sync.folder.placeholder'))
-					.setValue(settings.syncFolder)
-					.onChange(persistFolder);
-				text.inputEl.classList.add('aulyckanban-sync-folder-input');
-				text.inputEl.addEventListener('change', () => {
-					if (latestFolder) this.plugin.syncService.scheduleSyncAllViews();
+		let latestFolder = settings.syncFolder;
+		let suggest: VaultFolderSuggest | null = null;
+		setting.addText((text) => {
+			const persistFolder = async (value: string): Promise<void> => {
+				latestFolder = normalizeSyncFolder(value);
+				this.plugin.store.dispatch({
+					type: 'UPDATE_SETTINGS',
+					payload: { syncFolder: latestFolder },
 				});
-				this.folderSuggest = new VaultFolderSuggest(this.app, text.inputEl, (folder) => {
-					void persistFolder(folder);
-					this.plugin.syncService.scheduleSyncAllViews();
-				});
+				try {
+					await this.plugin.store.saveNow();
+				} catch {
+					// persistData 已提示用户并安排重试
+				}
+			};
+			text
+				.setPlaceholder(t('settings.sync.folder.placeholder'))
+				.setValue(settings.syncFolder)
+				.onChange(persistFolder);
+			text.inputEl.classList.add('aulyckanban-sync-folder-input');
+			text.inputEl.addEventListener('change', () => {
+				if (latestFolder) this.plugin.syncService.scheduleSyncAllViews();
 			});
+			suggest = new VaultFolderSuggest(this.app, text.inputEl, (folder) => {
+				void persistFolder(folder);
+				this.plugin.syncService.scheduleSyncAllViews();
+			});
+			this.destroyFolderSuggest();
+			this.folderSuggest = suggest;
+		});
+		return () => {
+			suggest?.destroy();
+			if (this.folderSuggest === suggest) this.folderSuggest = null;
+		};
+	}
 
-		new Setting(containerEl)
-			.setName(t('settings.sync.force.name'))
-			.setDesc(t('settings.sync.force.desc'))
-			.addButton((btn) => {
-				btn.buttonEl.classList.add('aulyckanban-settings-action-button');
-				const idleText = t('settings.sync.force.button');
-				const runForceSync = async (): Promise<void> => {
-					btn.setDisabled(true).setButtonText(t('settings.sync.force.running'));
-					try {
-						const result = await this.plugin.syncService.forceSyncAll();
-						new Notice(
-							t('settings.sync.force.success').replace('{count}', String(result.syncedCount)),
-						);
-					} catch (error) {
-						const detail = error instanceof Error ? error.message : String(error);
-						new Notice(`${t('settings.sync.force.fail')}：${detail}`);
-					} finally {
-						btn.setDisabled(false).setButtonText(idleText);
-					}
-				};
-				btn.setButtonText(idleText).onClick(() => {
-					new ConfirmModal(this.app, {
-						message: t('settings.sync.force.confirm'),
-						confirmText: idleText,
-						onConfirm: () => {
-							void runForceSync();
-						},
-					}).open();
-				});
+	private renderForceSyncSetting(setting: Setting): void {
+		setting.addButton((btn) => {
+			btn.buttonEl.classList.add('aulyckanban-settings-action-button');
+			const idleText = t('settings.sync.force.button');
+			const runForceSync = async (): Promise<void> => {
+				btn.setDisabled(true).setButtonText(t('settings.sync.force.running'));
+				try {
+					const result = await this.plugin.syncService.forceSyncAll();
+					new Notice(
+						t('settings.sync.force.success').replace('{count}', String(result.syncedCount)),
+					);
+				} catch (error) {
+					const detail = error instanceof Error ? error.message : String(error);
+					new Notice(`${t('settings.sync.force.fail')}：${detail}`);
+				} finally {
+					btn.setDisabled(false).setButtonText(idleText);
+				}
+			};
+			btn.setButtonText(idleText).onClick(() => {
+				new ConfirmModal(this.app, {
+					message: t('settings.sync.force.confirm'),
+					confirmText: idleText,
+					onConfirm: () => {
+						void runForceSync();
+					},
+				}).open();
 			});
+		});
+	}
 
-		// ==================== 关于 ====================
-		new Setting(containerEl)
-			.setName(t('settings.about.name'))
-			.setDesc(t('settings.about.desc'))
-			.addButton((btn) => {
-				btn.buttonEl.classList.add('aulyckanban-settings-action-button');
-				btn.setIcon('info');
-				btn.buttonEl.createSpan({
-					cls: 'aulyckanban-accessible-label',
-					text: t('settings.about.name'),
-				});
-				btn.onClick(() => {
-					new AboutModal(
-						this.app,
-						this.plugin.manifest.version,
-						this.plugin.manifest.minAppVersion,
-					).open();
-				});
+	private renderAboutSetting(setting: Setting): void {
+		setting.addButton((btn) => {
+			btn.buttonEl.classList.add('aulyckanban-settings-action-button');
+			btn.setIcon('info');
+			btn.buttonEl.createSpan({
+				cls: 'aulyckanban-accessible-label',
+				text: t('settings.about.name'),
 			});
+			btn.onClick(() => {
+				new AboutModal(
+					this.app,
+					this.plugin.manifest.version,
+					this.plugin.manifest.minAppVersion,
+				).open();
+			});
+		});
 	}
 
 	hide(): void {
+		this.destroyFolderSuggest();
+		super.hide();
+	}
+
+	private destroyFolderSuggest(): void {
 		this.folderSuggest?.destroy();
 		this.folderSuggest = null;
-		super.hide();
 	}
 
 	private async clearAllDataAndSave(): Promise<void> {

@@ -17,6 +17,10 @@ function isRecord(value: unknown): value is UnknownRecord {
 	return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
+function isUnknownArray(value: unknown): value is unknown[] {
+	return Array.isArray(value);
+}
+
 function findDuplicateRecordId(values: readonly unknown[]): string | null {
 	const seen = new Set<string>();
 	for (const value of values) {
@@ -29,9 +33,9 @@ function findDuplicateRecordId(values: readonly unknown[]): string | null {
 }
 
 function collectViewTasks(value: unknown): unknown[] {
-	if (!isRecord(value) || !Array.isArray(value['columns'])) return [];
-	return value['columns'].flatMap((column) =>
-		isRecord(column) && Array.isArray(column['tasks']) ? column['tasks'] : [],
+	if (!isRecord(value) || !isUnknownArray(value['columns'])) return [];
+	return value['columns'].flatMap<unknown>((column) =>
+		isRecord(column) && isUnknownArray(column['tasks']) ? column['tasks'] : [],
 	);
 }
 

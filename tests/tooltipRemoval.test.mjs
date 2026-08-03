@@ -25,6 +25,6 @@ test('icon controls keep accessible text visually hidden', () => {
 	const declarations = css.match(/\.aulyckanban-accessible-label\s*\{([^}]*)\}/)?.[1] ?? '';
 
 	assert.match(declarations, /position:\s*absolute/);
-	assert.match(declarations, /clip-path:\s*inset\(50%\)/);
+	assert.match(declarations, /clip:\s*rect\(0,\s*0,\s*0,\s*0\)/);
 	assert.match(declarations, /overflow:\s*hidden/);
 });

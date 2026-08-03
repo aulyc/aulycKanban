@@ -18,6 +18,8 @@ class MockElement {
 		this.listeners = new Map();
 		this.value = '';
 		this.classList = { contains: (value) => this.classes.has(value) };
+		this.doc = ownerDocument;
+		this.win = ownerDocument.defaultView;
 	}
 
 	append(child) {
@@ -82,7 +84,8 @@ const { UtilityBar } = await loadSourceModule(new URL('../src/ui/UtilityBar.ts',
 });
 
 function createHarness(overrides = {}) {
-	const documentRef = { activeElement: null };
+	const documentRef = { activeElement: null, defaultView: {} };
+	documentRef.defaultView.HTMLElement = MockElement;
 	globalThis.document = documentRef;
 	globalThis.HTMLElement = MockElement;
 	const store = {

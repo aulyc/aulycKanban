@@ -210,7 +210,7 @@ export class KanbanView extends ItemView {
 
 	/** 从 Ribbon 或命令打开看板后，让首次 Tab 直接进入焦点循环。 */
 	focusBoard(): void {
-		requestAnimationFrame(() => {
+		this.contentEl.win.requestAnimationFrame(() => {
 			if (this.isClosing) return;
 			this.contentEl.focus({ preventScroll: true });
 		});
@@ -220,9 +220,7 @@ export class KanbanView extends ItemView {
 		const ownerDocument = this.contentEl.ownerDocument;
 		const ownerWindow = ownerDocument.defaultView;
 		const active = ownerDocument.activeElement;
-		return ownerWindow && active instanceof ownerWindow.HTMLElement
-			? (active as HTMLElement)
-			: null;
+		return ownerWindow && active instanceof ownerWindow.HTMLElement ? active : null;
 	}
 
 	private handleSearchShortcut(e: KeyboardEvent): boolean {
@@ -282,7 +280,7 @@ export class KanbanView extends ItemView {
 		};
 		if (afterBlur) {
 			active?.blur();
-			requestAnimationFrame(focusTarget);
+			this.contentEl.win.requestAnimationFrame(focusTarget);
 		} else {
 			focusTarget();
 		}
@@ -350,7 +348,7 @@ export class KanbanView extends ItemView {
 	}
 
 	private getFocusedTaskTypeTarget(): TaskTypeNavigationTarget | null {
-		const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+		const active = this.getActiveElement();
 		if (!active || !this.contentEl.contains(active)) return null;
 		if (active.closest('.aulyckanban-all-tasks-btn')) return { kind: 'all' };
 		if (active.closest('.aulyckanban-view-add-btn')) return { kind: 'add' };
@@ -361,7 +359,7 @@ export class KanbanView extends ItemView {
 
 	private selectAdjacentColumn(offset: number): void {
 		const store = this.plugin.store;
-		const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+		const active = this.getActiveElement();
 		let focusedTarget: ColumnNavigationTarget | null = null;
 		if (active?.closest('.aulyckanban-nav-all-btn')) focusedTarget = { kind: 'all' };
 		else if (active?.closest('.aulyckanban-nav-add-btn')) focusedTarget = { kind: 'add' };
@@ -395,7 +393,7 @@ export class KanbanView extends ItemView {
 
 	private selectAdjacentTaskItem(offset: number): void {
 		const items = getTaskZoneNavigationItems(this.contentEl);
-		const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+		const active = this.getActiveElement();
 		const currentIndex = active ? items.indexOf(active) : -1;
 		const target = items[getWrappedItemIndex(currentIndex, items.length, offset)];
 		target?.focus({ preventScroll: true });
@@ -404,7 +402,7 @@ export class KanbanView extends ItemView {
 
 	private selectAdjacentUtilityItem(offset: number): void {
 		const items = getUtilityZoneNavigationItems(this.contentEl);
-		const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+		const active = this.getActiveElement();
 		const currentIndex = active ? items.indexOf(active) : -1;
 		const target = items[getWrappedItemIndex(currentIndex, items.length, offset)];
 		target?.focus({ preventScroll: true });
@@ -423,7 +421,7 @@ export class KanbanView extends ItemView {
 	}
 
 	private focusZoneAfterRender(zone: KanbanFocusZone): void {
-		requestAnimationFrame(() => {
+		this.contentEl.win.requestAnimationFrame(() => {
 			const target = this.getFocusTarget(zone);
 			target?.focus({ preventScroll: true });
 			if (zone === 'view' && target) revealTaskTypeItem(target);
@@ -433,7 +431,7 @@ export class KanbanView extends ItemView {
 	private requestRender(): void {
 		if (this.renderQueued) return;
 		this.renderQueued = true;
-		requestAnimationFrame(() => {
+		this.contentEl.win.requestAnimationFrame(() => {
 			this.renderQueued = false;
 			if (this.isClosing || !this.board) return;
 			this.board.render();

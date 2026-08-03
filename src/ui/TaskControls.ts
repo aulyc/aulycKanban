@@ -58,7 +58,7 @@ export class TaskControls {
 	private renderCreateEditor(): void {
 		const editorEl = this.el.createDiv({ cls: 'aulyckanban-task-create-editor' });
 		editorEl.addEventListener('focusout', () => {
-			requestAnimationFrame(() => {
+			editorEl.win.requestAnimationFrame(() => {
 				if (!this.isAdding) return;
 				const active = editorEl.ownerDocument.activeElement;
 				if (active && editorEl.contains(active)) return;

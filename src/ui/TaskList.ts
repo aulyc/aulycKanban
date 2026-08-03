@@ -52,6 +52,7 @@ export class TaskList {
 				continue;
 			}
 			const card = new TaskCard(
+				tasksEl,
 				this.app,
 				this.store,
 				ref.viewId,
@@ -60,7 +61,6 @@ export class TaskList {
 				sourceLabel,
 			);
 			const cardEl = card.getEl();
-			tasksEl.appendChild(cardEl);
 			nextCache.set(key, { el: cardEl, snapshot });
 		}
 		this.cardCache = nextCache;
