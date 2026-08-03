@@ -56,6 +56,22 @@ class MockPluginSettingTab {
 class MockSetting {
 	constructor() {
 		this.controls = [];
+		this.controlClasses = new Set();
+		this.controlChildren = [];
+		this.controlEl = {
+			classList: {
+				add: (value) => this.controlClasses.add(value),
+				toggle: (value, enabled) => {
+					if (enabled) this.controlClasses.add(value);
+					else this.controlClasses.delete(value);
+				},
+			},
+			createSpan: (options) => {
+				const span = { options };
+				this.controlChildren.push(span);
+				return span;
+			},
+		};
 		this.renderedAt = renderedSettings.push(this);
 	}
 	setHeading() {
@@ -212,6 +228,9 @@ const { KanbanSettingTab } = await loadSourceModule(
 				},
 				normalizePath: (value) => value,
 				PluginSettingTab: MockPluginSettingTab,
+				setIcon: (element, icon) => {
+					element.icon = icon;
+				},
 				Setting: MockSetting,
 			},
 			'../i18n': {
@@ -412,8 +431,15 @@ test('settings expose one automatic sync folder without layout or per-note contr
 	const folder = rendered.find((item) => item.name === 'settings.sync.folder.name');
 	assert.ok(folder);
 	assert.equal(folder.text.value, 'X-aulyc看板');
+	assert.equal(folder.controlClasses.has('aulyckanban-sync-folder-control'), true);
+	assert.equal(folder.controlClasses.has('aulyckanban-sync-folder-selected'), true);
+	assert.deepEqual(
+		folder.controlChildren.map((element) => element.icon),
+		['check', 'chevron-down'],
+	);
 	await folder.text.onChangeHandler(' 新目录/任务同步/ ');
 	assert.equal(settings.syncFolder, '新目录/任务同步');
+	assert.equal(folder.controlClasses.has('aulyckanban-sync-folder-selected'), true);
 	assert.equal(syncCalls.all, 0);
 	folder.text.listeners.get('change')();
 	assert.equal(syncCalls.all, 1);
@@ -428,6 +454,7 @@ test('clearing the folder restores the default managed directory', async () => {
 
 	await folder.text.onChangeHandler('   ');
 	assert.equal(settings.syncFolder, 'X-aulyc看板');
+	assert.equal(folder.controlClasses.has('aulyckanban-sync-folder-selected'), false);
 });
 
 test('sync folder input lists only top-level vault folders and filters Chinese or Latin input', () => {
@@ -481,16 +508,26 @@ test('sync folder suggestion popover matches the input width', () => {
 	assert.equal(suggest.suggestStyles.get('maxWidth'), '248px');
 });
 
-test('sync folder focus adds one pixel inside without an outward focus ring', () => {
+test('sync folder looks selected while focus still adds one pixel inside', () => {
 	const { tab } = createHarness();
 	const start = renderedSettings.length;
 	tab.display();
 	const folder = renderedSettings
 		.slice(start)
 		.find((item) => item.name === 'settings.sync.folder.name');
-	const focusRule = styles.match(/\.aulyckanban-sync-folder-input:focus\s*\{([^}]*)\}/)?.[1] ?? '';
+	const selectedRule =
+		styles.match(
+			/\.aulyckanban-sync-folder-control\.aulyckanban-sync-folder-selected\s+\.aulyckanban-sync-folder-input\s*\{([^}]*)\}/,
+		)?.[1] ?? '';
+	const focusRule =
+		styles.match(
+			/\.aulyckanban-sync-folder-control \.aulyckanban-sync-folder-input:focus\s*\{([^}]*)\}/,
+		)?.[1] ?? '';
 
 	assert.equal(folder.text.classes.has('aulyckanban-sync-folder-input'), true);
+	assert.match(selectedRule, /background-color:\s*var\(--background-modifier-hover\)/);
+	assert.match(selectedRule, /border-color:\s*var\(--interactive-accent\)/);
+	assert.match(selectedRule, /box-shadow:\s*inset 3px 0 0 var\(--interactive-accent\)/);
 	assert.match(focusRule, /border-color:\s*var\(--background-modifier-border-focus\)/);
 	assert.match(
 		focusRule,

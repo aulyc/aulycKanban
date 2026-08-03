@@ -1,4 +1,4 @@
-import { AbstractInputSuggest, App, Notice, PluginSettingTab, Setting } from 'obsidian';
+import { AbstractInputSuggest, App, Notice, PluginSettingTab, setIcon, Setting } from 'obsidian';
 import type { SettingDefinitionItem, TFolder } from 'obsidian';
 import { t, type I18nKey } from '../i18n';
 import type KanbanPlugin from '../main';
@@ -7,6 +7,9 @@ import { normalizeSyncFolder } from '../utils/noteSync';
 import { AboutModal } from './AboutModal';
 import { ClearDataModal } from './ClearDataModal';
 import { ConfirmModal } from './ConfirmModal';
+
+const SYNC_FOLDER_CONTROL_CLASS = 'aulyckanban-sync-folder-control';
+const SYNC_FOLDER_SELECTED_CLASS = 'aulyckanban-sync-folder-selected';
 
 export function filterVaultFolders(app: App, query: string): string[] {
 	const normalizedQuery = query.trim().toLocaleLowerCase();
@@ -214,8 +217,24 @@ export class KanbanSettingTab extends PluginSettingTab {
 		const settings = this.plugin.store.getSettings();
 		let latestFolder = settings.syncFolder;
 		let suggest: VaultFolderSuggest | null = null;
+		setting.controlEl.classList.add(SYNC_FOLDER_CONTROL_CLASS);
+		const selectedIconEl = setting.controlEl.createSpan({
+			cls: 'aulyckanban-sync-folder-selected-icon',
+			attr: { 'aria-hidden': 'true' },
+		});
+		setIcon(selectedIconEl, 'check');
+		const chevronEl = setting.controlEl.createSpan({
+			cls: 'aulyckanban-sync-folder-chevron',
+			attr: { 'aria-hidden': 'true' },
+		});
+		setIcon(chevronEl, 'chevron-down');
+		const updateSelectedState = (value: string): void => {
+			setting.controlEl.classList.toggle(SYNC_FOLDER_SELECTED_CLASS, value.trim().length > 0);
+		};
+		updateSelectedState(settings.syncFolder);
 		setting.addText((text) => {
 			const persistFolder = async (value: string): Promise<void> => {
+				updateSelectedState(value);
 				latestFolder = normalizeSyncFolder(value);
 				this.plugin.store.dispatch({
 					type: 'UPDATE_SETTINGS',
