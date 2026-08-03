@@ -1,4 +1,4 @@
-import { AbstractInputSuggest, App, Notice, PluginSettingTab, setIcon, Setting } from 'obsidian';
+import { App, Notice, PluginSettingTab, Setting } from 'obsidian';
 import type { SettingDefinitionItem, TFolder } from 'obsidian';
 import { t, type I18nKey } from '../i18n';
 import type KanbanPlugin from '../main';
@@ -8,81 +8,13 @@ import { AboutModal } from './AboutModal';
 import { ClearDataModal } from './ClearDataModal';
 import { ConfirmModal } from './ConfirmModal';
 
-const SYNC_FOLDER_CONTROL_CLASS = 'aulyckanban-sync-folder-control';
-const SYNC_FOLDER_SELECTED_CLASS = 'aulyckanban-sync-folder-selected';
-
-export function filterVaultFolders(app: App, query: string): string[] {
-	const normalizedQuery = query.trim().toLocaleLowerCase();
+export function listVaultFolders(app: App): string[] {
 	return app.vault
 		.getRoot()
 		.children.filter((file): file is TFolder => 'children' in file)
 		.map((folder) => folder.path)
-		.filter(
-			(path) =>
-				path.length > 0 &&
-				!path.includes('/') &&
-				path.toLocaleLowerCase().includes(normalizedQuery),
-		)
+		.filter((path) => path.length > 0 && !path.includes('/'))
 		.sort((left, right) => left.localeCompare(right));
-}
-
-class VaultFolderSuggest extends AbstractInputSuggest<string> {
-	private readonly inputEl: HTMLInputElement;
-	private readonly onChoose: (folder: string) => void;
-	private showAllOnNextQuery = false;
-
-	constructor(app: App, inputEl: HTMLInputElement, onChoose: (folder: string) => void) {
-		super(app, inputEl);
-		this.inputEl = inputEl;
-		this.onChoose = onChoose;
-		this.inputEl.addEventListener('focus', this.handleFocus);
-	}
-
-	open(): void {
-		super.open();
-		this.syncWidthToInput();
-	}
-
-	protected getSuggestions(query: string): string[] {
-		const effectiveQuery = this.showAllOnNextQuery ? '' : query;
-		this.showAllOnNextQuery = false;
-		return filterVaultFolders(this.app, effectiveQuery);
-	}
-
-	renderSuggestion(folder: string, el: HTMLElement): void {
-		el.setText(folder);
-	}
-
-	selectSuggestion(folder: string): void {
-		this.setValue(folder);
-		this.onChoose(folder);
-		this.close();
-	}
-
-	destroy(): void {
-		this.inputEl.removeEventListener('focus', this.handleFocus);
-		this.close();
-	}
-
-	private readonly handleFocus = (): void => {
-		this.showAllOnNextQuery = true;
-		const EventConstructor = this.inputEl.ownerDocument.defaultView?.Event ?? Event;
-		const inputEvent = new EventConstructor('input', { bubbles: true });
-		this.inputEl.dispatchEvent(inputEvent);
-	};
-
-	private syncWidthToInput(): void {
-		const width = this.inputEl.getBoundingClientRect().width;
-		if (width <= 0) return;
-		const suggestEl = (this as unknown as { suggestEl?: HTMLElement }).suggestEl;
-		if (!suggestEl) return;
-		suggestEl.classList.add('aulyckanban-folder-suggest');
-		suggestEl.setCssStyles({
-			width: `${width}px`,
-			minWidth: `${width}px`,
-			maxWidth: `${width}px`,
-		});
-	}
 }
 
 /**
@@ -92,7 +24,6 @@ class VaultFolderSuggest extends AbstractInputSuggest<string> {
 export class KanbanSettingTab extends PluginSettingTab {
 	private readonly plugin: KanbanPlugin;
 	private readonly backupService: BackupService;
-	private folderSuggest: VaultFolderSuggest | null = null;
 
 	constructor(app: App, plugin: KanbanPlugin) {
 		super(app, plugin);
@@ -149,7 +80,6 @@ export class KanbanSettingTab extends PluginSettingTab {
 
 	display(): void {
 		const { containerEl } = this;
-		this.destroyFolderSuggest();
 		containerEl.empty();
 
 		new Setting(containerEl).setHeading().setName(t('settings.dataManagement'));
@@ -213,58 +143,31 @@ export class KanbanSettingTab extends PluginSettingTab {
 		});
 	}
 
-	private renderSyncFolderSetting(setting: Setting): () => void {
+	private renderSyncFolderSetting(setting: Setting): void {
 		const settings = this.plugin.store.getSettings();
-		let latestFolder = settings.syncFolder;
-		let suggest: VaultFolderSuggest | null = null;
-		setting.controlEl.classList.add(SYNC_FOLDER_CONTROL_CLASS);
-		const selectedIconEl = setting.controlEl.createSpan({
-			cls: 'aulyckanban-sync-folder-selected-icon',
-			attr: { 'aria-hidden': 'true' },
-		});
-		setIcon(selectedIconEl, 'check');
-		const chevronEl = setting.controlEl.createSpan({
-			cls: 'aulyckanban-sync-folder-chevron',
-			attr: { 'aria-hidden': 'true' },
-		});
-		setIcon(chevronEl, 'chevron-down');
-		const updateSelectedState = (value: string): void => {
-			setting.controlEl.classList.toggle(SYNC_FOLDER_SELECTED_CLASS, value.trim().length > 0);
-		};
-		updateSelectedState(settings.syncFolder);
-		setting.addText((text) => {
-			const persistFolder = async (value: string): Promise<void> => {
-				updateSelectedState(value);
-				latestFolder = normalizeSyncFolder(value);
+		const currentFolder = normalizeSyncFolder(settings.syncFolder);
+		const vaultFolders = listVaultFolders(this.app);
+		const options = vaultFolders.includes(currentFolder)
+			? vaultFolders
+			: [currentFolder, ...vaultFolders];
+
+		setting.addDropdown((dropdown) => {
+			for (const folder of options) dropdown.addOption(folder, folder);
+			dropdown.selectEl.classList.add('aulyckanban-sync-folder-select');
+			dropdown.setValue(currentFolder).onChange(async (value) => {
+				const selectedFolder = normalizeSyncFolder(value);
 				this.plugin.store.dispatch({
 					type: 'UPDATE_SETTINGS',
-					payload: { syncFolder: latestFolder },
+					payload: { syncFolder: selectedFolder },
 				});
 				try {
 					await this.plugin.store.saveNow();
 				} catch {
 					// persistData 已提示用户并安排重试
 				}
-			};
-			text
-				.setPlaceholder(t('settings.sync.folder.placeholder'))
-				.setValue(settings.syncFolder)
-				.onChange(persistFolder);
-			text.inputEl.classList.add('aulyckanban-sync-folder-input');
-			text.inputEl.addEventListener('change', () => {
-				if (latestFolder) this.plugin.syncService.scheduleSyncAllViews();
-			});
-			suggest = new VaultFolderSuggest(this.app, text.inputEl, (folder) => {
-				void persistFolder(folder);
 				this.plugin.syncService.scheduleSyncAllViews();
 			});
-			this.destroyFolderSuggest();
-			this.folderSuggest = suggest;
 		});
-		return () => {
-			suggest?.destroy();
-			if (this.folderSuggest === suggest) this.folderSuggest = null;
-		};
 	}
 
 	private renderForceSyncSetting(setting: Setting): void {
@@ -313,16 +216,6 @@ export class KanbanSettingTab extends PluginSettingTab {
 				).open();
 			});
 		});
-	}
-
-	hide(): void {
-		this.destroyFolderSuggest();
-		super.hide();
-	}
-
-	private destroyFolderSuggest(): void {
-		this.folderSuggest?.destroy();
-		this.folderSuggest = null;
 	}
 
 	private async clearAllDataAndSave(): Promise<void> {

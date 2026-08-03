@@ -4,39 +4,10 @@ import test from 'node:test';
 import { loadSourceModule } from './helpers/load-source-module.mjs';
 
 const renderedSettings = [];
-const renderedFolderSuggests = [];
 const renderedConfirmModals = [];
 const renderedAboutModals = [];
 const renderedNotices = [];
 const styles = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
-
-class MockAbstractInputSuggest {
-	constructor(app, inputEl) {
-		this.app = app;
-		this.inputEl = inputEl;
-		this.suggestClasses = new Set();
-		this.suggestStyles = new Map();
-		this.suggestEl = {
-			classList: { add: (value) => this.suggestClasses.add(value) },
-			setCssStyles: (values) => {
-				for (const [name, value] of Object.entries(values)) this.suggestStyles.set(name, value);
-			},
-		};
-		inputEl.addEventListener('input', () => {
-			this.lastSuggestions = this.getSuggestions(inputEl.value);
-		});
-		renderedFolderSuggests.push(this);
-	}
-	open() {
-		this.opened = true;
-	}
-	setValue(value) {
-		this.inputEl.value = value;
-	}
-	close() {
-		this.closed = true;
-	}
-}
 
 class MockElement {
 	empty() {}
@@ -124,8 +95,13 @@ class MockSetting {
 		return this;
 	}
 	addDropdown(callback) {
+		const classes = new Set();
 		const dropdown = {
 			options: new Map(),
+			classes,
+			selectEl: {
+				classList: { add: (value) => classes.add(value) },
+			},
 			addOption: (value, label) => {
 				dropdown.options.set(value, label);
 				return dropdown;
@@ -220,7 +196,6 @@ const { KanbanSettingTab } = await loadSourceModule(
 		label: 'kanban-setting-tab',
 		mocks: {
 			obsidian: {
-				AbstractInputSuggest: MockAbstractInputSuggest,
 				Notice: class {
 					constructor(message) {
 						renderedNotices.push(message);
@@ -228,9 +203,6 @@ const { KanbanSettingTab } = await loadSourceModule(
 				},
 				normalizePath: (value) => value,
 				PluginSettingTab: MockPluginSettingTab,
-				setIcon: (element, icon) => {
-					element.icon = icon;
-				},
 				Setting: MockSetting,
 			},
 			'../i18n': {
@@ -339,7 +311,9 @@ test('declarative setting renderers construct every indexed control', () => {
 
 	assert.equal(rendered.length, 6);
 	assert.deepEqual(
-		rendered.map((setting) => setting.controls.length + (setting.text ? 1 : 0)),
+		rendered.map(
+			(setting) => setting.controls.length + (setting.dropdown ? 1 : 0) + (setting.text ? 1 : 0),
+		),
 		[1, 1, 1, 1, 1, 1],
 	);
 });
@@ -409,16 +383,13 @@ test('settings do not expose a project-integrated update checker', () => {
 	);
 });
 
-test('settings expose one automatic sync folder without layout or per-note controls', async () => {
+test('settings expose one select-only sync folder without layout or per-note controls', async () => {
 	const { tab, settings, syncCalls } = createHarness();
 	const start = renderedSettings.length;
 	tab.display();
 	const rendered = renderedSettings.slice(start);
 
-	assert.equal(
-		rendered.some((item) => item.dropdown),
-		false,
-	);
+	assert.equal(rendered.filter((item) => item.dropdown).length, 1);
 	assert.equal(
 		rendered.some((item) => item.name === '工作任务settings.sync.viewPath.suffix'),
 		false,
@@ -430,111 +401,54 @@ test('settings expose one automatic sync folder without layout or per-note contr
 
 	const folder = rendered.find((item) => item.name === 'settings.sync.folder.name');
 	assert.ok(folder);
-	assert.equal(folder.text.value, 'X-aulyc看板');
-	assert.equal(folder.controlClasses.has('aulyckanban-sync-folder-control'), true);
-	assert.equal(folder.controlClasses.has('aulyckanban-sync-folder-selected'), true);
+	assert.equal(folder.text, undefined);
+	assert.equal(folder.dropdown.value, 'X-aulyc看板');
 	assert.deepEqual(
-		folder.controlChildren.map((element) => element.icon),
-		['check', 'chevron-down'],
+		[...folder.dropdown.options.keys()],
+		['X-aulyc看板', 'Alpha', 'Beta', '工作', '项目'],
 	);
-	await folder.text.onChangeHandler(' 新目录/任务同步/ ');
-	assert.equal(settings.syncFolder, '新目录/任务同步');
-	assert.equal(folder.controlClasses.has('aulyckanban-sync-folder-selected'), true);
-	assert.equal(syncCalls.all, 0);
-	folder.text.listeners.get('change')();
-	assert.equal(syncCalls.all, 1);
-});
-
-test('clearing the folder restores the default managed directory', async () => {
-	const { tab, settings } = createHarness();
-	const start = renderedSettings.length;
-	tab.display();
-	const rendered = renderedSettings.slice(start);
-	const folder = rendered.find((item) => item.name === 'settings.sync.folder.name');
-
-	await folder.text.onChangeHandler('   ');
-	assert.equal(settings.syncFolder, 'X-aulyc看板');
-	assert.equal(folder.controlClasses.has('aulyckanban-sync-folder-selected'), false);
-});
-
-test('sync folder input lists only top-level vault folders and filters Chinese or Latin input', () => {
-	const { tab } = createHarness();
-	const start = renderedSettings.length;
-	const suggestStart = renderedFolderSuggests.length;
-	tab.display();
-	const rendered = renderedSettings.slice(start);
-	const folder = rendered.find((item) => item.name === 'settings.sync.folder.name');
-	const suggest = renderedFolderSuggests[suggestStart];
-
-	folder.text.listeners.get('focus')();
-	assert.deepEqual(new Set(suggest.lastSuggestions), new Set(['Alpha', 'Beta', '工作', '项目']));
-
-	folder.text.inputEl.value = 'a';
-	folder.text.inputEl.dispatchEvent({ type: 'input' });
-	assert.deepEqual(new Set(suggest.lastSuggestions), new Set(['Alpha', 'Beta']));
-
-	folder.text.inputEl.value = '项';
-	folder.text.inputEl.dispatchEvent({ type: 'input' });
-	assert.deepEqual(suggest.lastSuggestions, ['项目']);
-});
-
-test('choosing a suggested vault folder persists it and schedules note synchronization', () => {
-	const { tab, settings, syncCalls } = createHarness();
-	const start = renderedSettings.length;
-	const suggestStart = renderedFolderSuggests.length;
-	tab.display();
-	const rendered = renderedSettings.slice(start);
-	const folder = rendered.find((item) => item.name === 'settings.sync.folder.name');
-	const suggest = renderedFolderSuggests[suggestStart];
-
-	suggest.selectSuggestion('项目');
-	assert.equal(folder.text.inputEl.value, '项目');
+	assert.equal(folder.dropdown.classes.has('aulyckanban-sync-folder-select'), true);
+	await folder.dropdown.onChangeHandler('项目');
 	assert.equal(settings.syncFolder, '项目');
 	assert.equal(syncCalls.all, 1);
 });
 
-test('sync folder suggestion popover matches the input width', () => {
+test('the current folder remains selectable when it is not loaded in the Vault', () => {
 	const { tab } = createHarness();
-	const suggestStart = renderedFolderSuggests.length;
+	const start = renderedSettings.length;
 	tab.display();
-	const suggest = renderedFolderSuggests[suggestStart];
+	const rendered = renderedSettings.slice(start);
+	const folder = rendered.find((item) => item.name === 'settings.sync.folder.name');
 
-	suggest.open();
-
-	assert.equal(suggest.opened, true);
-	assert.equal(suggest.suggestClasses.has('aulyckanban-folder-suggest'), true);
-	assert.equal(suggest.suggestStyles.get('width'), '248px');
-	assert.equal(suggest.suggestStyles.get('minWidth'), '248px');
-	assert.equal(suggest.suggestStyles.get('maxWidth'), '248px');
+	assert.equal(folder.dropdown.options.get('X-aulyc看板'), 'X-aulyc看板');
 });
 
-test('sync folder looks selected while focus still adds one pixel inside', () => {
+test('sync folder dropdown lists only top-level Vault folders', () => {
+	const { tab } = createHarness();
+	const start = renderedSettings.length;
+	tab.display();
+	const rendered = renderedSettings.slice(start);
+	const folder = rendered.find((item) => item.name === 'settings.sync.folder.name');
+
+	assert.deepEqual([...folder.dropdown.options.keys()].slice(1), ['Alpha', 'Beta', '工作', '项目']);
+	assert.equal(folder.dropdown.options.has('Alpha/task.md'), false);
+});
+
+test('sync folder uses the native dropdown without custom selection chrome', () => {
 	const { tab } = createHarness();
 	const start = renderedSettings.length;
 	tab.display();
 	const folder = renderedSettings
 		.slice(start)
 		.find((item) => item.name === 'settings.sync.folder.name');
-	const selectedRule =
-		styles.match(
-			/\.aulyckanban-sync-folder-control\.aulyckanban-sync-folder-selected\s+\.aulyckanban-sync-folder-input\s*\{([^}]*)\}/,
-		)?.[1] ?? '';
-	const focusRule =
-		styles.match(
-			/\.aulyckanban-sync-folder-control \.aulyckanban-sync-folder-input:focus\s*\{([^}]*)\}/,
-		)?.[1] ?? '';
+	const selectRule = styles.match(/\.aulyckanban-sync-folder-select\s*\{([^}]*)\}/)?.[1] ?? '';
 
-	assert.equal(folder.text.classes.has('aulyckanban-sync-folder-input'), true);
-	assert.match(selectedRule, /background-color:\s*var\(--background-modifier-hover\)/);
-	assert.match(selectedRule, /border-color:\s*var\(--interactive-accent\)/);
-	assert.match(selectedRule, /box-shadow:\s*inset 3px 0 0 var\(--interactive-accent\)/);
-	assert.match(focusRule, /border-color:\s*var\(--background-modifier-border-focus\)/);
-	assert.match(
-		focusRule,
-		/box-shadow:\s*inset 0 0 0 1px var\(--background-modifier-border-focus\)/,
-	);
-	assert.doesNotMatch(focusRule, /!important/);
-	assert.match(focusRule, /outline:\s*none/);
+	assert.ok(folder.dropdown);
+	assert.equal(folder.text, undefined);
+	assert.match(selectRule, /width:\s*248px/);
+	assert.match(selectRule, /max-width:\s*100%/);
+	assert.doesNotMatch(styles, /aulyckanban-sync-folder-selected-icon/);
+	assert.doesNotMatch(styles, /aulyckanban-folder-suggest/);
 });
 
 test('force refresh requires confirmation and reports the rebuilt note count', async () => {
