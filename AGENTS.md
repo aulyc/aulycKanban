@@ -138,7 +138,7 @@ remote refs back, and finalizes the GitHub source fields in release provenance.
 
 ### Dual-mirror release policy
 
-- Explicit policy: `aulyc-dual-mirror-v1` `1.5.0`; it does not change the
+- Explicit policy: `aulyc-dual-mirror-v1` `1.6.0`; it does not change the
   `obsidian-plugin` Profile.
 - Public GitHub source, Release and Obsidian Community authority:
   `aulyc/aulycKanban`; Gitee Release mirror:
@@ -152,10 +152,13 @@ remote refs back, and finalizes the GitHub source fields in release provenance.
   the plugin must not expose startup/manual update checks or consume
   `latest.json`. Digital signing remains N/A unless a future project-owned
   downloader/installer is separately designed and authorized.
-- Community releases publish the formal ZIP/checksum/provenance/latest set plus
-  independently downloadable `main.js`, `manifest.json`, and `styles.css` to
-  both GitHub and Gitee. The GitHub Release must reuse the authoritative source
-  annotated tag; the mirror tool cannot create a missing source tag.
+- Channel mode: `obsidian-community` / `obsidian-managed`. GitHub and Gitee
+  Releases publish only `main.js`, `manifest.json`, and `styles.css` with the
+  same bytes. The formal ZIP, checksum sidecars, and provenance remain required
+  local `verificationEvidence` and are not public Release attachments;
+  `latest.json` is `N/A` and both manifest phases are `not-applicable`.
+  The GitHub Release must reuse the authoritative source annotated tag; the
+  mirror tool cannot create a missing source tag.
 - `publish` requires separate explicit authorization. A private GitHub source,
   missing Gitee mirror,
   one-sided failure or conflict must fail/record partial state; never push
@@ -168,6 +171,9 @@ remote refs back, and finalizes the GitHub source fields in release provenance.
 - 新发布只接受名称等于权威版本、指向独立发布元数据提交的 annotated tag。
 - 最终测试/正式 ZIP 从精确 tag 的 detached worktree 构建，构建前后均须 clean。
 - provenance 的 profile、channel、version、buildNumber、tag、commit、`dirty:false`、插件元数据、distribution 和所有 SHA-256 必须与真实 Git、ZIP 和文件交叉验证。
+- Community 双源远端附件集合必须精确等于 `main.js`、`manifest.json`、
+  `styles.css`；缺失、额外附件或同名不同字节全部 fail closed。GitHub Artifact
+  Attestation 当前为可选增强，不是 Obsidian Community 或本项目正式发版门禁。
 - 纯发版验证 ZIP 白名单和逐文件 SHA-256，不写入 Vault；显式安装后才用实际安装
   manifest 驱动 Obsidian CLI smoke。
 
@@ -175,7 +181,8 @@ remote refs back, and finalizes the GitHub source fields in release provenance.
 
 - Build number: 本项目显式使用独立 `buildNumber`。规范迁移保持 `2.1.19` 和 `buildNumber: 0`，不为历史版本伪造构建号；第一个未来测试或正式发布必须使用正整数，之后跨测试/正式渠道严格递增、不得重复或倒退。
 - Distribution: 正式 provenance 使用 `community-plugin-channel`；同一正式版本
-  另按 `aulyc-dual-mirror-v1` 发布到 GitHub 主仓和 Gitee 镜像。源码分支和
+  另按 `aulyc-dual-mirror-v1` 只把 Community 三文件发布到 GitHub 主仓和 Gitee
+  镜像。源码分支和
   annotated tag 只发布到中央绑定的公共 GitHub 主仓；显式安装仍为
   `local-vault`。版本化 ZIP、独立 provenance、Community 原始附件、目标 Vault
   安装哈希和实际加载身份继续作为插件渠道验证。
@@ -191,9 +198,9 @@ remote refs back, and finalizes the GitHub source fields in release provenance.
 - Tracked drift evidence: `AGENTS.md`、`VERSIONING.md`、`version-bump.mjs` 和稳定发布控制脚本；复核后的 SHA-256 记录在 `.codex/standards.json`。
 - Active exceptions: none。
 - Release-process feedback classification: `core-candidate` for the shared
-  Policy 1.5.0 extension and `project-only` for the aulycKanban runtime/docs
-  migration；项目采用 core
-  `3.0.0`、`obsidian-plugin` `2.0.0` 和可选双镜像 Policy。
+  Policy 1.6.0 asset-set extension and `project-only` for this repository's
+  mapping/docs migration；项目采用 core `3.1.0`、`obsidian-plugin` `2.1.0`
+  和可选双镜像 Policy `1.6.0`。
 
 ### Release documentation and invariants
 

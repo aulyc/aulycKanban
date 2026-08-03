@@ -108,10 +108,14 @@ ZIP 根目录只允许：
 
 provenance 从真实 Git、tag 和 ZIP 提取并交叉验证：Profile、渠道、版本、构建号、tag、Commit、`dirty:false`、插件 ID、最低 Obsidian 版本、`isDesktopOnly`、Distribution、ZIP 文件名/SHA-256，以及三个文件的 SHA-256。它不得包含 Vault 路径、用户数据、Token、凭据或本机身份。
 
-采用双源 Policy 1.5.0 后，中央工具还会从这个精确标签 ZIP 中校验并提取
-`main.js`、`manifest.json`、`styles.css`，作为 GitHub/Gitee 两端同字节的独立
-Release 附件。GitHub Release 位于唯一主仓 `aulyc/aulycKanban`，并复用已经原子
-推送和回读的权威 annotated tag；工具不得从其他分支补造标签。
+采用双源 Policy 1.6.0 的 `obsidian-community` / `obsidian-managed`
+模式后，中央工具从这个精确标签 ZIP 中校验并提取
+`main.js`、`manifest.json`、`styles.css`，作为 GitHub/Gitee 两端仅有
+且同字节的 Release 附件。ZIP、两个 checksum sidecar 和最终 provenance
+仍作为不可缺少的本地验证证据，但不上传到两端 Release；
+`latest.json` 为 `N/A`。GitHub Release 位于唯一主仓
+`aulyc/aulycKanban`，并复用已经原子推送和回读的权威 annotated tag；
+工具不得从其他分支补造标签。
 
 新构建只能生成 `aulycKanban-<version>` 前缀的 ZIP 和 provenance。当前验证器为只读历史兼容，可继续验证 `2.3.5` 及以前使用 `aulyckanban-<version>` 前缀的既有产物；该兼容分支不能用于生成新产物，也不能重写历史文件。
 
