@@ -4,6 +4,15 @@
 
 ## Unreleased
 
+## [2.9.5] - 2026-08-03
+
+- 接入 Obsidian 官方 ESLint 规则和当前 API 类型，补充声明式设置定义，并将计时器、
+  DOM 创建、活动元素及窗口访问收敛到对应 Vault/Workspace 上下文。
+- 移除 Community 自动审查指出的 `!important`、`:has()` 及其他可替代 CSS 写法，
+  通过显式焦点状态保持任务类型、象限和输入控件的原有交互效果。
+- GitHub 主仓与 Gitee 镜像的 Community 发布附件精确限定为 `main.js`、
+  `manifest.json` 和 `styles.css`；ZIP、校验和及 provenance 继续作为本地验证证据。
+
 ## [2.9.4] - 2026-08-02
 
 - 改用与最低版本 `1.5.0` 兼容的公开 Vault/Workspace API，修复 Community
