@@ -5,7 +5,7 @@
 
 - GitHub `aulyc/aulycKanban`：唯一源码权威、正式 annotated tag 权威、GitHub
   Release 仓库和 Obsidian Community canonical repository；
-- Gitee `aulyc/aulycKanban-releases`：公开 Release、人工下载和渠道审计的第二
+- Gitee `aulyc/aulycKanban`：公开 Release、人工下载和渠道审计的第二
   分发源，不接收业务源码 Git push。
 
 GitHub 主仓必须在首次 Community 发布前由仓库所有者明确授权改为 Public。当前
@@ -88,6 +88,7 @@ bash scripts/dual-mirror-release.sh verify \
 - 插件运行时不包含自更新机制，网络访问和数据行为在 README 中准确披露；
 - 通过 Obsidian 官方提交入口登记 `aulyc/aulycKanban`。
 
-现有 GitHub `aulyc/aulycKanban-releases` 不能在本次本地改造中直接删除。已发布
-`2.9.1` 的旧检查器仍引用该仓库；正式远端迁移前必须决定是否做一次桥接发布，
-并核对历史下载链接。完成迁移和观察期后，再对旧仓执行单独授权的归档或删除。
+历史 GitHub `aulyc/aulycKanban-releases` 已通过 `2.9.2` 兼容桥接完成迁移，随后
+按单独授权删除。Gitee Release 镜像已从 `aulyc/aulycKanban-releases` 重命名为
+`aulyc/aulycKanban`；后续发布只使用本文件顶部声明的两个同名仓库，且仍禁止向
+Gitee 推送业务源码。

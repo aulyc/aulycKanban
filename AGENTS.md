@@ -142,7 +142,7 @@ remote refs back, and finalizes the GitHub source fields in release provenance.
   `obsidian-plugin` Profile.
 - Public GitHub source, Release and Obsidian Community authority:
   `aulyc/aulycKanban`; Gitee Release mirror:
-  `aulyc/aulycKanban-releases`. Source is never pushed to Gitee.
+  `aulyc/aulycKanban`. Source is never pushed to Gitee.
 - Project adapter: `bash scripts/dual-mirror-release.sh
 <prepare|preflight|publish|verify> ...`; it only binds `projectId` and must
   not duplicate the central publication client.
