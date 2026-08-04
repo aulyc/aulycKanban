@@ -206,6 +206,7 @@ const { KanbanSettingTab } = await loadSourceModule(
 				Setting: MockSetting,
 			},
 			'../i18n': {
+				normalizeUiLanguage: (value) => (value === 'zh-CN' || value === 'en' ? value : 'system'),
 				t: (key) => (key === 'settings.sync.force.success' ? 'sync success {count}' : key),
 			},
 			'../services/backupService': { BackupService: class {} },
@@ -227,22 +228,26 @@ const { KanbanSettingTab } = await loadSourceModule(
 
 function createHarness() {
 	const settings = {
+		uiLanguage: 'system',
 		syncFolder: 'X-aulyc看板',
 		viewSyncTargets: { work: { filePath: '旧/工作.md' } },
 		archive: { filePath: '旧/归档.md' },
 	};
 	const syncCalls = { all: 0, force: 0 };
+	const languageCalls = [];
 	const store = {
 		getSettings: () => settings,
 		getTaskViews: () => [{ id: 'work', title: '工作任务' }],
 		dispatch(action) {
 			if (action.type !== 'UPDATE_SETTINGS') return;
+			if (action.payload.uiLanguage !== undefined) settings.uiLanguage = action.payload.uiLanguage;
 			if (action.payload.syncFolder !== undefined) settings.syncFolder = action.payload.syncFolder;
 		},
 		async saveNow() {},
 	};
 	const plugin = {
 		manifest: { version: '2.8.1-beta.6', minAppVersion: '1.5.0' },
+		applyUiLanguage: (language) => languageCalls.push(language),
 		store,
 		syncService: {
 			scheduleSyncAllViews: () => {
@@ -272,7 +277,7 @@ function createHarness() {
 		},
 	};
 	const tab = new KanbanSettingTab(app, plugin);
-	return { tab, settings, syncCalls };
+	return { tab, settings, syncCalls, languageCalls };
 }
 
 test('declarative settings index every visible setting while legacy display remains available', () => {
@@ -285,6 +290,8 @@ test('declarative settings index every visible setting while legacy display rema
 	);
 
 	assert.deepEqual(names, [
+		'settings.interface',
+		'settings.language.name',
 		'settings.dataManagement',
 		'settings.backup.name',
 		'settings.import.name',
@@ -309,13 +316,37 @@ test('declarative setting renderers construct every indexed control', () => {
 		return setting;
 	});
 
-	assert.equal(rendered.length, 6);
+	assert.equal(rendered.length, 7);
 	assert.deepEqual(
 		rendered.map(
 			(setting) => setting.controls.length + (setting.dropdown ? 1 : 0) + (setting.text ? 1 : 0),
 		),
-		[1, 1, 1, 1, 1, 1],
+		[1, 1, 1, 1, 1, 1, 1],
 	);
+});
+
+test('interface language supports system, Chinese, and English without syncing managed notes', async () => {
+	const { tab, settings, syncCalls, languageCalls } = createHarness();
+	const start = renderedSettings.length;
+	tab.display();
+	const language = renderedSettings
+		.slice(start)
+		.find((item) => item.name === 'settings.language.name');
+
+	assert.ok(language);
+	assert.deepEqual(
+		[...language.dropdown.options.entries()],
+		[
+			['system', 'settings.language.system'],
+			['zh-CN', 'settings.language.zhCN'],
+			['en', 'settings.language.en'],
+		],
+	);
+	assert.equal(language.dropdown.value, 'system');
+	await language.dropdown.onChangeHandler('en');
+	assert.equal(settings.uiLanguage, 'en');
+	assert.deepEqual(languageCalls, ['en']);
+	assert.equal(syncCalls.all, 0);
 });
 
 test('about setting opens an information card using current manifest metadata', () => {
@@ -389,7 +420,11 @@ test('settings expose one select-only sync folder without layout or per-note con
 	tab.display();
 	const rendered = renderedSettings.slice(start);
 
-	assert.equal(rendered.filter((item) => item.dropdown).length, 1);
+	assert.equal(rendered.filter((item) => item.dropdown).length, 2);
+	assert.equal(
+		rendered.filter((item) => item.name === 'settings.sync.folder.name' && item.dropdown).length,
+		1,
+	);
 	assert.equal(
 		rendered.some((item) => item.name === '工作任务settings.sync.viewPath.suffix'),
 		false,

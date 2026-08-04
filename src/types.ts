@@ -1,3 +1,5 @@
+import type { UiLanguage } from './i18n';
+
 /**
  * 看板数据类型定义
  */
@@ -57,6 +59,8 @@ export interface SyncTarget {
 
 /** 插件设置 */
 export interface PluginSettings {
+	/** 插件界面语言；system 表示跟随 Obsidian */
+	uiLanguage: UiLanguage;
 	currentView: ViewKind;
 	/** 当前选中的分类 ID */
 	activeColumnId: string;

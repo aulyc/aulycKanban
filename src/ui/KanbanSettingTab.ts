@@ -1,6 +1,6 @@
 import { App, Notice, PluginSettingTab, Setting } from 'obsidian';
 import type { SettingDefinitionItem, TFolder } from 'obsidian';
-import { t, type I18nKey } from '../i18n';
+import { normalizeUiLanguage, t, type I18nKey } from '../i18n';
 import type KanbanPlugin from '../main';
 import { BackupService } from '../services/backupService';
 import { normalizeSyncFolder } from '../utils/noteSync';
@@ -33,6 +33,17 @@ export class KanbanSettingTab extends PluginSettingTab {
 
 	getSettingDefinitions(): SettingDefinitionItem[] {
 		return [
+			{
+				type: 'group',
+				heading: t('settings.interface'),
+				items: [
+					{
+						name: t('settings.language.name'),
+						desc: t('settings.language.desc'),
+						render: (setting) => this.renderLanguageSetting(setting),
+					},
+				],
+			},
 			{
 				type: 'group',
 				heading: t('settings.dataManagement'),
@@ -79,8 +90,17 @@ export class KanbanSettingTab extends PluginSettingTab {
 	}
 
 	display(): void {
+		this.renderLegacySettings();
+	}
+
+	private renderLegacySettings(): void {
 		const { containerEl } = this;
 		containerEl.empty();
+
+		new Setting(containerEl).setHeading().setName(t('settings.interface'));
+		this.renderLanguageSetting(
+			this.createLegacySetting('settings.language.name', 'settings.language.desc'),
+		);
 
 		new Setting(containerEl).setHeading().setName(t('settings.dataManagement'));
 		this.renderBackupSetting(
@@ -103,6 +123,33 @@ export class KanbanSettingTab extends PluginSettingTab {
 
 	private createLegacySetting(nameKey: I18nKey, descKey: I18nKey): Setting {
 		return new Setting(this.containerEl).setName(t(nameKey)).setDesc(t(descKey));
+	}
+
+	private renderLanguageSetting(setting: Setting): void {
+		const selectedLanguage = this.plugin.store.getSettings().uiLanguage;
+		setting.addDropdown((dropdown) => {
+			dropdown
+				.addOption('system', t('settings.language.system'))
+				.addOption('zh-CN', t('settings.language.zhCN'))
+				.addOption('en', t('settings.language.en'))
+				.setValue(selectedLanguage)
+				.onChange(async (value) => {
+					const uiLanguage = normalizeUiLanguage(value);
+					this.plugin.applyUiLanguage(uiLanguage);
+					this.plugin.store.dispatch({
+						type: 'UPDATE_SETTINGS',
+						payload: { uiLanguage },
+					});
+					try {
+						await this.plugin.store.saveNow();
+					} catch {
+						// persistData 已提示用户并安排重试
+					}
+					const declarativeTab = this as unknown as { update?: () => void };
+					if (typeof declarativeTab.update === 'function') declarativeTab.update();
+					else this.renderLegacySettings();
+				});
+		});
 	}
 
 	private renderBackupSetting(setting: Setting): void {

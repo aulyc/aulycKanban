@@ -585,6 +585,7 @@ export class KanbanStore {
 	}
 
 	private updateSettings(partial: Partial<PluginSettings>): void {
+		if (partial.uiLanguage !== undefined) this.settings.uiLanguage = partial.uiLanguage;
 		if (partial.currentView !== undefined && this.getView(partial.currentView))
 			this.settings.currentView = partial.currentView;
 		if (partial.activeColumnId !== undefined) this.settings.activeColumnId = partial.activeColumnId;

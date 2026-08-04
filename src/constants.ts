@@ -40,6 +40,7 @@ export const CURRENT_SCHEMA_VERSION = 8;
 
 /** 默认设置 */
 export const DEFAULT_SETTINGS: PluginSettings = {
+	uiLanguage: 'system',
 	currentView: 'work',
 	activeColumnId: 'periodic',
 	showArchive: false,

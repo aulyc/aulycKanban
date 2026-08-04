@@ -1,6 +1,6 @@
 import { Notice, Plugin, WorkspaceLeaf } from 'obsidian';
 import { VIEW_TYPE_KANBAN } from './constants';
-import { initI18n, t } from './i18n';
+import { initI18n, resolveUiLocale, t, type UiLanguage } from './i18n';
 import { KanbanView } from './ui/KanbanView';
 import { KanbanSettingTab } from './ui/KanbanSettingTab';
 import { KanbanStore } from './store';
@@ -21,6 +21,9 @@ export default class KanbanPlugin extends Plugin {
 		// 初始化仓储并加载持久化数据
 		this.repository = new PluginDataRepository(this.loadData.bind(this), this.saveData.bind(this));
 		const { settings, board } = await this.repository.load();
+		if (settings.uiLanguage !== 'system') {
+			initI18n(settings.uiLanguage);
+		}
 
 		// 初始化 Store
 		this.store = new KanbanStore(settings, board, this);
@@ -115,6 +118,11 @@ export default class KanbanPlugin extends Plugin {
 		}
 
 		return 'en';
+	}
+
+	/** 应用插件界面语言；已有任务、象限和同步目录保持不变。 */
+	applyUiLanguage(language: UiLanguage): void {
+		initI18n(resolveUiLocale(language, this.getLocale()));
 	}
 
 	/**

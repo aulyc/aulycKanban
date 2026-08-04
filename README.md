@@ -15,6 +15,7 @@ tasks; and navigate the board with the keyboard.
 - Search, archive filtering, restore, sorting, and batch deletion.
 - Automatic Markdown mirrors for each task type and the archive.
 - Local persistence through Obsidian's plugin data API.
+- Interface language selection: Follow Obsidian, Simplified Chinese, or English.
 - Desktop and mobile-compatible plugin metadata.
 
 ### Installation and updates
@@ -44,6 +45,7 @@ only as a public manual-download and release-audit mirror.
 - 任务操作：共享搜索框提交可移除的搜索标签，下方 `+` 展开一次性新增任务；单击选择任务，双击任务内容或选中后按 Enter 编辑，并支持删除、归档
 - 归档视图：复用任务搜索与象限筛选，并支持排序、恢复、批量删除
 - 数据持久化：自动保存插件数据
+- 界面语言：支持跟随 Obsidian、简体中文和 English，切换语言不会改名已有数据或同步目录
 - Markdown 同步：在统一目录内自动创建并管理每个任务类型和归档任务的独立笔记
 - 社区渠道就绪：GitHub 主仓同时提供源码、正式 Release 和 Obsidian Community
   所需附件，Gitee 保留同版本公开分发镜像

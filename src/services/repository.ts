@@ -1,5 +1,6 @@
 import type { BoardData, PluginSettings, PluginData, SyncTarget } from '../types';
 import { DEFAULT_SETTINGS, getDefaultBoardData, CURRENT_SCHEMA_VERSION } from '../constants';
+import { normalizeUiLanguage } from '../i18n';
 import { folderFromFilePath, normalizeSyncFolder } from '../utils/noteSync';
 import { migrateBoardData } from './boardMigration';
 
@@ -59,6 +60,7 @@ export class PluginDataRepository {
 				.find(Boolean);
 
 			const settings: PluginSettings = {
+				uiLanguage: normalizeUiLanguage(rawSettings['uiLanguage']),
 				currentView:
 					typeof rawSettings['currentView'] === 'string'
 						? rawSettings['currentView']

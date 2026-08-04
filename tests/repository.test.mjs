@@ -50,12 +50,27 @@ test('settings without note paths use the default automatic sync folder', async 
 
 	assert.equal(settings.syncFolder, 'X-aulyc看板');
 	assert.equal(settings.viewSyncTargets.work.filePath, '');
+	assert.equal(settings.uiLanguage, 'system');
 	assert.equal(settings.schemaVersion, 8);
 	assert.equal('autoCheckUpdates' in settings, false);
 });
 
 test('legacy project update preferences are retired during settings migration', async () => {
 	assert.equal('autoCheckUpdates' in (await loadSettings({ autoCheckUpdates: true })), false);
+});
+
+test('interface language accepts supported values and falls back without renaming data paths', async () => {
+	const english = await loadSettings({
+		uiLanguage: 'en',
+		syncFolder: '已有目录',
+		viewSyncTargets: { work: { filePath: '已有目录/工作任务.md' } },
+		archive: { filePath: '已有目录/归档任务.md' },
+	});
+	assert.equal(english.uiLanguage, 'en');
+	assert.equal(english.syncFolder, '已有目录');
+	assert.equal(english.viewSyncTargets.work.filePath, '已有目录/工作任务.md');
+
+	assert.equal((await loadSettings({ uiLanguage: 'unsupported' })).uiLanguage, 'system');
 });
 
 test('legacy aggregate settings contribute only their folder and leave the old note untouched', async () => {

@@ -3,6 +3,16 @@
  * 中文为默认语言，英文完整补全
  */
 
+export type UiLanguage = 'system' | 'zh-CN' | 'en';
+
+export function normalizeUiLanguage(value: unknown): UiLanguage {
+	return value === 'zh-CN' || value === 'en' ? value : 'system';
+}
+
+export function resolveUiLocale(language: UiLanguage, obsidianLocale: string): string {
+	return language === 'system' ? obsidianLocale : language;
+}
+
 const zh = {
 	// 插件级别
 	'plugin.ribbonTip': '打开看板',
@@ -73,6 +83,12 @@ const zh = {
 	'archive.confirm.deleteSelected': '将删除选中的 {count} 条归档任务，此操作不可恢复。确认删除吗？',
 
 	// 设置页
+	'settings.interface': '界面',
+	'settings.language.name': '界面语言',
+	'settings.language.desc': '选择插件界面使用的语言',
+	'settings.language.system': '跟随 Obsidian',
+	'settings.language.zhCN': '简体中文',
+	'settings.language.en': 'English',
 	'settings.dataManagement': '数据管理',
 	'settings.backup.name': '备份数据',
 	'settings.backup.desc': '保存JSON格式的看板数据到用户本地',
@@ -216,6 +232,12 @@ const en: Record<I18nKey, string> = {
 	'archive.confirm.deleteSelected':
 		'Delete the {count} selected archived tasks? This cannot be undone.',
 
+	'settings.interface': 'Interface',
+	'settings.language.name': 'Interface language',
+	'settings.language.desc': 'Choose the language used by the plugin interface',
+	'settings.language.system': 'Follow Obsidian',
+	'settings.language.zhCN': '简体中文',
+	'settings.language.en': 'English',
 	'settings.dataManagement': 'Data management',
 	'settings.backup.name': 'Backup data',
 	'settings.backup.desc': 'Save kanban data as a JSON file',

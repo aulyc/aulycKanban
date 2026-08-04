@@ -2,12 +2,15 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import i18nModule from '../src/i18n.ts';
 
-const { initI18n, t } = i18nModule;
+const { initI18n, normalizeUiLanguage, resolveUiLocale, t } = i18nModule;
 
 test('simplified Chinese settings use localized section headings and clear-data copy', async () => {
 	initI18n('zh-CN');
 
 	assert.equal(t('settings.dataManagement'), '数据管理');
+	assert.equal(t('settings.interface'), '界面');
+	assert.equal(t('settings.language.name'), '界面语言');
+	assert.equal(t('settings.language.system'), '跟随 Obsidian');
 	assert.equal(t('settings.sync'), '笔记同步');
 	assert.equal(t('settings.sync.folder.name'), '同步文件夹');
 	assert.equal(
@@ -32,6 +35,9 @@ test('English settings retain their localized copy', async () => {
 	initI18n('en');
 
 	assert.equal(t('settings.dataManagement'), 'Data management');
+	assert.equal(t('settings.interface'), 'Interface');
+	assert.equal(t('settings.language.name'), 'Interface language');
+	assert.equal(t('settings.language.system'), 'Follow Obsidian');
 	assert.equal(t('settings.sync'), 'Note synchronization');
 	assert.equal(t('settings.sync.folder.name'), 'Sync folder');
 	assert.equal(t('settings.sync.force.name'), 'Force refresh synchronization');
@@ -40,4 +46,13 @@ test('English settings retain their localized copy', async () => {
 	assert.equal(t('settings.about.name'), 'About aulycKanban');
 	assert.equal(t('about.version'), 'Plugin version');
 	assert.equal(t('about.website'), 'Official website');
+});
+
+test('language preferences normalize safely and resolve system overrides', () => {
+	assert.equal(normalizeUiLanguage('zh-CN'), 'zh-CN');
+	assert.equal(normalizeUiLanguage('en'), 'en');
+	assert.equal(normalizeUiLanguage('fr'), 'system');
+	assert.equal(normalizeUiLanguage(null), 'system');
+	assert.equal(resolveUiLocale('system', 'en-GB'), 'en-GB');
+	assert.equal(resolveUiLocale('zh-CN', 'en-GB'), 'zh-CN');
 });

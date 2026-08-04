@@ -171,6 +171,8 @@ const { default: KanbanPlugin } = await loadSourceModule(
 			'./constants': { VIEW_TYPE_KANBAN: 'aulyckanban-view' },
 			'./i18n': {
 				initI18n: (locale) => activeSetup.initializedLocales.push(locale),
+				resolveUiLocale: (language, obsidianLocale) =>
+					language === 'system' ? obsidianLocale : language,
 				t: (key) => key,
 			},
 			'./ui/KanbanView': { KanbanView: MockKanbanView },
@@ -204,7 +206,7 @@ function createHarness({ htmlLocale = 'zh-CN' } = {}) {
 	const setup = {
 		initializedLocales: [],
 		loadResult: {
-			settings: { currentView: 'work' },
+			settings: { uiLanguage: 'system', currentView: 'work' },
 			board: { views: [], archives: {} },
 		},
 		notices: [],
@@ -330,6 +332,18 @@ test('registered controls activate existing or new board leaves and select expli
 		{ type: 'SWITCH_VIEW', payload: { view: 'work' } },
 		{ type: 'SWITCH_VIEW', payload: { view: 'personal' } },
 	]);
+	harness.plugin.onunload();
+});
+
+test('saved interface language overrides the Obsidian locale without changing stored data', async () => {
+	const harness = createHarness({ htmlLocale: 'zh-CN' });
+	harness.setup.loadResult.settings.uiLanguage = 'en';
+	await harness.plugin.onload();
+
+	assert.deepEqual(harness.setup.initializedLocales, ['zh-CN', 'en']);
+	assert.equal(harness.setup.stores[0].settings.uiLanguage, 'en');
+	harness.plugin.applyUiLanguage('system');
+	assert.deepEqual(harness.setup.initializedLocales, ['zh-CN', 'en', 'zh-CN']);
 	harness.plugin.onunload();
 });
 
