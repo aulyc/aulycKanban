@@ -1,6 +1,6 @@
 {
 	"name": "aulyckanban",
-	"version": "2.9.7",
+	"version": "2.10.0",
 	"description": "Manage tasks with custom types, shared quadrants, archives, search, and Markdown note synchronization.",
 	"main": "main.js",
 	"scripts": {
