@@ -43,6 +43,12 @@ export class TaskList {
 		this.statusEl = statusEl;
 	}
 
+	cancelSelection(): void {
+		if (!this.selection.isActive) return;
+		this.selection.deactivate();
+		this.render();
+	}
+
 	render(): void {
 		const previousScopeKey = this.el.dataset['scopeKey'] ?? '';
 		const previousTasksEl = this.el.querySelector<HTMLElement>('.aulyckanban-tasks');
@@ -121,11 +127,7 @@ export class TaskList {
 			t('task.select.cancel'),
 		);
 		cancelButton.disabled = !this.selection.isActive;
-		cancelButton.addEventListener('click', () => {
-			if (!this.selection.isActive) return;
-			this.selection.deactivate();
-			this.render();
-		});
+		cancelButton.addEventListener('click', () => this.cancelSelection());
 
 		const visibleKeys = refs.map(getTaskRefKey);
 		const allSelected =

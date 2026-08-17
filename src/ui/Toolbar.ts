@@ -256,6 +256,8 @@ export class Toolbar {
 		});
 		button.addEventListener('dragleave', (event: DragEvent) => {
 			if (!this.draggedViewId) return;
+			// WebKit 可能在占位槽插入导致布局变化时报告 null，不能据此清除占位槽。
+			if (!event.relatedTarget) return;
 			if (this.reorderVisual.containsPlaceholder(event.relatedTarget)) return;
 			const nextTarget = event.relatedTarget;
 			const NodeConstructor = button.ownerDocument.defaultView?.Node;

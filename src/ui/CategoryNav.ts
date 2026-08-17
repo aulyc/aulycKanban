@@ -226,6 +226,8 @@ export class CategoryNav {
 		});
 		itemEl.addEventListener('dragleave', (event: DragEvent) => {
 			if (!this.draggedColumnId) return;
+			// WebKit 可能在占位槽插入导致布局变化时报告 null，不能据此清除占位槽。
+			if (!event.relatedTarget) return;
 			if (this.reorderVisual.containsPlaceholder(event.relatedTarget)) return;
 			const nextTarget = event.relatedTarget;
 			const NodeConstructor = itemEl.ownerDocument.defaultView?.Node;

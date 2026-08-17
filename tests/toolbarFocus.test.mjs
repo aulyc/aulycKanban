@@ -161,7 +161,7 @@ const { Toolbar } = await loadSourceModule(new URL('../src/ui/Toolbar.ts', impor
 	},
 });
 
-function createToolbarHarness(drag) {
+function createToolbarHarness(drag, overrides = {}) {
 	const documentRef = { activeElement: null, defaultView: {} };
 	documentRef.defaultView.HTMLElement = MockElement;
 	documentRef.defaultView.Node = MockElement;
@@ -211,6 +211,7 @@ function createToolbarHarness(drag) {
 				this.archiveTaskTypeScope = 'all';
 			}
 		},
+		...overrides,
 	};
 	const parent = new MockElement('div', {}, documentRef);
 	const toolbar = new Toolbar(parent, {}, store, drag);
@@ -323,6 +324,41 @@ test('task type reorder hides the placeholder for an adjacent no-op slot', () =>
 		stopPropagation() {},
 	});
 	assert.deepEqual(store.actions, []);
+});
+
+test('task type reorder keeps one stable placeholder across the same insertion slot', () => {
+	const { parent } = createToolbarHarness(undefined, {
+		getTaskViews: () => [
+			{ id: 'work', title: 'Work' },
+			{ id: 'test', title: 'Test' },
+			{ id: 'future', title: 'Future' },
+		],
+	});
+	const sourceButton = descendants(parent).find((element) => element.dataset.viewId === 'work');
+	const firstTarget = descendants(parent).find((element) => element.dataset.viewId === 'test');
+	const nextTarget = descendants(parent).find((element) => element.dataset.viewId === 'future');
+	const dataTransfer = { setData() {}, setDragImage() {} };
+	sourceButton.listeners.get('dragstart')[0]({ dataTransfer });
+	for (const listener of firstTarget.listeners.get('dragover')) {
+		listener({ clientX: 90, dataTransfer, preventDefault() {} });
+	}
+	const placeholder = descendants(parent).find((element) =>
+		element.classList.contains('aulyckanban-reorder-placeholder-horizontal'),
+	);
+	assert.ok(placeholder);
+
+	for (const listener of firstTarget.listeners.get('dragleave')) {
+		listener({ relatedTarget: null });
+	}
+	for (const listener of nextTarget.listeners.get('dragover')) {
+		listener({ clientX: 10, dataTransfer, preventDefault() {} });
+	}
+
+	const placeholders = descendants(parent).filter((element) =>
+		element.classList.contains('aulyckanban-reorder-placeholder-horizontal'),
+	);
+	assert.deepEqual(placeholders, [placeholder]);
+	assert.equal(placeholder.nextSibling, nextTarget);
 });
 
 test('task type controls stay out of the native Tab order', () => {

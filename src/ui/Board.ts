@@ -47,17 +47,21 @@ export class Board {
 		this.contentAreaEl = this.containerEl.createDiv({ cls: 'aulyckanban-content-area' });
 		this.taskPaneEl = this.contentAreaEl.createDiv({ cls: 'aulyckanban-task-pane' });
 		this.taskHeaderEl = this.taskPaneEl.createDiv({ cls: 'aulyckanban-task-header' });
-		this.taskControls = new TaskControls(this.taskHeaderEl, app, this.store);
+		let taskList: TaskList | undefined;
+		this.taskControls = new TaskControls(this.taskHeaderEl, app, this.store, () =>
+			taskList?.cancelSelection(),
+		);
 		this.taskSelectionControlsEl = this.taskHeaderEl.createDiv({
 			cls: 'aulyckanban-task-selection-controls',
 		});
-		this.taskList = new TaskList(
+		taskList = new TaskList(
 			this.taskPaneEl,
 			app,
 			this.store,
 			this.drag,
 			this.taskSelectionControlsEl,
 		);
+		this.taskList = taskList;
 
 		// 归档与普通任务列表共用左侧网格区域
 		this.archiveContainerEl = this.taskPaneEl.createDiv({

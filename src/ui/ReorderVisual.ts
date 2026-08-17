@@ -13,6 +13,7 @@ export class ReorderVisual {
 	private placeholderEl: HTMLElement | null = null;
 	private targetEl: HTMLElement | null = null;
 	private side: ReorderSide | null = null;
+	private onDrop: (() => void) | null = null;
 	private placeholderSize = 0;
 
 	constructor(private readonly axis: ReorderAxis) {}
@@ -41,12 +42,26 @@ export class ReorderVisual {
 			this.clearPlaceholder();
 			return;
 		}
-		if (this.placeholderEl && this.targetEl === targetEl && this.side === side) return;
-
-		this.clearPlaceholder();
 		const parentEl = targetEl.parentElement;
 		if (!parentEl) return;
-		const referenceEl = side === 'before' ? targetEl : targetEl.nextSibling;
+		const candidateReferenceEl = side === 'before' ? targetEl : targetEl.nextSibling;
+		const referenceEl =
+			this.placeholderEl && candidateReferenceEl === this.placeholderEl
+				? this.placeholderEl.nextSibling
+				: candidateReferenceEl;
+		if (
+			this.placeholderEl &&
+			this.placeholderEl.parentElement === parentEl &&
+			this.placeholderEl.nextSibling === referenceEl
+		) {
+			// “上一项之后”和“下一项之前”是同一个插入槽；只更新语义，不重建 DOM。
+			this.targetEl = targetEl;
+			this.side = side;
+			this.onDrop = onDrop;
+			return;
+		}
+
+		this.clearPlaceholder();
 		const placeholderEl = parentEl.createDiv({
 			cls: `aulyckanban-reorder-placeholder aulyckanban-reorder-placeholder-${this.axis}`,
 			attr: { 'aria-hidden': 'true' },
@@ -62,9 +77,11 @@ export class ReorderVisual {
 		placeholderEl.addEventListener('drop', (event: DragEvent) => {
 			event.preventDefault();
 			event.stopPropagation();
-			onDrop();
+			this.onDrop?.();
 		});
 		placeholderEl.addEventListener('dragleave', (event: DragEvent) => {
+			// WebKit 在插入占位槽引起布局变化时可能给出 null；这不代表离开列表。
+			if (!event.relatedTarget) return;
 			if (containsEventTarget(parentEl, event.relatedTarget)) return;
 			this.clearPlaceholder();
 		});
@@ -73,6 +90,7 @@ export class ReorderVisual {
 		this.placeholderEl = placeholderEl;
 		this.targetEl = targetEl;
 		this.side = side;
+		this.onDrop = onDrop;
 	}
 
 	containsPlaceholder(target: EventTarget | null): boolean {
@@ -87,6 +105,7 @@ export class ReorderVisual {
 		this.placeholderEl = null;
 		this.targetEl = null;
 		this.side = null;
+		this.onDrop = null;
 	}
 
 	finish(): void {

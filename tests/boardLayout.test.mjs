@@ -52,6 +52,9 @@ const component = (name) =>
 		setStatusEl(statusEl) {
 			this.statusEl = statusEl;
 		}
+		cancelSelection() {
+			this.cancelSelectionCount = (this.cancelSelectionCount ?? 0) + 1;
+		}
 		getEl() {
 			return this.el;
 		}
@@ -105,6 +108,8 @@ test('utility row precedes task types while task add stays above normal and arch
 	assert.equal(instances.get('tasks').statusEl, footer.children[0]);
 	assert.equal(footer.children[0].attributes.role, 'status');
 	assert.equal(footer.children[0].attributes['aria-live'], 'polite');
+	instances.get('controls').args[2]();
+	assert.equal(instances.get('tasks').cancelSelectionCount, 1);
 
 	board.render();
 	assert.equal(instances.get('utility').renderCount, 1);
@@ -199,8 +204,10 @@ test('fixed board footer reserves a reusable status region below scrollable cont
 	assert.match(footer, /flex:\s*none/);
 	assert.match(footer, /min-height:\s*32px/);
 	assert.match(footer, /border-top:\s*1px solid var\(--background-modifier-border\)/);
-	assert.match(footer, /justify-content:\s*flex-end/);
-	assert.match(rule('.aulyckanban-board-footer-status'), /justify-content:\s*flex-end/);
+	assert.match(footer, /justify-content:\s*flex-start/);
+	const footerStatus = rule('.aulyckanban-board-footer-status');
+	assert.match(footerStatus, /justify-content:\s*flex-start/);
+	assert.match(footerStatus, /flex:\s*1/);
 	assert.equal(rule('.aulyckanban-task-selected-count'), '');
 });
 

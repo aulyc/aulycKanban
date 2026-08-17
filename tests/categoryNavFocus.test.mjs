@@ -329,6 +329,41 @@ test('quadrant reorder hides the placeholder for an adjacent no-op slot', () => 
 	assert.deepEqual(store.actions, []);
 });
 
+test('quadrant reorder keeps one stable placeholder across the same insertion slot', () => {
+	const { parent } = createCategoryNavHarness({
+		getCurrentColumns: () => [
+			{ id: 'last', title: '多少啊', tasks: [] },
+			{ id: 'later', title: '稍后', tasks: [] },
+			{ id: 'future', title: '未来', tasks: [] },
+		],
+	});
+	const sourceItem = descendants(parent).find((element) => element.dataset.columnId === 'last');
+	const firstTarget = descendants(parent).find((element) => element.dataset.columnId === 'later');
+	const nextTarget = descendants(parent).find((element) => element.dataset.columnId === 'future');
+	const dataTransfer = { setData() {}, setDragImage() {} };
+	sourceItem.listeners.get('dragstart')[0]({ dataTransfer });
+	for (const listener of firstTarget.listeners.get('dragover')) {
+		listener({ clientY: 35, dataTransfer, preventDefault() {} });
+	}
+	const placeholder = descendants(parent).find((element) =>
+		element.classList.contains('aulyckanban-reorder-placeholder-vertical'),
+	);
+	assert.ok(placeholder);
+
+	for (const listener of firstTarget.listeners.get('dragleave')) {
+		listener({ relatedTarget: null });
+	}
+	for (const listener of nextTarget.listeners.get('dragover')) {
+		listener({ clientY: 5, dataTransfer, preventDefault() {} });
+	}
+
+	const placeholders = descendants(parent).filter((element) =>
+		element.classList.contains('aulyckanban-reorder-placeholder-vertical'),
+	);
+	assert.deepEqual(placeholders, [placeholder]);
+	assert.equal(placeholder.nextSibling, nextTarget);
+});
+
 test('all quadrants is a fixed first navigation control with the aggregate count', () => {
 	const { parent, store } = createCategoryNavHarness();
 	const nav = parent.children[0];

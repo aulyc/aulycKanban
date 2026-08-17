@@ -105,7 +105,7 @@ const { TaskControls } = await loadSourceModule(
 	},
 );
 
-function createHarness(overrides = {}) {
+function createHarness(overrides = {}, onStartAdding) {
 	const store = {
 		actions: [],
 		keyword: '',
@@ -137,7 +137,7 @@ function createHarness(overrides = {}) {
 		...overrides,
 	};
 	const parent = new MockElement();
-	const controls = new TaskControls(parent, {}, store);
+	const controls = new TaskControls(parent, {}, store, onStartAdding);
 	return { controls, parent, store };
 }
 
@@ -158,6 +158,25 @@ test('collapsed add control expands and creates a task in the concrete intersect
 	assert.equal(store.actions.at(-1).payload.viewId, 'personal');
 	assert.equal(store.actions.at(-1).payload.columnId, 'base');
 	assert.equal(store.actions.at(-1).payload.content, '新增内容');
+});
+
+test('opening the create editor requests cancellation of any active task selection', () => {
+	let cancellationCount = 0;
+	const { parent } = createHarness({}, () => {
+		cancellationCount += 1;
+	});
+	const addButton = descendants(parent).find((element) =>
+		element.classList.contains('aulyckanban-task-add-btn'),
+	);
+	addButton.listeners.get('click')[0]({ preventDefault() {}, stopPropagation() {} });
+
+	assert.equal(cancellationCount, 1);
+	assert.equal(
+		descendants(parent).some((element) =>
+			element.classList.contains('aulyckanban-task-create-input'),
+		),
+		true,
+	);
 });
 
 test('aggregate scopes require explicit task type and quadrant targets before creating', () => {

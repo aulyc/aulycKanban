@@ -287,6 +287,41 @@ test('ordinary task list enters multi-select mode and moves the selected coordin
 	assert.equal(footerStatus.children.length, 0);
 });
 
+test('cancelling selection clears selected cards and the footer status', () => {
+	activeCards = [];
+	const refs = [taskRef('work', '工作任务', 'base', '基础', '工作内容')];
+	const store = {
+		getVisibleTaskRefs: () => refs,
+		getTaskScope: () => 'current',
+		getColumnScope: () => 'current',
+		getCurrentView: () => 'work',
+		getActiveColumnId: () => 'base',
+		getSearchKeyword: () => '',
+	};
+	const parent = new MockElement();
+	const footerStatus = new MockElement();
+	const list = new TaskList(parent, {}, store);
+	list.setStatusEl(footerStatus);
+	list.render();
+
+	const selectionButton = descendants(parent).find((element) =>
+		element.classList.contains('aulyckanban-task-select-mode-btn'),
+	);
+	selectionButton.listeners.get('click')[0]();
+	activeCards.at(-1).options.onSelectionRequest({ shiftKey: false });
+	assert.equal(activeCards.at(-1).options.selected, true);
+	assert.equal(footerStatus.children[0].textContent, '已选 1 项');
+
+	list.cancelSelection();
+	assert.equal(activeCards.at(-1).options.selectionMode, false);
+	assert.equal(activeCards.at(-1).options.selected, false);
+	assert.equal(footerStatus.children.length, 0);
+	const cancelButton = descendants(parent).find((element) =>
+		element.classList.contains('aulyckanban-task-cancel-selection-btn'),
+	);
+	assert.equal(cancelButton.disabled, true);
+});
+
 test('right-clicking an ordinary card opens the exact same move modal for that card', () => {
 	activeCards = [];
 	activeMenus = [];

@@ -10,12 +10,14 @@ import { createInlineInput } from './InlineInput';
 export class TaskControls {
 	private readonly el: HTMLElement;
 	private readonly store: KanbanStore;
+	private readonly onStartAdding?: () => void;
 	private isAdding = false;
 	private targetViewId = '';
 	private targetColumnId = '';
 
-	constructor(parentEl: HTMLElement, _app: App, store: KanbanStore) {
+	constructor(parentEl: HTMLElement, _app: App, store: KanbanStore, onStartAdding?: () => void) {
 		this.store = store;
+		this.onStartAdding = onStartAdding;
 		this.el = parentEl.createDiv({ cls: 'aulyckanban-task-controls' });
 		this.render();
 	}
@@ -44,6 +46,7 @@ export class TaskControls {
 		const start = (event: MouseEvent | KeyboardEvent): void => {
 			event.preventDefault();
 			event.stopPropagation();
+			this.onStartAdding?.();
 			this.isAdding = true;
 			this.targetViewId = this.store.getCurrentView();
 			this.targetColumnId = this.store.getActiveColumnId();

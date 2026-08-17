@@ -343,7 +343,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 .aulyckanban-board-footer {
 	display: flex;
 	align-items: center;
-	justify-content: flex-end;
+	justify-content: flex-start;
 	flex: none;
 	min-height: 32px;
 	box-sizing: border-box;
@@ -357,7 +357,8 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 .aulyckanban-board-footer-status {
 	display: flex;
 	align-items: center;
-	justify-content: flex-end;
+	justify-content: flex-start;
+	flex: 1;
 	min-width: 0;
 }
 
