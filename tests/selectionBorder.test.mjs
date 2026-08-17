@@ -238,18 +238,34 @@ test('archive container never draws a full-panel focus frame', () => {
 	assert.doesNotMatch(rule('.aulyckanban-archive-container'), /box-shadow/);
 });
 
-test('white selection borders belong to focus selectors or the active archive control', () => {
+test('task type drag targets use one complete white border without an outer shadow', () => {
+	const dragTarget = combinedRule([
+		'.aulyckanban-view-tab.aulyckanban-drop-hover',
+		'.aulyckanban-view-tab.aulyckanban-drop-locked',
+	]);
+	assert.equal(
+		declarationValue(dragTarget, 'border'),
+		'1px solid var(--aulyckanban-selection-border)',
+	);
+	assert.equal(declarationValue(dragTarget, 'box-shadow'), 'none');
+});
+
+test('white selection borders belong to focus, the active archive, or drag targets', () => {
 	const rules = [
 		...css.matchAll(/([^{}]+)\{([^{}]*var\(--aulyckanban-selection-border\)[^{}]*)\}/g),
 	];
 	assert.ok(rules.length > 0);
+	const permittedStateSelectors = new Set([
+		'.aulyckanban-kanban-container .aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active',
+		'.aulyckanban-view-tab.aulyckanban-drop-hover',
+		'.aulyckanban-view-tab.aulyckanban-drop-locked',
+	]);
 	for (const [, selectorList] of rules) {
 		for (const selector of selectorList.split(',')) {
 			const normalizedSelector = selector.trim();
 			assert.equal(
 				/:focus(?:-visible)?$/.test(normalizedSelector) ||
-					normalizedSelector ===
-						'.aulyckanban-kanban-container .aulyckanban-tab.aulyckanban-archive-btn.aulyckanban-tab-active',
+					permittedStateSelectors.has(normalizedSelector),
 				true,
 				`unexpected white selection border selector: ${normalizedSelector}`,
 			);
