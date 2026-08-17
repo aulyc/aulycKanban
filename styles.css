@@ -28,6 +28,12 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	--aulyckanban-task-content-inset: 4px;
 	--aulyckanban-nav-width: 150px;
 	--aulyckanban-nav-inner-padding-x: 6px;
+	--aulyckanban-content-control-height: 33px;
+	--aulyckanban-content-control-gap: 6px;
+	--aulyckanban-task-selection-controls-width: calc(
+		var(--aulyckanban-content-control-height) + var(--aulyckanban-content-control-height) +
+			var(--aulyckanban-content-control-gap)
+	);
 	--aulyckanban-selection-border: var(--text-on-accent);
 	display: flex;
 	flex-direction: column;
@@ -423,7 +429,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr) auto;
 	align-items: start;
-	gap: 6px;
+	gap: var(--aulyckanban-content-control-gap);
 	min-width: 0;
 	padding: 0 0 10px;
 }
@@ -535,7 +541,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	display: grid;
 	place-items: center;
 	width: 100%;
-	height: 38px;
+	height: var(--aulyckanban-content-control-height);
 	padding: 0;
 	transition: none;
 }
@@ -561,7 +567,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 
 .aulyckanban-kanban-container .aulyckanban-task-create-target {
 	width: 100%;
-	height: 30px;
+	height: var(--aulyckanban-content-control-height);
 	box-sizing: border-box;
 	padding: 0 24px 0 8px;
 	border: 1px solid var(--background-modifier-border);
@@ -574,9 +580,9 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 }
 
 .aulyckanban-kanban-container .aulyckanban-task-create-input {
-	flex: 1 0 100%;
-	width: 100%;
-	min-height: 38px;
+	flex: 0 0 calc(100% + var(--aulyckanban-task-selection-controls-width));
+	width: calc(100% + var(--aulyckanban-task-selection-controls-width));
+	min-height: var(--aulyckanban-content-control-height);
 	box-sizing: border-box;
 	padding: 8px 10px;
 	border: 1px solid var(--interactive-accent);
@@ -632,8 +638,8 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 .aulyckanban-task-selection-toolbar {
 	display: flex;
 	align-items: center;
-	gap: 6px;
-	min-height: 38px;
+	gap: var(--aulyckanban-content-control-gap);
+	min-height: var(--aulyckanban-content-control-height);
 	padding: 0;
 }
 
@@ -645,9 +651,9 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	width: 38px;
-	height: 38px;
-	min-width: 38px;
+	width: var(--aulyckanban-content-control-height);
+	height: var(--aulyckanban-content-control-height);
+	min-width: var(--aulyckanban-content-control-height);
 	padding: 0;
 	border: 1px solid var(--background-modifier-border);
 	border-radius: 6px;
@@ -708,6 +714,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
+	height: var(--aulyckanban-content-control-height);
 	padding: 7px 9px;
 	border: 1px solid transparent;
 	border-radius: 6px;
@@ -1047,6 +1054,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	align-items: center;
 	gap: 8px;
 	flex-shrink: 0;
+	min-height: 18px;
 }
 
 .aulyckanban-task-archive {

@@ -293,6 +293,38 @@ test('task types drag horizontally to persist a new order without starting a tas
 	);
 });
 
+test('task type reorder hides the placeholder for an adjacent no-op slot', () => {
+	const { parent, store } = createToolbarHarness();
+	const sourceButton = descendants(parent).find((element) => element.dataset.viewId === 'work');
+	const targetButton = descendants(parent).find((element) => element.dataset.viewId === 'test');
+	const dataTransfer = { setData() {}, setDragImage() {} };
+	sourceButton.listeners.get('dragstart')[0]({ dataTransfer });
+	for (const listener of targetButton.listeners.get('dragover')) {
+		listener({ clientX: 90, dataTransfer, preventDefault() {} });
+	}
+	assert.equal(
+		descendants(parent).some((element) =>
+			element.classList.contains('aulyckanban-reorder-placeholder-horizontal'),
+		),
+		true,
+	);
+	for (const listener of targetButton.listeners.get('dragover')) {
+		listener({ clientX: 10, dataTransfer, preventDefault() {} });
+	}
+	assert.equal(
+		descendants(parent).some((element) =>
+			element.classList.contains('aulyckanban-reorder-placeholder-horizontal'),
+		),
+		false,
+	);
+	targetButton.listeners.get('drop')[0]({
+		clientX: 10,
+		preventDefault() {},
+		stopPropagation() {},
+	});
+	assert.deepEqual(store.actions, []);
+});
+
 test('task type controls stay out of the native Tab order', () => {
 	const { parent } = createToolbarHarness();
 	const buttons = descendants(parent).filter((element) => element.tagName === 'button');

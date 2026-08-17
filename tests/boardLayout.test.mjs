@@ -141,14 +141,41 @@ test('normal and archive task components share one horizontal content edge', () 
 });
 
 test('collapsed and expanded task creation reserve the same single-row height', () => {
-	assert.match(rule('.aulyckanban-task-add-btn'), /height:\s*38px/);
-	assert.match(rule('.aulyckanban-task-selection-toolbar'), /min-height:\s*38px/);
-	const selectionButton = rule('.aulyckanban-task-selection-btn');
-	assert.match(selectionButton, /width:\s*38px/);
-	assert.match(selectionButton, /height:\s*38px/);
+	const root = rule('.aulyckanban-kanban-container');
+	assert.match(root, /--aulyckanban-content-control-height:\s*33px/);
+	assert.match(root, /--aulyckanban-content-control-gap:\s*6px/);
 	assert.match(
-		rule('.aulyckanban-kanban-container .aulyckanban-task-create-input'),
-		/min-height:\s*38px/,
+		root,
+		/--aulyckanban-task-selection-controls-width:\s*calc\([\s\S]*var\(--aulyckanban-content-control-height\)[\s\S]*var\(--aulyckanban-content-control-gap\)[\s\S]*\)/,
+	);
+	assert.match(
+		rule('.aulyckanban-task-add-btn'),
+		/height:\s*var\(--aulyckanban-content-control-height\)/,
+	);
+	assert.match(
+		rule('.aulyckanban-task-selection-toolbar'),
+		/min-height:\s*var\(--aulyckanban-content-control-height\)/,
+	);
+	const selectionButton = rule('.aulyckanban-task-selection-btn');
+	assert.match(selectionButton, /width:\s*var\(--aulyckanban-content-control-height\)/);
+	assert.match(selectionButton, /height:\s*var\(--aulyckanban-content-control-height\)/);
+	assert.match(
+		rule('.aulyckanban-nav-item'),
+		/height:\s*var\(--aulyckanban-content-control-height\)/,
+	);
+	assert.match(
+		rule('.aulyckanban-kanban-container .aulyckanban-task-create-target'),
+		/height:\s*var\(--aulyckanban-content-control-height\)/,
+	);
+	const createInput = rule('.aulyckanban-kanban-container .aulyckanban-task-create-input');
+	assert.match(createInput, /min-height:\s*var\(--aulyckanban-content-control-height\)/);
+	assert.match(
+		createInput,
+		/flex:\s*0 0 calc\(100% \+ var\(--aulyckanban-task-selection-controls-width\)\)/,
+	);
+	assert.match(
+		createInput,
+		/width:\s*calc\(100% \+ var\(--aulyckanban-task-selection-controls-width\)\)/,
 	);
 });
 

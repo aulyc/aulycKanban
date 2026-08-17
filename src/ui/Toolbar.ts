@@ -5,7 +5,7 @@ import { createInlineInput } from './InlineInput';
 import { ConfirmModal } from './ConfirmModal';
 import { revealTaskTypeItem } from '../utils/focusCycle';
 import { appendAccessibleLabel } from '../utils/dom';
-import { getReorderSide, reorderIds, type ReorderSide } from '../utils/reorder';
+import { getReorderSide, reorderIdsIfChanged, type ReorderSide } from '../utils/reorder';
 import { Menu, setIcon } from 'obsidian';
 import type { App } from 'obsidian';
 import type { TaskDrag } from './TaskDrag';
@@ -248,6 +248,10 @@ export class Toolbar {
 			event.preventDefault();
 			if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
 			const side = this.getViewDropSide(button, event);
+			if (!this.getChangedViewOrder(viewId, side)) {
+				this.reorderVisual.clearPlaceholder();
+				return;
+			}
 			this.reorderVisual.show(button, side, () => this.commitViewReorder(viewId, side));
 		});
 		button.addEventListener('dragleave', (event: DragEvent) => {
@@ -275,14 +279,22 @@ export class Toolbar {
 	}
 
 	private commitViewReorder(targetViewId: ViewKind, side: ReorderSide): void {
-		const draggedViewId = this.draggedViewId;
-		if (!draggedViewId) return;
-		const currentIds = this.store.getTaskViews().map((view) => view.id);
-		const reorderedIds = reorderIds(currentIds, draggedViewId, targetViewId, side);
+		const reorderedIds = this.getChangedViewOrder(targetViewId, side);
 		this.finishViewReorder();
-		if (reorderedIds.some((id, index) => id !== currentIds[index])) {
+		if (reorderedIds) {
 			this.store.dispatch({ type: 'REORDER_VIEWS', payload: { viewIds: reorderedIds } });
 		}
+	}
+
+	private getChangedViewOrder(targetViewId: ViewKind, side: ReorderSide): string[] | null {
+		const draggedViewId = this.draggedViewId;
+		if (!draggedViewId) return null;
+		return reorderIdsIfChanged(
+			this.store.getTaskViews().map((view) => view.id),
+			draggedViewId,
+			targetViewId,
+			side,
+		);
 	}
 
 	private finishViewReorder(): void {

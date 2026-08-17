@@ -55,6 +55,10 @@ test('ordinary task selection checkbox is anchored at the card top right', () =>
 	);
 });
 
+test('ordinary task cards reserve the same metadata action height in and out of selection mode', () => {
+	assert.equal(declarationValue(rule('.aulyckanban-task-actions'), 'min-height'), '18px');
+});
+
 test('each of the four keyboard zones draws white only from actual focus', () => {
 	const focusRules = [
 		combinedRule(['.aulyckanban-tab:focus', '.aulyckanban-tab:focus-visible']),
@@ -195,7 +199,10 @@ test('task type and task list add controls share quadrant hover styling for keyb
 
 test('new task textarea starts at one line while remaining content-sized', () => {
 	const declarations = rule('.aulyckanban-kanban-container .aulyckanban-task-create-input');
-	assert.equal(declarationValue(declarations, 'min-height'), '38px');
+	assert.equal(
+		declarationValue(declarations, 'min-height'),
+		'var(--aulyckanban-content-control-height)',
+	);
 	assert.equal(declarationValue(declarations, 'resize'), 'none');
 	assert.equal(declarationValue(declarations, 'overflow'), 'hidden');
 });

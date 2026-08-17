@@ -5,7 +5,7 @@ import { t } from '../i18n';
 import { ConfirmModal } from './ConfirmModal';
 import { createInlineInput } from './InlineInput';
 import { appendAccessibleLabel } from '../utils/dom';
-import { getReorderSide, reorderIds, type ReorderSide } from '../utils/reorder';
+import { getReorderSide, reorderIdsIfChanged, type ReorderSide } from '../utils/reorder';
 import type { TaskDrag } from './TaskDrag';
 import { ReorderVisual } from './ReorderVisual';
 
@@ -218,6 +218,10 @@ export class CategoryNav {
 			event.preventDefault();
 			if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
 			const side = this.getColumnDropSide(itemEl, event);
+			if (!this.getChangedColumnOrder(columnId, side)) {
+				this.reorderVisual.clearPlaceholder();
+				return;
+			}
 			this.reorderVisual.show(itemEl, side, () => this.commitColumnReorder(columnId, side));
 		});
 		itemEl.addEventListener('dragleave', (event: DragEvent) => {
@@ -245,14 +249,22 @@ export class CategoryNav {
 	}
 
 	private commitColumnReorder(targetColumnId: string, side: ReorderSide): void {
-		const draggedColumnId = this.draggedColumnId;
-		if (!draggedColumnId) return;
-		const currentIds = this.store.getCurrentColumns().map((column) => column.id);
-		const reorderedIds = reorderIds(currentIds, draggedColumnId, targetColumnId, side);
+		const reorderedIds = this.getChangedColumnOrder(targetColumnId, side);
 		this.finishColumnReorder();
-		if (reorderedIds.some((id, index) => id !== currentIds[index])) {
+		if (reorderedIds) {
 			this.store.dispatch({ type: 'REORDER_COLUMNS', payload: { columnIds: reorderedIds } });
 		}
+	}
+
+	private getChangedColumnOrder(targetColumnId: string, side: ReorderSide): string[] | null {
+		const draggedColumnId = this.draggedColumnId;
+		if (!draggedColumnId) return null;
+		return reorderIdsIfChanged(
+			this.store.getCurrentColumns().map((column) => column.id),
+			draggedColumnId,
+			targetColumnId,
+			side,
+		);
 	}
 
 	private finishColumnReorder(): void {

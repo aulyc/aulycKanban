@@ -297,6 +297,38 @@ test('quadrants drag vertically to persist their shared order without moving tas
 	);
 });
 
+test('quadrant reorder hides the placeholder for an adjacent no-op slot', () => {
+	const { parent, store } = createCategoryNavHarness();
+	const sourceItem = descendants(parent).find((element) => element.dataset.columnId === 'last');
+	const targetItem = descendants(parent).find((element) => element.dataset.columnId === 'later');
+	const dataTransfer = { setData() {}, setDragImage() {} };
+	sourceItem.listeners.get('dragstart')[0]({ dataTransfer });
+	for (const listener of targetItem.listeners.get('dragover')) {
+		listener({ clientY: 35, dataTransfer, preventDefault() {} });
+	}
+	assert.equal(
+		descendants(parent).some((element) =>
+			element.classList.contains('aulyckanban-reorder-placeholder-vertical'),
+		),
+		true,
+	);
+	for (const listener of targetItem.listeners.get('dragover')) {
+		listener({ clientY: 5, dataTransfer, preventDefault() {} });
+	}
+	assert.equal(
+		descendants(parent).some((element) =>
+			element.classList.contains('aulyckanban-reorder-placeholder-vertical'),
+		),
+		false,
+	);
+	targetItem.listeners.get('drop')[0]({
+		clientY: 5,
+		preventDefault() {},
+		stopPropagation() {},
+	});
+	assert.deepEqual(store.actions, []);
+});
+
 test('all quadrants is a fixed first navigation control with the aggregate count', () => {
 	const { parent, store } = createCategoryNavHarness();
 	const nav = parent.children[0];

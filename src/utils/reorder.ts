@@ -21,3 +21,14 @@ export function reorderIds(
 	reordered.splice(insertionIndex, 0, draggedId);
 	return reordered;
 }
+
+/** 返回真正改变顺序的重排结果；原位或相邻无效插入返回 null。 */
+export function reorderIdsIfChanged(
+	ids: readonly string[],
+	draggedId: string,
+	targetId: string,
+	side: ReorderSide,
+): string[] | null {
+	const reordered = reorderIds(ids, draggedId, targetId, side);
+	return reordered.some((id, index) => id !== ids[index]) ? reordered : null;
+}
