@@ -224,6 +224,15 @@ test('ordinary task list enters multi-select mode and moves the selected coordin
 	);
 	selectingCards[0].options.onSelectionRequest({ shiftKey: false });
 	selectingCards[1].options.onSelectionRequest({ shiftKey: false });
+	const selectedCards = activeCards.slice(-2);
+	const transfer = {
+		setData(type, value) {
+			this.value = [type, value];
+		},
+	};
+	assert.equal(selectedCards[0].options.onDragStart({ dataTransfer: transfer }), 2);
+	assert.deepEqual(transfer.value, ['text/plain', 'task.drag.count']);
+	selectedCards[0].options.onDragEnd({});
 
 	const moveButton = descendants(list.getEl()).find((element) =>
 		element.classList.contains('aulyckanban-task-move-selected-btn'),

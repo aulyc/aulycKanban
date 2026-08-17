@@ -41,6 +41,20 @@ test('business selection keeps its fill but never owns the white focus border', 
 	}
 });
 
+test('ordinary task selection checkbox is anchored at the card top right', () => {
+	const checkboxLabel = rule('.aulyckanban-task-select-label');
+	assert.equal(declarationValue(checkboxLabel, 'position'), 'absolute');
+	assert.equal(declarationValue(checkboxLabel, 'top'), '12px');
+	assert.equal(declarationValue(checkboxLabel, 'right'), '12px');
+	assert.equal(
+		declarationValue(
+			rule('.aulyckanban-task-selecting .aulyckanban-task-content'),
+			'padding-right',
+		),
+		'28px',
+	);
+});
+
 test('each of the four keyboard zones draws white only from actual focus', () => {
 	const focusRules = [
 		combinedRule(['.aulyckanban-tab:focus', '.aulyckanban-tab:focus-visible']),

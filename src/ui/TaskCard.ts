@@ -13,7 +13,7 @@ export interface TaskCardOptions {
 	selected?: boolean;
 	onSelectionRequest?: (event: MouseEvent | KeyboardEvent) => void;
 	onContextMenu?: (event: MouseEvent) => void;
-	onDragStart?: (event: DragEvent) => void;
+	onDragStart?: (event: DragEvent) => number;
 	onDragEnd?: (event: DragEvent) => void;
 }
 
@@ -225,12 +225,26 @@ export class TaskCard {
 		this.el.draggable = true;
 		this.el.addEventListener('dragstart', (event: DragEvent) => {
 			this.el.addClass('aulyckanban-task-dragging');
-			this.options.onDragStart?.(event);
+			const taskCount = this.options.onDragStart?.(event) ?? 1;
+			this.setMultiTaskDragImage(event, taskCount);
 		});
 		this.el.addEventListener('dragend', (event: DragEvent) => {
 			this.el.removeClass('aulyckanban-task-dragging');
 			this.options.onDragEnd?.(event);
 		});
+	}
+
+	private setMultiTaskDragImage(event: DragEvent, taskCount: number): void {
+		if (taskCount <= 1 || !event.dataTransfer?.setDragImage) return;
+		const ownerDocument = this.el.ownerDocument;
+		const previewEl = this.el.createDiv({
+			cls: 'aulyckanban-task-drag-preview',
+			text: t('task.drag.count').replace('{count}', String(taskCount)),
+		});
+		previewEl.setAttribute('aria-hidden', 'true');
+		ownerDocument.body.appendChild(previewEl);
+		event.dataTransfer.setDragImage(previewEl, 24, 20);
+		this.el.win.requestAnimationFrame(() => previewEl.remove());
 	}
 
 	/**

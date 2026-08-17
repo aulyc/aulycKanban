@@ -255,7 +255,7 @@ export class TaskList {
 		this.render();
 	}
 
-	private handleDragStart(ref: TaskRef, visibleRefs: readonly TaskRef[], event: DragEvent): void {
+	private handleDragStart(ref: TaskRef, visibleRefs: readonly TaskRef[], event: DragEvent): number {
 		const key = getTaskRefKey(ref);
 		const draggedRefs =
 			this.selection.isActive && this.selection.isSelected(key)
@@ -275,6 +275,7 @@ export class TaskList {
 			);
 		}
 		this.drag.start(coordinates);
+		return coordinates.length;
 	}
 
 	private getCommonValue(values: readonly string[]): string | null {

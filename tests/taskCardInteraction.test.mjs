@@ -45,6 +45,16 @@ class MockElement {
 		return child;
 	}
 
+	appendChild(child) {
+		return this.append(child);
+	}
+
+	remove() {
+		if (!this.parentElement) return;
+		this.parentElement.children = this.parentElement.children.filter((child) => child !== this);
+		this.parentElement = null;
+	}
+
 	setAttribute(name, value) {
 		this.attributes[name] = value;
 	}
@@ -128,6 +138,7 @@ function createHarness(options = {}) {
 			requestAnimationFrame: (callback) => callback(),
 		},
 	};
+	documentRef.body = new MockElement(documentRef);
 	documentRef.defaultView.HTMLElement = MockElement;
 	documentRef.defaultView.MouseEvent = class {
 		constructor(type, eventOptions) {
@@ -242,6 +253,26 @@ test('desktop drag delegates start and end while marking the card as draggable',
 		['start', startEvent],
 		['end', {}],
 	]);
+});
+
+test('dragging multiple selected tasks uses a count-aware drag image', () => {
+	const { card, documentRef } = createHarness({
+		onDragStart: () => 3,
+	});
+	const transfer = {
+		setDragImage(element, x, y) {
+			this.dragImage = { element, x, y };
+		},
+	};
+	card.listeners.get('dragstart')[0]({ dataTransfer: transfer });
+
+	assert.equal(
+		transfer.dragImage.element.classList.contains('aulyckanban-task-drag-preview'),
+		true,
+	);
+	assert.equal(transfer.dragImage.element.textContent, 'task.drag.count');
+	assert.deepEqual([transfer.dragImage.x, transfer.dragImage.y], [24, 20]);
+	assert.equal(documentRef.body.children.length, 0);
 });
 
 test('task archive action reuses the toolbar archive folder icon', () => {

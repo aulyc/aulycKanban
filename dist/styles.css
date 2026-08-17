@@ -857,9 +857,12 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 }
 
 .aulyckanban-task-select-label {
+	position: absolute;
+	top: 12px;
+	right: 12px;
+	z-index: 1;
 	display: flex;
-	align-items: flex-start;
-	padding-top: 1px;
+	align-items: center;
 }
 
 .aulyckanban-task-select-checkbox {
@@ -868,6 +871,29 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	margin: 0;
 	accent-color: var(--interactive-accent);
 	cursor: pointer;
+}
+
+.aulyckanban-task-selecting .aulyckanban-task-content {
+	padding-right: 28px;
+}
+
+.aulyckanban-task-drag-preview {
+	position: fixed;
+	top: 0;
+	left: 0;
+	z-index: 1000;
+	display: flex;
+	align-items: center;
+	min-height: 40px;
+	padding: 8px 14px;
+	color: var(--text-normal);
+	background: var(--background-primary);
+	border: 1px solid var(--interactive-accent);
+	border-radius: 8px;
+	box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+	font-weight: 600;
+	white-space: nowrap;
+	pointer-events: none;
 }
 
 .aulyckanban-task:focus {
