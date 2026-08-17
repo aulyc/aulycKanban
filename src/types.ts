@@ -117,6 +117,7 @@ export type Action =
 	| { type: 'ADD_VIEW'; payload: { title: string } }
 	| { type: 'RENAME_VIEW'; payload: { viewId: ViewKind; title: string } }
 	| { type: 'DELETE_VIEW'; payload: { viewId: ViewKind } }
+	| { type: 'REORDER_VIEWS'; payload: { viewIds: ViewKind[] } }
 	| { type: 'SELECT_COLUMN'; payload: { columnId: string } }
 	| { type: 'ADD_COLUMN'; payload: { title: string } }
 	| { type: 'RENAME_COLUMN'; payload: { columnId: string; title: string } }

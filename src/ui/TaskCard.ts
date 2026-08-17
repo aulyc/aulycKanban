@@ -71,11 +71,11 @@ export class TaskCard {
 			this.el.setAttribute('aria-checked', String(Boolean(options.selected)));
 		}
 
-		this.buildContent();
-		this.bindDrag();
+		const dragHandleEl = this.buildContent();
+		this.bindDrag(dragHandleEl);
 	}
 
-	private buildContent(): void {
+	private buildContent(): HTMLElement {
 		const { task } = this;
 		if (this.options.selectionMode) this.buildSelectionCheckbox();
 
@@ -157,7 +157,7 @@ export class TaskCard {
 		});
 
 		const actionsEl = metaRowEl.createDiv({ cls: 'aulyckanban-task-actions' });
-		if (this.options.selectionMode) return;
+		if (this.options.selectionMode) return metaRowEl;
 
 		const archiveBtn = actionsEl.createSpan({
 			cls: 'aulyckanban-task-archive',
@@ -200,6 +200,7 @@ export class TaskCard {
 					}),
 			}).open();
 		});
+		return metaRowEl;
 	}
 
 	private buildSelectionCheckbox(): void {
@@ -220,22 +221,26 @@ export class TaskCard {
 		return Boolean(this.options.selectionMode || event.metaKey || event.ctrlKey || event.shiftKey);
 	}
 
-	private bindDrag(): void {
+	private bindDrag(dragHandleEl: HTMLElement): void {
 		if (!this.options.onDragStart) return;
-		this.el.draggable = true;
-		this.el.addEventListener('dragstart', (event: DragEvent) => {
+		dragHandleEl.draggable = true;
+		dragHandleEl.addEventListener('dragstart', (event: DragEvent) => {
 			this.el.addClass('aulyckanban-task-dragging');
 			const taskCount = this.options.onDragStart?.(event) ?? 1;
-			this.setMultiTaskDragImage(event, taskCount);
+			this.setTaskDragImage(event, taskCount);
 		});
-		this.el.addEventListener('dragend', (event: DragEvent) => {
+		dragHandleEl.addEventListener('dragend', (event: DragEvent) => {
 			this.el.removeClass('aulyckanban-task-dragging');
 			this.options.onDragEnd?.(event);
 		});
 	}
 
-	private setMultiTaskDragImage(event: DragEvent, taskCount: number): void {
-		if (taskCount <= 1 || !event.dataTransfer?.setDragImage) return;
+	private setTaskDragImage(event: DragEvent, taskCount: number): void {
+		if (!event.dataTransfer?.setDragImage) return;
+		if (taskCount <= 1) {
+			event.dataTransfer.setDragImage(this.el, 24, 20);
+			return;
+		}
 		const ownerDocument = this.el.ownerDocument;
 		const previewEl = this.el.createDiv({
 			cls: 'aulyckanban-task-drag-preview',

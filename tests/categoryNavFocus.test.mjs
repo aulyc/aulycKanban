@@ -59,6 +59,10 @@ class MockElement {
 		this.attributes[name] = value;
 	}
 
+	getBoundingClientRect() {
+		return { left: 0, top: 0, width: 100, height: 40, right: 100, bottom: 40 };
+	}
+
 	removeAttribute(name) {
 		delete this.attributes[name];
 	}
@@ -193,6 +197,39 @@ test('quadrants ignore drag events when no task drag session is active', () => {
 	});
 	assert.equal(prevented, false);
 	assert.deepEqual(drops, []);
+});
+
+test('quadrants drag vertically to persist their shared order without moving tasks', () => {
+	const { parent, store } = createCategoryNavHarness();
+	const sourceItem = descendants(parent).find((element) => element.dataset.columnId === 'last');
+	const targetItem = descendants(parent).find((element) => element.dataset.columnId === 'later');
+	const dataTransfer = {
+		setData(type, value) {
+			this.value = [type, value];
+		},
+	};
+	sourceItem.listeners.get('dragstart')[0]({ dataTransfer });
+	assert.equal(sourceItem.draggable, true);
+	assert.equal(sourceItem.classList.contains('aulyckanban-reorder-dragging'), true);
+	assert.deepEqual(dataTransfer.value, ['application/x-aulyckanban-column-order', 'last']);
+	let prevented = 0;
+	for (const listener of targetItem.listeners.get('dragover')) {
+		listener({ clientY: 35, dataTransfer, preventDefault: () => prevented++ });
+	}
+	assert.equal(targetItem.classList.contains('aulyckanban-reorder-after'), true);
+	for (const listener of targetItem.listeners.get('drop')) {
+		listener({
+			clientY: 35,
+			preventDefault: () => prevented++,
+			stopPropagation() {},
+		});
+	}
+	assert.equal(prevented, 2);
+	assert.deepEqual(store.actions.at(-1), {
+		type: 'REORDER_COLUMNS',
+		payload: { columnIds: ['later', 'last'] },
+	});
+	assert.equal(targetItem.classList.contains('aulyckanban-reorder-after'), false);
 });
 
 test('all quadrants is a fixed first navigation control with the aggregate count', () => {

@@ -282,6 +282,9 @@ export class KanbanStore {
 			case 'DELETE_VIEW':
 				didMutateData = this.deleteView(action.payload.viewId);
 				break;
+			case 'REORDER_VIEWS':
+				didMutateData = this.reorderViews(action.payload.viewIds);
+				break;
 			case 'SELECT_COLUMN':
 				this.settings.activeColumnId = action.payload.columnId;
 				this.columnScope = 'current';
@@ -602,6 +605,19 @@ export class KanbanStore {
 		return true;
 	}
 
+	private reorderViews(viewIds: ViewKind[]): boolean {
+		const currentIds = this.getTaskViews().map((view) => view.id);
+		if (!this.isExactReorder(currentIds, viewIds)) return false;
+		let changed = false;
+		viewIds.forEach((id, order) => {
+			const view = this.getView(id);
+			if (!view || view.order === order) return;
+			view.order = order;
+			changed = true;
+		});
+		return changed;
+	}
+
 	private addColumn(rawTitle: string): boolean {
 		const title = rawTitle.trim();
 		if (!title) return false;
@@ -653,6 +669,8 @@ export class KanbanStore {
 	}
 
 	private reorderColumns(columnIds: string[]): boolean {
+		const currentIds = this.getCurrentColumns().map((column) => column.id);
+		if (!this.isExactReorder(currentIds, columnIds)) return false;
 		let changed = false;
 		for (const view of this.board.views) {
 			columnIds.forEach((id, order) => {
@@ -663,6 +681,14 @@ export class KanbanStore {
 			});
 		}
 		return changed;
+	}
+
+	private isExactReorder(currentIds: readonly string[], nextIds: readonly string[]): boolean {
+		return (
+			currentIds.length === nextIds.length &&
+			new Set(nextIds).size === nextIds.length &&
+			currentIds.every((id) => nextIds.includes(id))
+		);
 	}
 
 	private getRawColumns(viewId: ViewKind = this.settings.currentView): Column[] {

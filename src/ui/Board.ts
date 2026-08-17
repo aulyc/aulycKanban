@@ -20,7 +20,9 @@ export class Board {
 	private readonly toolbar: Toolbar;
 	private readonly contentAreaEl: HTMLElement;
 	private readonly taskPaneEl: HTMLElement;
+	private readonly taskHeaderEl: HTMLElement;
 	private readonly taskControls: TaskControls;
+	private readonly taskSelectionControlsEl: HTMLElement;
 	private readonly archiveContainerEl: HTMLElement;
 	private readonly taskList: TaskList;
 	private readonly categoryNav: CategoryNav;
@@ -42,8 +44,18 @@ export class Board {
 		// 看板视图容器（左侧任务列表 + 右侧分类导航）
 		this.contentAreaEl = this.containerEl.createDiv({ cls: 'aulyckanban-content-area' });
 		this.taskPaneEl = this.contentAreaEl.createDiv({ cls: 'aulyckanban-task-pane' });
-		this.taskControls = new TaskControls(this.taskPaneEl, app, this.store);
-		this.taskList = new TaskList(this.taskPaneEl, app, this.store, this.drag);
+		this.taskHeaderEl = this.taskPaneEl.createDiv({ cls: 'aulyckanban-task-header' });
+		this.taskControls = new TaskControls(this.taskHeaderEl, app, this.store);
+		this.taskSelectionControlsEl = this.taskHeaderEl.createDiv({
+			cls: 'aulyckanban-task-selection-controls',
+		});
+		this.taskList = new TaskList(
+			this.taskPaneEl,
+			app,
+			this.store,
+			this.drag,
+			this.taskSelectionControlsEl,
+		);
 
 		// 归档与普通任务列表共用左侧网格区域
 		this.archiveContainerEl = this.taskPaneEl.createDiv({

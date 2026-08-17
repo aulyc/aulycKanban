@@ -5,6 +5,7 @@ import { createInlineInput } from './InlineInput';
 import { ConfirmModal } from './ConfirmModal';
 import { revealTaskTypeItem } from '../utils/focusCycle';
 import { appendAccessibleLabel } from '../utils/dom';
+import { getReorderSide, reorderIds, type ReorderSide } from '../utils/reorder';
 import { Menu, setIcon } from 'obsidian';
 import type { App } from 'obsidian';
 import type { TaskDrag } from './TaskDrag';
@@ -23,6 +24,7 @@ export class Toolbar {
 	private readonly drag?: TaskDrag;
 	private readonly unsubscribeDrag?: () => void;
 	private pendingViewLock: number | null = null;
+	private draggedViewId: ViewKind | null = null;
 
 	constructor(parentEl: HTMLElement, app: App, store: KanbanStore, drag?: TaskDrag) {
 		this.app = app;
@@ -223,7 +225,84 @@ export class Toolbar {
 			);
 		});
 		this.bindDragTarget(button, view);
+		this.bindViewReorder(button, view);
 		return button;
+	}
+
+	private bindViewReorder(button: HTMLButtonElement, viewId: ViewKind): void {
+		button.draggable = true;
+		button.addEventListener('dragstart', (event: DragEvent) => {
+			this.clearPendingViewLock();
+			this.draggedViewId = viewId;
+			button.addClass('aulyckanban-reorder-dragging');
+			if (event.dataTransfer) {
+				event.dataTransfer.effectAllowed = 'move';
+				event.dataTransfer.setData('application/x-aulyckanban-view-order', viewId);
+			}
+		});
+		button.addEventListener('dragover', (event: DragEvent) => {
+			if (!this.draggedViewId) return;
+			event.preventDefault();
+			if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+			this.showViewReorderTarget(button, this.getViewDropSide(button, event));
+		});
+		button.addEventListener('dragleave', (event: DragEvent) => {
+			if (!this.draggedViewId) return;
+			const nextTarget = event.relatedTarget;
+			const NodeConstructor = button.ownerDocument.defaultView?.Node;
+			if (NodeConstructor && nextTarget instanceof NodeConstructor && button.contains(nextTarget)) {
+				return;
+			}
+			button.removeClass('aulyckanban-reorder-before');
+			button.removeClass('aulyckanban-reorder-after');
+		});
+		button.addEventListener('drop', (event: DragEvent) => {
+			const draggedViewId = this.draggedViewId;
+			if (!draggedViewId) return;
+			event.preventDefault();
+			event.stopPropagation();
+			const currentIds = this.store.getTaskViews().map((view) => view.id);
+			const reorderedIds = reorderIds(
+				currentIds,
+				draggedViewId,
+				viewId,
+				this.getViewDropSide(button, event),
+			);
+			this.finishViewReorder();
+			if (reorderedIds.some((id, index) => id !== currentIds[index])) {
+				this.store.dispatch({ type: 'REORDER_VIEWS', payload: { viewIds: reorderedIds } });
+			}
+		});
+		button.addEventListener('dragend', () => this.finishViewReorder());
+	}
+
+	private getViewDropSide(button: HTMLElement, event: DragEvent): ReorderSide {
+		const rect = button.getBoundingClientRect();
+		return getReorderSide(event.clientX, rect.left, rect.width);
+	}
+
+	private showViewReorderTarget(button: HTMLElement, side: ReorderSide): void {
+		this.clearViewReorderTargets();
+		button.addClass(side === 'before' ? 'aulyckanban-reorder-before' : 'aulyckanban-reorder-after');
+	}
+
+	private clearViewReorderTargets(): void {
+		for (const button of Array.from(
+			this.el.querySelectorAll<HTMLElement>('.aulyckanban-view-tab'),
+		)) {
+			button.removeClass('aulyckanban-reorder-before');
+			button.removeClass('aulyckanban-reorder-after');
+		}
+	}
+
+	private finishViewReorder(): void {
+		this.draggedViewId = null;
+		this.clearViewReorderTargets();
+		for (const button of Array.from(
+			this.el.querySelectorAll<HTMLElement>('.aulyckanban-view-tab'),
+		)) {
+			button.removeClass('aulyckanban-reorder-dragging');
+		}
 	}
 
 	private bindDragTarget(button: HTMLButtonElement, viewId: ViewKind): void {
@@ -284,6 +363,7 @@ export class Toolbar {
 
 	destroy(): void {
 		this.clearPendingViewLock();
+		this.finishViewReorder();
 		this.unsubscribeDrag?.();
 	}
 

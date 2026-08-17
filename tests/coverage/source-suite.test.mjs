@@ -8,6 +8,7 @@ import '../keyboard.test.mjs';
 import '../markdown.test.mjs';
 import '../noteSync.test.mjs';
 import '../repository.test.mjs';
+import '../reorder.test.mjs';
 import '../resizeHost.test.mjs';
 import '../store.test.mjs';
 import '../syncTarget.test.mjs';

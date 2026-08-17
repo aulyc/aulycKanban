@@ -212,10 +212,23 @@ test('ordinary task list enters multi-select mode and moves the selected coordin
 	const parent = new MockElement();
 	const list = new TaskList(parent, {}, store);
 	list.render();
-	let selectionButton = descendants(list.getEl()).find((element) =>
+	const selectionButton = descendants(parent).find((element) =>
 		element.classList.contains('aulyckanban-task-select-mode-btn'),
 	);
+	let cancelButton = descendants(parent).find((element) =>
+		element.classList.contains('aulyckanban-task-cancel-selection-btn'),
+	);
+	assert.ok(selectionButton);
+	assert.equal(selectionButton.icon, 'list-checks');
+	assert.equal(cancelButton.disabled, true);
+	const cardCountBeforeDisabledCancel = activeCards.length;
+	cancelButton.listeners.get('click')[0]();
+	assert.equal(activeCards.length, cardCountBeforeDisabledCancel);
 	selectionButton.listeners.get('click')[0]();
+	cancelButton = descendants(parent).find((element) =>
+		element.classList.contains('aulyckanban-task-cancel-selection-btn'),
+	);
+	assert.equal(cancelButton.disabled, false);
 
 	const selectingCards = activeCards.slice(-2);
 	assert.equal(
@@ -234,10 +247,15 @@ test('ordinary task list enters multi-select mode and moves the selected coordin
 	assert.deepEqual(transfer.value, ['text/plain', 'task.drag.count']);
 	selectedCards[0].options.onDragEnd({});
 
-	const moveButton = descendants(list.getEl()).find((element) =>
-		element.classList.contains('aulyckanban-task-move-selected-btn'),
+	assert.equal(
+		descendants(parent).some((element) =>
+			element.classList.contains('aulyckanban-task-move-selected-btn'),
+		),
+		false,
 	);
-	moveButton.listeners.get('click')[0]();
+	selectedCards[0].options.onContextMenu({});
+	assert.equal(activeMenus.at(-1).items[0].title, 'task.move.selected');
+	activeMenus.at(-1).items[0].handler();
 	assert.equal(activeMoveModals.at(-1).options.taskCount, 2);
 	activeMoveModals.at(-1).options.onMove({ targetColumnId: 'important' });
 	assert.equal(actions.at(-1).type, 'MOVE_TASKS');

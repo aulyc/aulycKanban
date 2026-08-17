@@ -62,6 +62,10 @@ class MockElement {
 		this.attributes[name] = value;
 	}
 
+	getBoundingClientRect() {
+		return { left: 0, top: 0, width: 100, height: 30, right: 100, bottom: 30 };
+	}
+
 	toggleClass(value, enabled) {
 		if (enabled) this.classes.add(value);
 		else this.classes.delete(value);
@@ -201,6 +205,39 @@ test('dragging onto a task type locks it and drops to that exact type', () => {
 		['lock', 'test'],
 		['drop', { targetViewId: 'test' }],
 	]);
+});
+
+test('task types drag horizontally to persist a new order without starting a task drop', () => {
+	const { parent, store } = createToolbarHarness();
+	const sourceButton = descendants(parent).find((element) => element.dataset.viewId === 'work');
+	const targetButton = descendants(parent).find((element) => element.dataset.viewId === 'test');
+	const dataTransfer = {
+		setData(type, value) {
+			this.value = [type, value];
+		},
+	};
+	sourceButton.listeners.get('dragstart')[0]({ dataTransfer });
+	assert.equal(sourceButton.draggable, true);
+	assert.equal(sourceButton.classList.contains('aulyckanban-reorder-dragging'), true);
+	assert.deepEqual(dataTransfer.value, ['application/x-aulyckanban-view-order', 'work']);
+	let prevented = 0;
+	for (const listener of targetButton.listeners.get('dragover')) {
+		listener({ clientX: 90, dataTransfer, preventDefault: () => prevented++ });
+	}
+	assert.equal(targetButton.classList.contains('aulyckanban-reorder-after'), true);
+	for (const listener of targetButton.listeners.get('drop')) {
+		listener({
+			clientX: 90,
+			preventDefault: () => prevented++,
+			stopPropagation() {},
+		});
+	}
+	assert.equal(prevented, 2);
+	assert.deepEqual(store.actions.at(-1), {
+		type: 'REORDER_VIEWS',
+		payload: { viewIds: ['test', 'work'] },
+	});
+	assert.equal(targetButton.classList.contains('aulyckanban-reorder-after'), false);
 });
 
 test('task type controls stay out of the native Tab order', () => {

@@ -5,6 +5,7 @@ import { t } from '../i18n';
 import { ConfirmModal } from './ConfirmModal';
 import { createInlineInput } from './InlineInput';
 import { appendAccessibleLabel } from '../utils/dom';
+import { getReorderSide, reorderIds, type ReorderSide } from '../utils/reorder';
 import type { TaskDrag } from './TaskDrag';
 
 const TRANSIENT_FOCUS_CLASS = 'aulyckanban-add-control-focused';
@@ -24,6 +25,7 @@ export class CategoryNav {
 	private focusTargetAfterRender: { kind: 'all' } | { kind: 'column'; id: string } | null = null;
 	private readonly drag?: TaskDrag;
 	private readonly unsubscribeDrag?: () => void;
+	private draggedColumnId: string | null = null;
 
 	constructor(parentEl: HTMLElement, app: App, store: KanbanStore, drag?: TaskDrag) {
 		this.app = app;
@@ -118,6 +120,7 @@ export class CategoryNav {
 				this.showColumnMenu(e, column.id, itemEl);
 			});
 			this.bindDragTarget(itemEl, column.id);
+			this.bindColumnReorder(itemEl, column.id);
 		}
 
 		// 添加分类按钮（紧跟在分类列表下方）
@@ -197,6 +200,81 @@ export class CategoryNav {
 		});
 	}
 
+	private bindColumnReorder(itemEl: HTMLElement, columnId: string): void {
+		itemEl.draggable = true;
+		itemEl.addEventListener('dragstart', (event: DragEvent) => {
+			this.draggedColumnId = columnId;
+			itemEl.addClass('aulyckanban-reorder-dragging');
+			if (event.dataTransfer) {
+				event.dataTransfer.effectAllowed = 'move';
+				event.dataTransfer.setData('application/x-aulyckanban-column-order', columnId);
+			}
+		});
+		itemEl.addEventListener('dragover', (event: DragEvent) => {
+			if (!this.draggedColumnId) return;
+			event.preventDefault();
+			if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+			this.showColumnReorderTarget(itemEl, this.getColumnDropSide(itemEl, event));
+		});
+		itemEl.addEventListener('dragleave', (event: DragEvent) => {
+			if (!this.draggedColumnId) return;
+			const nextTarget = event.relatedTarget;
+			const NodeConstructor = itemEl.ownerDocument.defaultView?.Node;
+			if (NodeConstructor && nextTarget instanceof NodeConstructor && itemEl.contains(nextTarget)) {
+				return;
+			}
+			itemEl.removeClass('aulyckanban-reorder-before');
+			itemEl.removeClass('aulyckanban-reorder-after');
+		});
+		itemEl.addEventListener('drop', (event: DragEvent) => {
+			const draggedColumnId = this.draggedColumnId;
+			if (!draggedColumnId) return;
+			event.preventDefault();
+			event.stopPropagation();
+			const currentIds = this.store.getCurrentColumns().map((column) => column.id);
+			const reorderedIds = reorderIds(
+				currentIds,
+				draggedColumnId,
+				columnId,
+				this.getColumnDropSide(itemEl, event),
+			);
+			this.finishColumnReorder();
+			if (reorderedIds.some((id, index) => id !== currentIds[index])) {
+				this.store.dispatch({ type: 'REORDER_COLUMNS', payload: { columnIds: reorderedIds } });
+			}
+		});
+		itemEl.addEventListener('dragend', () => this.finishColumnReorder());
+	}
+
+	private getColumnDropSide(itemEl: HTMLElement, event: DragEvent): ReorderSide {
+		const rect = itemEl.getBoundingClientRect();
+		return getReorderSide(event.clientY, rect.top, rect.height);
+	}
+
+	private showColumnReorderTarget(itemEl: HTMLElement, side: ReorderSide): void {
+		this.clearColumnReorderTargets();
+		itemEl.addClass(side === 'before' ? 'aulyckanban-reorder-before' : 'aulyckanban-reorder-after');
+	}
+
+	private clearColumnReorderTargets(): void {
+		for (const item of Array.from(
+			this.el.querySelectorAll<HTMLElement>('.aulyckanban-nav-item[data-column-id]'),
+		)) {
+			item.removeClass('aulyckanban-reorder-before');
+			item.removeClass('aulyckanban-reorder-after');
+		}
+	}
+
+	private finishColumnReorder(): void {
+		this.draggedColumnId = null;
+		this.clearColumnReorderTargets();
+		for (const item of Array.from(
+			this.el.querySelectorAll<HTMLElement>('.aulyckanban-nav-item[data-column-id]'),
+		)) {
+			item.removeClass('aulyckanban-reorder-dragging');
+		}
+	}
+
 	private updateDragTargets(): void {
 		if (!this.drag) return;
 		for (const item of Array.from(
@@ -208,6 +286,7 @@ export class CategoryNav {
 	}
 
 	destroy(): void {
+		this.finishColumnReorder();
 		this.unsubscribeDrag?.();
 	}
 

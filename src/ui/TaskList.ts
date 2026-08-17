@@ -16,16 +16,25 @@ export class TaskList {
 	private readonly el: HTMLElement;
 	private readonly app: App;
 	private readonly store: KanbanStore;
+	private readonly selectionControlsEl: HTMLElement;
 	private readonly scrollTopByScope = new Map<string, number>();
 	private cardCache = new Map<string, { el: HTMLElement; snapshot: string }>();
 	private readonly selection = new TaskSelection();
 	private readonly drag: TaskDrag;
 
-	constructor(parentEl: HTMLElement, app: App, store: KanbanStore, drag = new TaskDrag()) {
+	constructor(
+		parentEl: HTMLElement,
+		app: App,
+		store: KanbanStore,
+		drag = new TaskDrag(),
+		selectionControlsEl?: HTMLElement,
+	) {
 		this.app = app;
 		this.store = store;
 		this.drag = drag;
 		this.drag.setDropHandler((tasks, target) => this.moveCoordinates(tasks, target));
+		this.selectionControlsEl =
+			selectionControlsEl ?? parentEl.createDiv({ cls: 'aulyckanban-task-selection-controls' });
 		this.el = parentEl.createDiv({ cls: 'aulyckanban-task-list' });
 	}
 
@@ -37,12 +46,13 @@ export class TaskList {
 		}
 
 		this.el.empty();
+		this.selectionControlsEl.empty();
 		const scopeKey = this.getScopeKey();
 		this.el.dataset['scopeKey'] = scopeKey;
 		this.selection.resetForScope(scopeKey);
 		const refs = this.store.getVisibleTaskRefs();
 		this.selection.prune(new Set(refs.map(getTaskRefKey)));
-		if (refs.length > 0) this.renderSelectionToolbar(refs);
+		this.renderSelectionToolbar(refs);
 		if (refs.length === 0) {
 			this.cardCache.clear();
 			this.el.createDiv({
@@ -93,64 +103,49 @@ export class TaskList {
 	}
 
 	private renderSelectionToolbar(refs: readonly TaskRef[]): void {
-		const toolbarEl = this.el.createDiv({
+		const toolbarEl = this.selectionControlsEl.createDiv({
 			cls: `aulyckanban-task-selection-toolbar${
 				this.selection.isActive ? ' aulyckanban-task-selection-toolbar-active' : ''
 			}`,
 		});
-		if (!this.selection.isActive) {
-			const selectButton = this.createToolbarButton(
-				toolbarEl,
-				'aulyckanban-task-select-mode-btn',
-				'list-checks',
-				t('task.select.mode'),
-			);
-			selectButton.addEventListener('click', () => {
-				this.selection.activate();
-				this.render();
-			});
-			return;
-		}
-
 		const cancelButton = this.createToolbarButton(
 			toolbarEl,
 			'aulyckanban-task-cancel-selection-btn',
 			'x',
 			t('task.select.cancel'),
 		);
+		cancelButton.disabled = !this.selection.isActive;
 		cancelButton.addEventListener('click', () => {
+			if (!this.selection.isActive) return;
 			this.selection.deactivate();
 			this.render();
 		});
 
 		const visibleKeys = refs.map(getTaskRefKey);
-		const allSelected = visibleKeys.every((key) => this.selection.isSelected(key));
+		const allSelected =
+			visibleKeys.length > 0 && visibleKeys.every((key) => this.selection.isSelected(key));
 		const selectAllButton = this.createToolbarButton(
 			toolbarEl,
-			'aulyckanban-task-select-all-btn',
-			allSelected ? 'list-x' : 'list-checks',
-			allSelected ? t('task.select.clearAll') : t('task.select.all'),
+			'aulyckanban-task-select-mode-btn aulyckanban-task-select-all-btn',
+			this.selection.isActive && allSelected ? 'list-x' : 'list-checks',
+			this.selection.isActive
+				? allSelected
+					? t('task.select.clearAll')
+					: t('task.select.all')
+				: t('task.select.mode'),
 		);
 		selectAllButton.addEventListener('click', () => {
-			this.selection.selectAll(visibleKeys);
+			if (this.selection.isActive) this.selection.selectAll(visibleKeys);
+			else this.selection.activate();
 			this.render();
 		});
 
-		const moveButton = this.createToolbarButton(
-			toolbarEl,
-			'aulyckanban-task-move-selected-btn',
-			'move',
-			t('task.move.selected'),
-		);
-		moveButton.disabled = this.selection.size === 0;
-		moveButton.addEventListener('click', () => {
-			this.openMoveModal(this.getSelectedRefs(refs));
-		});
-
-		toolbarEl.createSpan({
-			cls: 'aulyckanban-task-selected-count',
-			text: t('task.select.count').replace('{count}', String(this.selection.size)),
-		});
+		if (this.selection.isActive) {
+			toolbarEl.createSpan({
+				cls: 'aulyckanban-task-selected-count',
+				text: t('task.select.count').replace('{count}', String(this.selection.size)),
+			});
+		}
 	}
 
 	private createToolbarButton(

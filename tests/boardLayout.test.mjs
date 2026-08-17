@@ -39,8 +39,9 @@ const css = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
 let activeInstances = new Map();
 const component = (name) =>
 	class {
-		constructor(parent) {
+		constructor(parent, ...args) {
 			this.parent = parent;
+			this.args = args;
 			this.el = parent.createDiv({ cls: `mock-${name}` });
 			this.renderCount = 0;
 			activeInstances.set(name, this);
@@ -85,9 +86,14 @@ test('utility row precedes task types while task add stays above normal and arch
 	assert.equal(instances.get('toolbar').parent, root);
 	assert.equal(root.children[0], instances.get('utility').el);
 	assert.equal(root.children[1], instances.get('toolbar').el);
-	const taskPane = instances.get('controls').parent;
+	const taskHeader = instances.get('controls').parent;
+	assert.equal(taskHeader.classes.has('aulyckanban-task-header'), true);
+	const taskPane = taskHeader.parentElement;
 	assert.equal(taskPane.classes.has('aulyckanban-task-pane'), true);
 	assert.equal(instances.get('tasks').parent, taskPane);
+	const selectionControls = instances.get('tasks').args[3];
+	assert.equal(selectionControls.parentElement, taskHeader);
+	assert.equal(selectionControls.classes.has('aulyckanban-task-selection-controls'), true);
 	assert.equal(instances.get('archive').parent.parentElement, taskPane);
 	assert.equal(instances.get('archive').parent.attributes.tabindex, undefined);
 
@@ -112,9 +118,12 @@ test('normal and archive task components share one horizontal content edge', () 
 	assert.match(pane, /box-sizing:\s*border-box/);
 	assert.match(pane, /padding-inline:\s*var\(--aulyckanban-task-content-inset\)/);
 
-	assert.match(rule('.aulyckanban-task-controls'), /padding:\s*0 0 10px/);
+	const header = rule('.aulyckanban-task-header');
+	assert.match(header, /grid-template-columns:\s*minmax\(0, 1fr\) auto/);
+	assert.match(header, /padding:\s*0 0 10px/);
+	assert.match(rule('.aulyckanban-task-controls'), /padding:\s*0/);
 	assert.match(
-		rule('.aulyckanban-task-pane.aulyckanban-mode-archive .aulyckanban-task-controls'),
+		rule('.aulyckanban-task-pane.aulyckanban-mode-archive .aulyckanban-task-header'),
 		/display:\s*none/,
 	);
 	assert.match(rule('.aulyckanban-task-list'), /padding:\s*0/);
@@ -124,6 +133,10 @@ test('normal and archive task components share one horizontal content edge', () 
 
 test('collapsed and expanded task creation reserve the same single-row height', () => {
 	assert.match(rule('.aulyckanban-task-add-btn'), /height:\s*38px/);
+	assert.match(rule('.aulyckanban-task-selection-toolbar'), /min-height:\s*38px/);
+	const selectionButton = rule('.aulyckanban-task-selection-btn');
+	assert.match(selectionButton, /width:\s*38px/);
+	assert.match(selectionButton, /height:\s*38px/);
 	assert.match(
 		rule('.aulyckanban-kanban-container .aulyckanban-task-create-input'),
 		/min-height:\s*38px/,
@@ -147,10 +160,13 @@ test('task list is transparent while each task card owns a themed surface', () =
 
 test('task metadata stacks source above a single-line date and time at the left edge', () => {
 	assert.match(rule('.aulyckanban-task-meta-row'), /align-items:\s*flex-end/);
+	assert.match(rule(".aulyckanban-task-meta-row[draggable='true']"), /cursor:\s*grab/);
 	const details = rule('.aulyckanban-task-meta-details');
 	assert.match(details, /flex-direction:\s*column/);
 	assert.match(details, /align-items:\s*flex-start/);
 	const time = rule('.aulyckanban-task-time');
 	assert.doesNotMatch(time, /flex-direction:\s*column/);
 	assert.match(time, /white-space:\s*nowrap/);
+	assert.match(rule('.aulyckanban-task-content'), /cursor:\s*text/);
+	assert.equal(rule(".aulyckanban-task[draggable='true']"), '');
 });

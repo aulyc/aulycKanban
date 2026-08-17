@@ -237,17 +237,33 @@ test('keyboard context-menu shortcut opens the same task move menu', () => {
 	assert.equal(menuEvents[0].type, 'contextmenu');
 });
 
-test('desktop drag delegates start and end while marking the card as draggable', () => {
+test('desktop drag starts only from the metadata row and keeps the content non-draggable', () => {
 	const events = [];
 	const { card } = createHarness({
 		onDragStart: (event) => events.push(['start', event]),
 		onDragEnd: (event) => events.push(['end', event]),
 	});
-	assert.equal(card.draggable, true);
-	const startEvent = { dataTransfer: {} };
-	card.listeners.get('dragstart')[0](startEvent);
+	const content = descendants(card).find((element) =>
+		element.classList.contains('aulyckanban-task-content'),
+	);
+	const metaRow = descendants(card).find((element) =>
+		element.classList.contains('aulyckanban-task-meta-row'),
+	);
+	assert.notEqual(card.draggable, true);
+	assert.notEqual(content.draggable, true);
+	assert.equal(metaRow.draggable, true);
+	assert.equal(card.listeners.has('dragstart'), false);
+	assert.equal(content.listeners.has('dragstart'), false);
+	const transfer = {
+		setDragImage(element, x, y) {
+			this.dragImage = { element, x, y };
+		},
+	};
+	const startEvent = { dataTransfer: transfer };
+	metaRow.listeners.get('dragstart')[0](startEvent);
 	assert.equal(card.classList.contains('aulyckanban-task-dragging'), true);
-	card.listeners.get('dragend')[0]({});
+	assert.deepEqual(transfer.dragImage, { element: card, x: 24, y: 20 });
+	metaRow.listeners.get('dragend')[0]({});
 	assert.equal(card.classList.contains('aulyckanban-task-dragging'), false);
 	assert.deepEqual(events, [
 		['start', startEvent],
@@ -259,12 +275,15 @@ test('dragging multiple selected tasks uses a count-aware drag image', () => {
 	const { card, documentRef } = createHarness({
 		onDragStart: () => 3,
 	});
+	const metaRow = descendants(card).find((element) =>
+		element.classList.contains('aulyckanban-task-meta-row'),
+	);
 	const transfer = {
 		setDragImage(element, x, y) {
 			this.dragImage = { element, x, y };
 		},
 	};
-	card.listeners.get('dragstart')[0]({ dataTransfer: transfer });
+	metaRow.listeners.get('dragstart')[0]({ dataTransfer: transfer });
 
 	assert.equal(
 		transfer.dragImage.element.classList.contains('aulyckanban-task-drag-preview'),

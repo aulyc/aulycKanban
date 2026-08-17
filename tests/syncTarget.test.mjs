@@ -24,6 +24,10 @@ test('ordinary and board-wide mutations retain their current sync scope', () => 
 		JSON.stringify(getMutationSyncTarget('ADD_COLUMN', 'personal', null)),
 		JSON.stringify({ kind: 'all' }),
 	);
+	assert.equal(
+		JSON.stringify(getMutationSyncTarget('REORDER_VIEWS', 'personal', null)),
+		JSON.stringify({ kind: 'all' }),
+	);
 });
 
 test('cross-task-type batch moves sync every affected task type without syncing all views', () => {

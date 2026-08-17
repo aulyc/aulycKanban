@@ -652,8 +652,13 @@ test('rename, reorder, and delete quadrants apply to all task types and archives
 
 	store.dispatch({ type: 'RENAME_COLUMN', payload: { columnId: 'second', title: '统一名称' } });
 	store.dispatch({ type: 'REORDER_COLUMNS', payload: { columnIds: ['second', 'base'] } });
-	for (const item of store.getTaskViews())
+	for (const item of store.getTaskViews()) {
 		assert.equal(item.columns.find((candidate) => candidate.id === 'second').title, '统一名称');
+		assert.deepEqual(
+			[...item.columns].sort((a, b) => a.order - b.order).map((column) => column.id),
+			['second', 'base'],
+		);
+	}
 
 	store.dispatch({ type: 'DELETE_COLUMN', payload: { columnId: 'second', moveTasks: true } });
 	for (const item of store.getTaskViews()) {
@@ -662,5 +667,32 @@ test('rename, reorder, and delete quadrants apply to all task types and archives
 		assert.equal(store.getBoardData().archives[item.id].tasks[0].sourceColumnId, 'base');
 	}
 	assert.equal(store.getActiveColumnId(), 'base');
+	store.destroy();
+});
+
+test('task types reorder by their complete id list and reject incomplete permutations', () => {
+	const views = ['work', 'personal', 'project'].map((id, order) =>
+		view(id, id, [column('base', '基础')], order),
+	);
+	const archives = Object.fromEntries(views.map((item) => [item.id, { tasks: [] }]));
+	const store = createStore({ views, archives }, 'personal');
+
+	store.dispatch({
+		type: 'REORDER_VIEWS',
+		payload: { viewIds: ['project', 'work', 'personal'] },
+	});
+	assert.deepEqual(
+		store.getTaskViews().map((item) => item.id),
+		['project', 'work', 'personal'],
+	);
+	assert.equal(store.getCurrentView(), 'personal');
+	assert.equal(store.lastActionMutatedData, true);
+
+	store.dispatch({ type: 'REORDER_VIEWS', payload: { viewIds: ['work', 'personal'] } });
+	assert.deepEqual(
+		store.getTaskViews().map((item) => item.id),
+		['project', 'work', 'personal'],
+	);
+	assert.equal(store.lastActionMutatedData, false);
 	store.destroy();
 });
