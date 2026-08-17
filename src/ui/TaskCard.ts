@@ -8,6 +8,15 @@ import { setTextWithLineBreaks } from '../utils/dom';
 import { ConfirmModal } from './ConfirmModal';
 import { createInlineInput } from './InlineInput';
 
+export interface TaskCardOptions {
+	selectionMode?: boolean;
+	selected?: boolean;
+	onSelectionRequest?: (event: MouseEvent | KeyboardEvent) => void;
+	onContextMenu?: (event: MouseEvent) => void;
+	onDragStart?: (event: DragEvent) => void;
+	onDragEnd?: (event: DragEvent) => void;
+}
+
 /**
  * 任务卡片组件
  * - 单击选中卡片，双击任务内容或按 Enter 进入编辑模式（inline textarea）
@@ -22,6 +31,7 @@ export class TaskCard {
 	private readonly columnId: string;
 	private readonly task: Task;
 	private readonly sourceLabel?: string;
+	private readonly options: TaskCardOptions;
 
 	constructor(
 		parentEl: HTMLElement,
@@ -31,6 +41,7 @@ export class TaskCard {
 		columnId: string,
 		task: Task,
 		sourceLabel?: string,
+		options: TaskCardOptions = {},
 	) {
 		this.app = app;
 		this.store = store;
@@ -38,21 +49,35 @@ export class TaskCard {
 		this.columnId = columnId;
 		this.task = task;
 		this.sourceLabel = sourceLabel;
+		this.options = options;
 
 		this.el = parentEl.createDiv({
-			cls: `aulyckanban-task${task.completed ? ' aulyckanban-task-completed' : ''}`,
+			cls: [
+				'aulyckanban-task',
+				task.completed ? 'aulyckanban-task-completed' : '',
+				options.selectionMode ? 'aulyckanban-task-selecting' : '',
+				options.selected ? 'aulyckanban-task-selected' : '',
+			]
+				.filter(Boolean)
+				.join(' '),
 		});
 		this.el.tabIndex = -1;
 		this.el.setAttribute('role', 'button');
 		this.el.dataset['viewId'] = viewId;
 		this.el.dataset['taskId'] = task.id;
 		this.el.dataset['columnId'] = columnId;
+		if (options.selectionMode) {
+			this.el.setAttribute('role', 'checkbox');
+			this.el.setAttribute('aria-checked', String(Boolean(options.selected)));
+		}
 
 		this.buildContent();
+		this.bindDrag();
 	}
 
 	private buildContent(): void {
 		const { task } = this;
+		if (this.options.selectionMode) this.buildSelectionCheckbox();
 
 		// 中间区域：内容 + 时间
 		const middleEl = this.el.createDiv({ cls: 'aulyckanban-task-middle' });
@@ -67,6 +92,12 @@ export class TaskCard {
 
 		this.el.addEventListener('click', (e: MouseEvent) => {
 			e.stopPropagation();
+			if (this.shouldSelect(e)) {
+				e.preventDefault();
+				this.options.onSelectionRequest?.(e);
+				this.el.focus({ preventScroll: true });
+				return;
+			}
 			if (this.el.doc.activeElement !== this.el) {
 				this.el.focus({ preventScroll: true });
 			}
@@ -74,15 +105,45 @@ export class TaskCard {
 		contentEl.addEventListener('dblclick', (e: MouseEvent) => {
 			e.preventDefault();
 			e.stopPropagation();
+			if (this.options.selectionMode) return;
 			this.el.focus({ preventScroll: true });
 			this.enterEditMode(contentEl);
 		});
 		this.el.addEventListener('keydown', (e: KeyboardEvent) => {
+			if (
+				this.options.onContextMenu &&
+				(e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10'))
+			) {
+				e.preventDefault();
+				e.stopPropagation();
+				const rect = this.el.getBoundingClientRect();
+				const MouseEventConstructor = this.el.ownerDocument.defaultView?.MouseEvent ?? MouseEvent;
+				this.options.onContextMenu(
+					new MouseEventConstructor('contextmenu', {
+						clientX: rect.left + rect.width / 2,
+						clientY: rect.bottom,
+					}),
+				);
+				return;
+			}
+			if (this.options.selectionMode && (e.key === 'Enter' || e.key === ' ')) {
+				e.preventDefault();
+				e.stopPropagation();
+				this.options.onSelectionRequest?.(e);
+				return;
+			}
 			if (e.key !== 'Enter' || e.target !== this.el) return;
 			e.preventDefault();
 			e.stopPropagation();
 			this.enterEditMode(contentEl);
 		});
+		if (this.options.onContextMenu) {
+			this.el.addEventListener('contextmenu', (event: MouseEvent) => {
+				event.preventDefault();
+				event.stopPropagation();
+				this.options.onContextMenu?.(event);
+			});
+		}
 
 		// 底部信息：来源与完整日期时间分行显示，操作图标固定在右侧
 		const metaRowEl = middleEl.createDiv({ cls: 'aulyckanban-task-meta-row' });
@@ -96,6 +157,7 @@ export class TaskCard {
 		});
 
 		const actionsEl = metaRowEl.createDiv({ cls: 'aulyckanban-task-actions' });
+		if (this.options.selectionMode) return;
 
 		const archiveBtn = actionsEl.createSpan({
 			cls: 'aulyckanban-task-archive',
@@ -137,6 +199,37 @@ export class TaskCard {
 						},
 					}),
 			}).open();
+		});
+	}
+
+	private buildSelectionCheckbox(): void {
+		const labelEl = this.el.createEl('label', { cls: 'aulyckanban-task-select-label' });
+		const checkboxEl = labelEl.createEl('input', {
+			cls: 'aulyckanban-task-select-checkbox',
+			attr: { type: 'checkbox' },
+		});
+		checkboxEl.checked = Boolean(this.options.selected);
+		labelEl.addEventListener('click', (event: MouseEvent) => event.stopPropagation());
+		checkboxEl.addEventListener('click', (event: MouseEvent) => event.stopPropagation());
+		checkboxEl.addEventListener('change', (event: Event) => {
+			this.options.onSelectionRequest?.(event as MouseEvent);
+		});
+	}
+
+	private shouldSelect(event: MouseEvent): boolean {
+		return Boolean(this.options.selectionMode || event.metaKey || event.ctrlKey || event.shiftKey);
+	}
+
+	private bindDrag(): void {
+		if (!this.options.onDragStart) return;
+		this.el.draggable = true;
+		this.el.addEventListener('dragstart', (event: DragEvent) => {
+			this.el.addClass('aulyckanban-task-dragging');
+			this.options.onDragStart?.(event);
+		});
+		this.el.addEventListener('dragend', (event: DragEvent) => {
+			this.el.removeClass('aulyckanban-task-dragging');
+			this.options.onDragEnd?.(event);
 		});
 	}
 

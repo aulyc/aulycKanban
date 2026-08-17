@@ -46,9 +46,12 @@ export default class KanbanPlugin extends Plugin {
 				actionType,
 				this.store.getCurrentView(),
 				this.store.lastMutatedViewId,
+				this.store.lastMutatedViewIds,
 			);
 			if (target.kind === 'all') {
 				this.syncService.scheduleSyncAllViews();
+			} else if (target.kind === 'views') {
+				for (const viewId of target.viewIds) this.syncService.scheduleSyncView(viewId);
 			} else {
 				this.syncService.scheduleSyncView(target.viewId);
 			}

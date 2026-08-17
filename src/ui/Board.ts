@@ -6,6 +6,7 @@ import { Toolbar } from './Toolbar';
 import { ArchiveView } from './ArchiveView';
 import { TaskControls } from './TaskControls';
 import { UtilityBar } from './UtilityBar';
+import { TaskDrag } from './TaskDrag';
 
 /**
  * 看板面板组件
@@ -24,6 +25,7 @@ export class Board {
 	private readonly taskList: TaskList;
 	private readonly categoryNav: CategoryNav;
 	private readonly archiveView: ArchiveView;
+	private readonly drag = new TaskDrag();
 
 	constructor(containerEl: HTMLElement, app: App, store: KanbanStore) {
 		this.containerEl = containerEl;
@@ -34,14 +36,14 @@ export class Board {
 		this.utilityBar.getEl();
 
 		// 任务类型栏（始终显示）
-		this.toolbar = new Toolbar(this.containerEl, app, this.store);
+		this.toolbar = new Toolbar(this.containerEl, app, this.store, this.drag);
 		this.toolbar.getEl();
 
 		// 看板视图容器（左侧任务列表 + 右侧分类导航）
 		this.contentAreaEl = this.containerEl.createDiv({ cls: 'aulyckanban-content-area' });
 		this.taskPaneEl = this.contentAreaEl.createDiv({ cls: 'aulyckanban-task-pane' });
 		this.taskControls = new TaskControls(this.taskPaneEl, app, this.store);
-		this.taskList = new TaskList(this.taskPaneEl, app, this.store);
+		this.taskList = new TaskList(this.taskPaneEl, app, this.store, this.drag);
 
 		// 归档与普通任务列表共用左侧网格区域
 		this.archiveContainerEl = this.taskPaneEl.createDiv({
@@ -49,7 +51,7 @@ export class Board {
 		});
 		this.archiveView = new ArchiveView(this.archiveContainerEl, app, this.store);
 
-		this.categoryNav = new CategoryNav(this.contentAreaEl, app, this.store);
+		this.categoryNav = new CategoryNav(this.contentAreaEl, app, this.store, this.drag);
 	}
 
 	render(): void {
@@ -66,6 +68,9 @@ export class Board {
 	}
 
 	destroy(): void {
+		this.toolbar.destroy?.();
+		this.categoryNav.destroy?.();
+		this.drag.cancel();
 		this.containerEl.empty();
 	}
 }

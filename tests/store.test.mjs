@@ -375,6 +375,146 @@ test('task mutations use an explicit source view without switching the selected 
 	store.destroy();
 });
 
+test('moving a task can change its task type and quadrant atomically', () => {
+	const moved = task('move-me', '待移动');
+	const createdAt = moved.createdAt;
+	const store = createStore(
+		{
+			views: [
+				view(
+					'work',
+					'工作',
+					[column('base', '基础', [moved]), column('important', '重要', [], 1)],
+					0,
+				),
+				view('personal', '个人', [column('base', '基础'), column('important', '重要', [], 1)], 1),
+			],
+			archives: { work: { tasks: [] }, personal: { tasks: [] } },
+		},
+		'work',
+		'base',
+	);
+
+	store.dispatch({
+		type: 'MOVE_TASKS',
+		payload: {
+			tasks: [{ viewId: 'work', columnId: 'base', taskId: 'move-me' }],
+			targetViewId: 'personal',
+			targetColumnId: 'important',
+		},
+	});
+
+	assert.equal(store.getView('work').columns[0].tasks.length, 0);
+	const target = store.findTask('important', 'move-me', 'personal');
+	assert.ok(target);
+	assert.equal(target.content, '待移动');
+	assert.equal(target.createdAt, createdAt);
+	assert.notEqual(target.updatedAt, undefined);
+	assert.equal(store.getCurrentView(), 'work');
+	assert.deepEqual(store.lastMutatedViewIds, ['work', 'personal']);
+	store.destroy();
+});
+
+test('batch moving to one quadrant preserves each task type and visible order', () => {
+	const store = createStore({
+		views: [
+			view(
+				'work',
+				'工作',
+				[column('base', '基础', [task('work-a')]), column('important', '重要', [], 1)],
+				0,
+			),
+			view(
+				'personal',
+				'个人',
+				[
+					column('base', '基础', [task('personal-a'), task('personal-b')]),
+					column('important', '重要', [], 1),
+				],
+				1,
+			),
+		],
+		archives: { work: { tasks: [] }, personal: { tasks: [] } },
+	});
+
+	store.dispatch({
+		type: 'MOVE_TASKS',
+		payload: {
+			tasks: [
+				{ viewId: 'work', columnId: 'base', taskId: 'work-a' },
+				{ viewId: 'personal', columnId: 'base', taskId: 'personal-a' },
+				{ viewId: 'personal', columnId: 'base', taskId: 'personal-b' },
+			],
+			targetColumnId: 'important',
+		},
+	});
+
+	assert.deepEqual(
+		store
+			.getView('work')
+			.columns.find((item) => item.id === 'important')
+			.tasks.map((item) => item.id),
+		['work-a'],
+	);
+	assert.deepEqual(
+		store
+			.getView('personal')
+			.columns.find((item) => item.id === 'important')
+			.tasks.map((item) => item.id),
+		['personal-a', 'personal-b'],
+	);
+	assert.deepEqual(store.lastMutatedViewIds, ['work', 'personal']);
+	store.destroy();
+});
+
+test('batch moving rejects invalid targets and id collisions without partial mutation', () => {
+	const original = {
+		views: [
+			view(
+				'work',
+				'工作',
+				[column('base', '基础', [task('same'), task('valid')]), column('important', '重要', [], 1)],
+				0,
+			),
+			view(
+				'personal',
+				'个人',
+				[column('base', '基础', [task('same')]), column('important', '重要', [], 1)],
+				1,
+			),
+		],
+		archives: { work: { tasks: [] }, personal: { tasks: [] } },
+	};
+	const store = createStore(original);
+	const before = structuredClone(store.getBoardData());
+
+	store.dispatch({
+		type: 'MOVE_TASKS',
+		payload: {
+			tasks: [
+				{ viewId: 'work', columnId: 'base', taskId: 'valid' },
+				{ viewId: 'missing', columnId: 'base', taskId: 'absent' },
+			],
+			targetColumnId: 'important',
+		},
+	});
+	assert.deepEqual(store.getBoardData(), before);
+	assert.equal(store.lastActionMutatedData, false);
+
+	store.dispatch({
+		type: 'MOVE_TASKS',
+		payload: {
+			tasks: [{ viewId: 'work', columnId: 'base', taskId: 'same' }],
+			targetViewId: 'personal',
+			targetColumnId: 'base',
+		},
+	});
+	assert.deepEqual(store.getBoardData(), before);
+	assert.equal(store.lastActionMutatedData, false);
+	assert.deepEqual(store.lastMutatedViewIds, []);
+	store.destroy();
+});
+
 test('archive restore and deletion use explicit task type references when ids collide', () => {
 	const archived = (content) => ({
 		...task('same', content),

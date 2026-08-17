@@ -67,6 +67,21 @@ class MockElement {
 		else this.classes.delete(value);
 	}
 
+	addClass(value) {
+		this.classes.add(value);
+	}
+
+	removeClass(value) {
+		this.classes.delete(value);
+	}
+
+	querySelectorAll(selector) {
+		if (selector !== '.aulyckanban-view-tab') return [];
+		return descendants(this).filter((element) =>
+			element.classList.contains('aulyckanban-view-tab'),
+		);
+	}
+
 	addEventListener(name, listener) {
 		const listeners = this.listeners.get(name) ?? [];
 		listeners.push(listener);
@@ -109,7 +124,7 @@ const { Toolbar } = await loadSourceModule(new URL('../src/ui/Toolbar.ts', impor
 	},
 });
 
-function createToolbarHarness() {
+function createToolbarHarness(drag) {
 	const documentRef = { activeElement: null, defaultView: {} };
 	documentRef.defaultView.HTMLElement = MockElement;
 	documentRef.defaultView.MouseEvent = class {
@@ -119,6 +134,11 @@ function createToolbarHarness() {
 		}
 	};
 	documentRef.defaultView.requestAnimationFrame = (callback) => callback();
+	documentRef.defaultView.setTimeout = (callback) => {
+		callback();
+		return 1;
+	};
+	documentRef.defaultView.clearTimeout = () => {};
 	globalThis.document = documentRef;
 	globalThis.HTMLElement = MockElement;
 
@@ -154,9 +174,34 @@ function createToolbarHarness() {
 		},
 	};
 	const parent = new MockElement('div', {}, documentRef);
-	const toolbar = new Toolbar(parent, {}, store);
+	const toolbar = new Toolbar(parent, {}, store, drag);
 	return { documentRef, parent, store, toolbar };
 }
+
+test('dragging onto a task type locks it and drops to that exact type', () => {
+	const calls = [];
+	const drag = {
+		isDragging: true,
+		lockedViewId: null,
+		subscribe: () => () => {},
+		lockView: (viewId) => calls.push(['lock', viewId]),
+		drop: (target) => calls.push(['drop', target]),
+	};
+	const { parent } = createToolbarHarness(drag);
+	const target = descendants(parent).find((element) => element.dataset.viewId === 'test');
+	let prevented = 0;
+	target.listeners.get('dragenter')[0]({ preventDefault: () => prevented++ });
+	target.listeners.get('drop')[0]({
+		preventDefault: () => prevented++,
+		stopPropagation() {},
+	});
+	assert.equal(target.classList.contains('aulyckanban-drop-zone'), true);
+	assert.equal(prevented, 2);
+	assert.deepEqual(calls, [
+		['lock', 'test'],
+		['drop', { targetViewId: 'test' }],
+	]);
+});
 
 test('task type controls stay out of the native Tab order', () => {
 	const { parent } = createToolbarHarness();

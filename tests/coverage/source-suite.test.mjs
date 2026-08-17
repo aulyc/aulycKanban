@@ -11,4 +11,6 @@ import '../repository.test.mjs';
 import '../resizeHost.test.mjs';
 import '../store.test.mjs';
 import '../syncTarget.test.mjs';
+import '../taskDrag.test.mjs';
 import '../taskQuery.test.mjs';
+import '../taskSelection.test.mjs';

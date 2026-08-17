@@ -66,6 +66,7 @@ class MockStore {
 		this.lastActionMutatedData = false;
 		this.lastActionType = null;
 		this.lastMutatedViewId = null;
+		this.lastMutatedViewIds = [];
 		activeSetup.stores.push(this);
 	}
 
@@ -77,10 +78,11 @@ class MockStore {
 		};
 	}
 
-	emitMutation({ mutated = true, actionType = 'ADD_TASK', viewId = null } = {}) {
+	emitMutation({ mutated = true, actionType = 'ADD_TASK', viewId = null, viewIds = [] } = {}) {
 		this.lastActionMutatedData = mutated;
 		this.lastActionType = actionType;
 		this.lastMutatedViewId = viewId;
+		this.lastMutatedViewIds = viewIds;
 		for (const listener of this.listeners) listener();
 	}
 
@@ -181,7 +183,8 @@ const { default: KanbanPlugin } = await loadSourceModule(
 			'./services/syncService': { VaultSyncService: MockSyncService },
 			'./services/repository': { PluginDataRepository: MockRepository },
 			'./utils/syncTarget': {
-				getMutationSyncTarget(actionType, currentView, mutatedView) {
+				getMutationSyncTarget(actionType, currentView, mutatedView, mutatedViews) {
+					if (mutatedViews.length > 1) return { kind: 'views', viewIds: mutatedViews };
 					return actionType === 'CLEAR_ALL_DATA'
 						? { kind: 'all' }
 						: { kind: 'view', viewId: mutatedView ?? currentView };
@@ -282,6 +285,8 @@ test('plugin load registers entry points and routes only data mutations to manag
 	assert.deepEqual(sync.viewSyncs, ['personal']);
 	store.emitMutation({ actionType: 'CLEAR_ALL_DATA' });
 	assert.equal(sync.allSyncCount, 1);
+	store.emitMutation({ actionType: 'MOVE_TASKS', viewIds: ['work', 'personal'] });
+	assert.deepEqual(sync.viewSyncs, ['personal', 'work', 'personal']);
 
 	await harness.plugin.persistData();
 	assert.deepEqual(harness.setup.saves, [{ settings: store.settings, board: store.board }]);

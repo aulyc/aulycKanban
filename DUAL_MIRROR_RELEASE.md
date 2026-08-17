@@ -1,6 +1,6 @@
 # 单一 GitHub 主仓、Obsidian Community 与 Gitee 双发布源
 
-本项目采用中央可选策略 `aulyc-dual-mirror-v1` `1.6.0`，Release Profile 仍为
+本项目采用中央可选策略 `aulyc-dual-mirror-v1` `1.7.0`，Release Profile 仍为
 `obsidian-plugin`。目标分发拓扑只有两个仓库：
 
 - GitHub `aulyc/aulycKanban`：唯一源码权威、正式 annotated tag 权威、GitHub
@@ -29,6 +29,10 @@ provenance 的逐文件 SHA-256 交叉验证。发现缺失文件、额外 ZIP �
 上传到 GitHub/Gitee Release。`latest.json` 与 GitHub `release-channel`
 分支对本模式均为 `N/A`；两端状态的 manifest 阶段必须是
 `not-applicable`。
+
+Policy `1.7.0` 新增的 `DMR-011` 只适用于 `macos-arm64-app` 的
+`macos-compact` 合同。本项目不发布 macOS 原生 artifact，因此该规则为 `N/A`；
+`obsidian-community` / `obsidian-managed` 的三文件、无 `latest.json` 合同保持不变。
 
 ## 更新职责
 

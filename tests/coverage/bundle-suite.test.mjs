@@ -12,5 +12,6 @@ import '../syncService.test.mjs';
 import '../taskCardInteraction.test.mjs';
 import '../taskControls.test.mjs';
 import '../taskList.test.mjs';
+import '../taskMoveModal.test.mjs';
 import '../toolbarFocus.test.mjs';
 import '../utilityBar.test.mjs';

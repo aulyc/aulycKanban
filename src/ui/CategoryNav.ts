@@ -5,6 +5,7 @@ import { t } from '../i18n';
 import { ConfirmModal } from './ConfirmModal';
 import { createInlineInput } from './InlineInput';
 import { appendAccessibleLabel } from '../utils/dom';
+import type { TaskDrag } from './TaskDrag';
 
 const TRANSIENT_FOCUS_CLASS = 'aulyckanban-add-control-focused';
 
@@ -21,11 +22,15 @@ export class CategoryNav {
 	private draftTitle = '';
 	private shouldFocusInput = false;
 	private focusTargetAfterRender: { kind: 'all' } | { kind: 'column'; id: string } | null = null;
+	private readonly drag?: TaskDrag;
+	private readonly unsubscribeDrag?: () => void;
 
-	constructor(parentEl: HTMLElement, app: App, store: KanbanStore) {
+	constructor(parentEl: HTMLElement, app: App, store: KanbanStore, drag?: TaskDrag) {
 		this.app = app;
 		this.store = store;
+		this.drag = drag;
 		this.el = parentEl.createDiv({ cls: 'aulyckanban-category-nav' });
+		this.unsubscribeDrag = drag?.subscribe(() => this.updateDragTargets());
 		this.render();
 	}
 
@@ -112,6 +117,7 @@ export class CategoryNav {
 				e.stopPropagation();
 				this.showColumnMenu(e, column.id, itemEl);
 			});
+			this.bindDragTarget(itemEl, column.id);
 		}
 
 		// 添加分类按钮（紧跟在分类列表下方）
@@ -159,6 +165,50 @@ export class CategoryNav {
 		}
 
 		this.restoreRequestedFocus(allItemEl, listEl);
+		this.updateDragTargets();
+	}
+
+	private bindDragTarget(itemEl: HTMLElement, columnId: string): void {
+		if (!this.drag) return;
+		itemEl.addEventListener('dragenter', (event: DragEvent) => {
+			if (!this.drag?.isDragging) return;
+			event.preventDefault();
+			itemEl.addClass('aulyckanban-drop-hover');
+		});
+		itemEl.addEventListener('dragover', (event: DragEvent) => {
+			if (!this.drag?.isDragging) return;
+			event.preventDefault();
+			if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+		});
+		itemEl.addEventListener('dragleave', (event: DragEvent) => {
+			const nextTarget = event.relatedTarget;
+			const NodeConstructor = itemEl.ownerDocument.defaultView?.Node;
+			if (NodeConstructor && nextTarget instanceof NodeConstructor && itemEl.contains(nextTarget)) {
+				return;
+			}
+			itemEl.removeClass('aulyckanban-drop-hover');
+		});
+		itemEl.addEventListener('drop', (event: DragEvent) => {
+			if (!this.drag?.isDragging) return;
+			event.preventDefault();
+			event.stopPropagation();
+			itemEl.removeClass('aulyckanban-drop-hover');
+			this.drag.drop({ targetColumnId: columnId });
+		});
+	}
+
+	private updateDragTargets(): void {
+		if (!this.drag) return;
+		for (const item of Array.from(
+			this.el.querySelectorAll<HTMLElement>('.aulyckanban-nav-item[data-column-id]'),
+		)) {
+			item.toggleClass('aulyckanban-drop-zone', this.drag.isDragging);
+			if (!this.drag.isDragging) item.removeClass('aulyckanban-drop-hover');
+		}
+	}
+
+	destroy(): void {
+		this.unsubscribeDrag?.();
 	}
 
 	private restoreRequestedFocus(allItemEl: HTMLElement, listEl: HTMLElement): void {

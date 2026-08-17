@@ -47,6 +47,10 @@ class MockElement {
 		else this.classes.delete(value);
 	}
 
+	removeClass(value) {
+		this.classes.delete(value);
+	}
+
 	setText(value) {
 		this.textContent = value;
 	}
@@ -76,10 +80,17 @@ class MockElement {
 	}
 
 	querySelectorAll(selector) {
-		if (selector !== '.aulyckanban-nav-item') return [];
-		return descendants(this).filter((element) =>
-			element.classList.contains('aulyckanban-nav-item'),
-		);
+		if (selector === '.aulyckanban-nav-item') {
+			return descendants(this).filter((element) =>
+				element.classList.contains('aulyckanban-nav-item'),
+			);
+		}
+		if (selector === '.aulyckanban-nav-item[data-column-id]') {
+			return descendants(this).filter(
+				(element) => element.classList.contains('aulyckanban-nav-item') && element.dataset.columnId,
+			);
+		}
+		return [];
 	}
 
 	querySelector() {
@@ -117,7 +128,7 @@ const { CategoryNav } = await loadSourceModule(
 	},
 );
 
-function createCategoryNavHarness(overrides = {}) {
+function createCategoryNavHarness(overrides = {}, drag) {
 	const store = {
 		actions: [],
 		getCurrentColumns: () => [
@@ -136,9 +147,53 @@ function createCategoryNavHarness(overrides = {}) {
 		...overrides,
 	};
 	const parent = new MockElement();
-	const categoryNav = new CategoryNav(parent, {}, store);
+	const categoryNav = new CategoryNav(parent, {}, store, drag);
 	return { categoryNav, parent, store };
 }
+
+test('dragging onto a quadrant drops to that exact quadrant', () => {
+	const drops = [];
+	const drag = {
+		isDragging: true,
+		subscribe: () => () => {},
+		drop: (target) => drops.push(target),
+	};
+	const { parent } = createCategoryNavHarness({}, drag);
+	const target = descendants(parent).find((element) => element.dataset.columnId === 'later');
+	let prevented = 0;
+	const dataTransfer = {};
+	target.listeners.get('dragover')[0]({
+		preventDefault: () => prevented++,
+		dataTransfer,
+	});
+	target.listeners.get('drop')[0]({
+		preventDefault: () => prevented++,
+		stopPropagation() {},
+	});
+	assert.equal(target.classList.contains('aulyckanban-drop-zone'), true);
+	assert.equal(prevented, 2);
+	assert.equal(dataTransfer.dropEffect, 'move');
+	assert.deepEqual(drops, [{ targetColumnId: 'later' }]);
+});
+
+test('quadrants ignore drag events when no task drag session is active', () => {
+	const drops = [];
+	const drag = {
+		isDragging: false,
+		subscribe: () => () => {},
+		drop: (target) => drops.push(target),
+	};
+	const { parent } = createCategoryNavHarness({}, drag);
+	const target = descendants(parent).find((element) => element.dataset.columnId === 'later');
+	let prevented = false;
+	target.listeners.get('dragover')[0]({ preventDefault: () => (prevented = true) });
+	target.listeners.get('drop')[0]({
+		preventDefault: () => (prevented = true),
+		stopPropagation() {},
+	});
+	assert.equal(prevented, false);
+	assert.deepEqual(drops, []);
+});
 
 test('all quadrants is a fixed first navigation control with the aggregate count', () => {
 	const { parent, store } = createCategoryNavHarness();

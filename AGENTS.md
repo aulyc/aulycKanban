@@ -138,7 +138,7 @@ remote refs back, and finalizes the GitHub source fields in release provenance.
 
 ### Dual-mirror release policy
 
-- Explicit policy: `aulyc-dual-mirror-v1` `1.6.0`; it does not change the
+- Explicit policy: `aulyc-dual-mirror-v1` `1.7.0`; it does not change the
   `obsidian-plugin` Profile.
 - Public GitHub source, Release and Obsidian Community authority:
   `aulyc/aulycKanban`; Gitee Release mirror:
@@ -159,6 +159,10 @@ remote refs back, and finalizes the GitHub source fields in release provenance.
   `latest.json` is `N/A` and both manifest phases are `not-applicable`.
   The GitHub Release must reuse the authoritative source annotated tag; the
   mirror tool cannot create a missing source tag.
+- Policy `1.7.0` 新增的 `DMR-011` 只约束 `macos-arm64-app` 的
+  `macos-compact` 渠道；本仓库不发布 macOS 原生 artifact，因此该规则为
+  `N/A`，不改变 Community 三文件、`latest.json: N/A` 或 manifest
+  `not-applicable` 合同。
 - `publish` requires separate explicit authorization. A private GitHub source,
   missing Gitee mirror,
   one-sided failure or conflict must fail/record partial state; never push
@@ -197,10 +201,10 @@ remote refs back, and finalizes the GitHub source fields in release provenance.
 - CI signals: `package.json`；仓库当前没有远端 CI workflow。
 - Tracked drift evidence: `AGENTS.md`、`VERSIONING.md`、`version-bump.mjs` 和稳定发布控制脚本；复核后的 SHA-256 记录在 `.codex/standards.json`。
 - Active exceptions: none。
-- Release-process feedback classification: `core-candidate` for the shared
-  Policy 1.6.0 asset-set extension and `project-only` for this repository's
-  mapping/docs migration；项目采用 core `3.1.0`、`obsidian-plugin` `2.1.0`
-  和可选双镜像 Policy `1.6.0`。
+- Release-process feedback classification: `project-only` for this
+  repository's Policy `1.7.0` adoption metadata and documentation；`DMR-011`
+  is macOS-only and `N/A` for this Obsidian plugin。项目采用 core `3.1.0`、
+  `obsidian-plugin` `2.1.0` 和可选双镜像 Policy `1.7.0`。
 
 ### Release documentation and invariants
 

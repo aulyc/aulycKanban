@@ -1,6 +1,9 @@
 import type { ActionType, ViewKind } from '../types';
 
-export type MutationSyncTarget = { kind: 'all' } | { kind: 'view'; viewId: ViewKind };
+export type MutationSyncTarget =
+	| { kind: 'all' }
+	| { kind: 'view'; viewId: ViewKind }
+	| { kind: 'views'; viewIds: ViewKind[] };
 
 /** 会同时影响全部任务类型的操作。 */
 const MULTI_VIEW_MUTATION_ACTIONS: ReadonlySet<ActionType> = new Set([
@@ -23,7 +26,12 @@ export function getMutationSyncTarget(
 	actionType: ActionType,
 	currentViewId: ViewKind,
 	mutatedViewId: ViewKind | null,
+	mutatedViewIds: readonly ViewKind[] = [],
 ): MutationSyncTarget {
 	if (MULTI_VIEW_MUTATION_ACTIONS.has(actionType)) return { kind: 'all' };
+	const uniqueViewIds = [...new Set(mutatedViewIds)];
+	if (uniqueViewIds.length > 1) return { kind: 'views', viewIds: uniqueViewIds };
+	if (uniqueViewIds.length === 1)
+		return { kind: 'view', viewId: uniqueViewIds[0] ?? currentViewId };
 	return { kind: 'view', viewId: mutatedViewId ?? currentViewId };
 }

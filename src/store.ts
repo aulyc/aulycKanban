@@ -6,6 +6,7 @@ import type {
 	Column,
 	PluginSettings,
 	Task,
+	TaskCoordinate,
 	TaskView,
 	ViewKind,
 } from './types';
@@ -36,6 +37,7 @@ export class KanbanStore {
 	private _lastActionMutatedData = false;
 	private _lastActionType: ActionType | null = null;
 	private _lastMutatedViewId: ViewKind | null = null;
+	private _lastMutatedViewIds: ViewKind[] = [];
 	private taskScope: TaskScope;
 	private archiveTaskTypeScope: TaskTypeScope = 'current';
 	private columnScope: ColumnScope = 'current';
@@ -191,6 +193,9 @@ export class KanbanStore {
 	get lastMutatedViewId(): ViewKind | null {
 		return this._lastMutatedViewId;
 	}
+	get lastMutatedViewIds(): readonly ViewKind[] {
+		return this._lastMutatedViewIds;
+	}
 
 	subscribe(listener: Listener): () => void {
 		this.listeners.add(listener);
@@ -204,12 +209,12 @@ export class KanbanStore {
 	dispatch(action: Action): void {
 		let didMutateData = false;
 		let shouldPersist = false;
-		this._lastMutatedViewId = null;
+		this.recordMutatedViews([]);
 		switch (action.type) {
 			case 'ADD_TASK': {
 				const viewId = action.payload.viewId ?? this.settings.currentView;
 				didMutateData = this.addTask(viewId, action.payload.columnId, action.payload.content);
-				if (didMutateData) this._lastMutatedViewId = viewId;
+				if (didMutateData) this.recordMutatedViews([viewId]);
 				break;
 			}
 			case 'EDIT_TASK': {
@@ -220,19 +225,29 @@ export class KanbanStore {
 					action.payload.taskId,
 					action.payload.content,
 				);
-				if (didMutateData) this._lastMutatedViewId = viewId;
+				if (didMutateData) this.recordMutatedViews([viewId]);
 				break;
 			}
 			case 'DELETE_TASK': {
 				const viewId = action.payload.viewId ?? this.settings.currentView;
 				didMutateData = this.deleteTask(viewId, action.payload.columnId, action.payload.taskId);
-				if (didMutateData) this._lastMutatedViewId = viewId;
+				if (didMutateData) this.recordMutatedViews([viewId]);
 				break;
 			}
 			case 'TOGGLE_TASK': {
 				const viewId = action.payload.viewId ?? this.settings.currentView;
 				didMutateData = this.toggleTask(viewId, action.payload.columnId, action.payload.taskId);
-				if (didMutateData) this._lastMutatedViewId = viewId;
+				if (didMutateData) this.recordMutatedViews([viewId]);
+				break;
+			}
+			case 'MOVE_TASKS': {
+				const mutatedViewIds = this.moveTasks(
+					action.payload.tasks,
+					action.payload.targetViewId,
+					action.payload.targetColumnId,
+				);
+				didMutateData = mutatedViewIds.length > 0;
+				if (didMutateData) this.recordMutatedViews(mutatedViewIds);
 				break;
 			}
 			case 'SWITCH_VIEW':
@@ -299,7 +314,7 @@ export class KanbanStore {
 			case 'RESTORE_TASK': {
 				const restoredViewId = this.restoreTask(action.payload.viewId, action.payload.taskId);
 				didMutateData = restoredViewId !== null;
-				this._lastMutatedViewId = restoredViewId;
+				if (restoredViewId !== null) this.recordMutatedViews([restoredViewId]);
 				break;
 			}
 			case 'DELETE_ARCHIVE_TASKS':
@@ -385,6 +400,112 @@ export class KanbanStore {
 		column.tasks.splice(column.tasks.indexOf(task), 1);
 		this.getOrCreateArchive(viewId).tasks.unshift(task);
 		return true;
+	}
+
+	/**
+	 * 先验证全部来源、目标与 ID 冲突，再一次性移动；任何无效项都不会产生部分写入。
+	 */
+	private moveTasks(
+		tasks: readonly TaskCoordinate[],
+		targetViewId?: ViewKind,
+		targetColumnId?: string,
+	): ViewKind[] {
+		if (tasks.length === 0 || (!targetViewId && !targetColumnId)) return [];
+
+		type MoveRecord = {
+			coordinate: TaskCoordinate;
+			sourceColumn: Column;
+			sourceIndex: number;
+			targetViewId: ViewKind;
+			targetColumnId: string;
+			targetColumn: Column;
+			task: Task;
+		};
+		const coordinateKeys = new Set<string>();
+		const records: MoveRecord[] = [];
+		for (const coordinate of tasks) {
+			const coordinateKey = `${coordinate.viewId}:${coordinate.columnId}:${coordinate.taskId}`;
+			if (coordinateKeys.has(coordinateKey)) return [];
+			coordinateKeys.add(coordinateKey);
+			const sourceColumn = this.getRawColumn(coordinate.viewId, coordinate.columnId);
+			const sourceIndex =
+				sourceColumn?.tasks.findIndex((candidate) => candidate.id === coordinate.taskId) ?? -1;
+			const task = sourceColumn?.tasks[sourceIndex];
+			const nextViewId = targetViewId ?? coordinate.viewId;
+			const nextColumnId = targetColumnId ?? coordinate.columnId;
+			const targetColumn = this.getRawColumn(nextViewId, nextColumnId);
+			if (!sourceColumn || sourceIndex < 0 || !task || !targetColumn) return [];
+			records.push({
+				coordinate,
+				sourceColumn,
+				sourceIndex,
+				targetViewId: nextViewId,
+				targetColumnId: nextColumnId,
+				targetColumn,
+				task,
+			});
+		}
+
+		const moving = records.filter(
+			(record) =>
+				record.coordinate.viewId !== record.targetViewId ||
+				record.coordinate.columnId !== record.targetColumnId,
+		);
+		if (moving.length === 0) return [];
+
+		const leavingKeys = new Set(
+			moving.map(
+				(record) =>
+					`${record.coordinate.viewId}:${record.coordinate.columnId}:${record.coordinate.taskId}`,
+			),
+		);
+		const incomingKeys = new Set<string>();
+		for (const record of moving) {
+			const incomingKey = `${record.targetViewId}:${record.targetColumnId}:${record.task.id}`;
+			if (incomingKeys.has(incomingKey)) return [];
+			incomingKeys.add(incomingKey);
+			const conflictingTask = record.targetColumn.tasks.find(
+				(candidate) => candidate.id === record.task.id,
+			);
+			if (
+				conflictingTask &&
+				!leavingKeys.has(`${record.targetViewId}:${record.targetColumnId}:${conflictingTask.id}`)
+			) {
+				return [];
+			}
+		}
+
+		const sourceGroups = new Map<Column, MoveRecord[]>();
+		for (const record of moving) {
+			const group = sourceGroups.get(record.sourceColumn) ?? [];
+			group.push(record);
+			sourceGroups.set(record.sourceColumn, group);
+		}
+		for (const [column, group] of sourceGroups) {
+			for (const record of [...group].sort((a, b) => b.sourceIndex - a.sourceIndex)) {
+				column.tasks.splice(record.sourceIndex, 1);
+			}
+		}
+
+		const now = new Date().toISOString();
+		const targetGroups = new Map<Column, MoveRecord[]>();
+		for (const record of moving) {
+			record.task.updatedAt = now;
+			const group = targetGroups.get(record.targetColumn) ?? [];
+			group.push(record);
+			targetGroups.set(record.targetColumn, group);
+		}
+		for (const [column, group] of targetGroups) {
+			column.tasks.unshift(...group.map((record) => record.task));
+		}
+
+		const affectedViewIds: ViewKind[] = [];
+		for (const record of moving) {
+			for (const viewId of [record.coordinate.viewId, record.targetViewId]) {
+				if (!affectedViewIds.includes(viewId)) affectedViewIds.push(viewId);
+			}
+		}
+		return affectedViewIds;
 	}
 
 	private restoreTask(viewId: ViewKind | undefined, taskId: string): ViewKind | null {
@@ -604,6 +725,12 @@ export class KanbanStore {
 
 	private generateId(prefix: string): string {
 		return `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+	}
+
+	private recordMutatedViews(viewIds: readonly ViewKind[]): void {
+		this._lastMutatedViewIds = [...new Set(viewIds)];
+		this._lastMutatedViewId =
+			this._lastMutatedViewIds.length === 1 ? (this._lastMutatedViewIds[0] ?? null) : null;
 	}
 
 	private scheduleSave(isRetry = false): void {

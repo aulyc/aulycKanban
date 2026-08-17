@@ -7,6 +7,7 @@ import { revealTaskTypeItem } from '../utils/focusCycle';
 import { appendAccessibleLabel } from '../utils/dom';
 import { Menu, setIcon } from 'obsidian';
 import type { App } from 'obsidian';
+import type { TaskDrag } from './TaskDrag';
 
 const TRANSIENT_FOCUS_CLASS = 'aulyckanban-add-control-focused';
 
@@ -19,11 +20,16 @@ export class Toolbar {
 	private isAdding = false;
 	private draftTitle = '';
 	private shouldFocusInput = false;
+	private readonly drag?: TaskDrag;
+	private readonly unsubscribeDrag?: () => void;
+	private pendingViewLock: number | null = null;
 
-	constructor(parentEl: HTMLElement, app: App, store: KanbanStore) {
+	constructor(parentEl: HTMLElement, app: App, store: KanbanStore, drag?: TaskDrag) {
 		this.app = app;
 		this.store = store;
+		this.drag = drag;
 		this.el = parentEl.createDiv({ cls: 'aulyckanban-toolbar' });
+		this.unsubscribeDrag = drag?.subscribe(() => this.updateDragTargets());
 		this.render();
 	}
 
@@ -102,6 +108,7 @@ export class Toolbar {
 			target?.focus({ preventScroll: true });
 			if (target) revealTaskTypeItem(target);
 		}
+		this.updateDragTargets();
 	}
 
 	private renderAddInput(parentEl: HTMLElement): void {
@@ -215,7 +222,69 @@ export class Toolbar {
 				label,
 			);
 		});
+		this.bindDragTarget(button, view);
 		return button;
+	}
+
+	private bindDragTarget(button: HTMLButtonElement, viewId: ViewKind): void {
+		if (!this.drag) return;
+		button.addEventListener('dragenter', (event: DragEvent) => {
+			if (!this.drag?.isDragging) return;
+			event.preventDefault();
+			button.addClass('aulyckanban-drop-hover');
+			this.clearPendingViewLock();
+			this.pendingViewLock = button.win.setTimeout(() => {
+				this.pendingViewLock = null;
+				this.drag?.lockView(viewId);
+			}, 500);
+		});
+		button.addEventListener('dragover', (event: DragEvent) => {
+			if (!this.drag?.isDragging) return;
+			event.preventDefault();
+			if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+		});
+		button.addEventListener('dragleave', (event: DragEvent) => {
+			const nextTarget = event.relatedTarget;
+			const NodeConstructor = button.ownerDocument.defaultView?.Node;
+			if (NodeConstructor && nextTarget instanceof NodeConstructor && button.contains(nextTarget)) {
+				return;
+			}
+			button.removeClass('aulyckanban-drop-hover');
+			this.clearPendingViewLock();
+		});
+		button.addEventListener('drop', (event: DragEvent) => {
+			if (!this.drag?.isDragging) return;
+			event.preventDefault();
+			event.stopPropagation();
+			button.removeClass('aulyckanban-drop-hover');
+			this.clearPendingViewLock();
+			this.drag.drop({ targetViewId: viewId });
+		});
+	}
+
+	private updateDragTargets(): void {
+		if (!this.drag) return;
+		for (const button of Array.from(
+			this.el.querySelectorAll<HTMLElement>('.aulyckanban-view-tab'),
+		)) {
+			button.toggleClass('aulyckanban-drop-zone', this.drag.isDragging);
+			button.toggleClass(
+				'aulyckanban-drop-locked',
+				this.drag.isDragging && button.dataset['viewId'] === this.drag.lockedViewId,
+			);
+			if (!this.drag.isDragging) button.removeClass('aulyckanban-drop-hover');
+		}
+	}
+
+	private clearPendingViewLock(): void {
+		if (this.pendingViewLock === null) return;
+		this.el.win.clearTimeout(this.pendingViewLock);
+		this.pendingViewLock = null;
+	}
+
+	destroy(): void {
+		this.clearPendingViewLock();
+		this.unsubscribeDrag?.();
 	}
 
 	private bindTransientControlFocus(element: HTMLElement): void {

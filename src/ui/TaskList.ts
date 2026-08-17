@@ -1,9 +1,15 @@
+import { Menu, Notice, setIcon } from 'obsidian';
 import type { App } from 'obsidian';
 import type { KanbanStore } from '../store';
+import type { TaskCoordinate } from '../types';
 import type { TaskRef } from '../utils/taskQuery';
 import { getTaskRefKey } from '../utils/taskQuery';
 import { t } from '../i18n';
+import { appendAccessibleLabel } from '../utils/dom';
 import { TaskCard } from './TaskCard';
+import { TaskDrag } from './TaskDrag';
+import { TaskMoveModal, type TaskMoveTarget } from './TaskMoveModal';
+import { TaskSelection } from './TaskSelection';
 
 /** 当前任务范围与象限范围交叉后的未归档任务列表。 */
 export class TaskList {
@@ -12,10 +18,14 @@ export class TaskList {
 	private readonly store: KanbanStore;
 	private readonly scrollTopByScope = new Map<string, number>();
 	private cardCache = new Map<string, { el: HTMLElement; snapshot: string }>();
+	private readonly selection = new TaskSelection();
+	private readonly drag: TaskDrag;
 
-	constructor(parentEl: HTMLElement, app: App, store: KanbanStore) {
+	constructor(parentEl: HTMLElement, app: App, store: KanbanStore, drag = new TaskDrag()) {
 		this.app = app;
 		this.store = store;
+		this.drag = drag;
+		this.drag.setDropHandler((tasks, target) => this.moveCoordinates(tasks, target));
 		this.el = parentEl.createDiv({ cls: 'aulyckanban-task-list' });
 	}
 
@@ -29,7 +39,10 @@ export class TaskList {
 		this.el.empty();
 		const scopeKey = this.getScopeKey();
 		this.el.dataset['scopeKey'] = scopeKey;
+		this.selection.resetForScope(scopeKey);
 		const refs = this.store.getVisibleTaskRefs();
+		this.selection.prune(new Set(refs.map(getTaskRefKey)));
+		if (refs.length > 0) this.renderSelectionToolbar(refs);
 		if (refs.length === 0) {
 			this.cardCache.clear();
 			this.el.createDiv({
@@ -44,7 +57,9 @@ export class TaskList {
 		for (const ref of refs) {
 			const key = getTaskRefKey(ref);
 			const sourceLabel = this.getSourceLabel(ref);
-			const snapshot = `${key}|${ref.task.content}|${ref.task.completed}|${ref.task.updatedAt ?? ''}|${ref.task.createdAt}|${sourceLabel ?? ''}`;
+			const selected = this.selection.isSelected(key);
+			const selectionMode = this.selection.isActive;
+			const snapshot = `${key}|${ref.task.content}|${ref.task.completed}|${ref.task.updatedAt ?? ''}|${ref.task.createdAt}|${sourceLabel ?? ''}|${selectionMode}|${selected}`;
 			const cached = this.cardCache.get(key);
 			if (cached?.snapshot === snapshot) {
 				tasksEl.appendChild(cached.el);
@@ -59,6 +74,14 @@ export class TaskList {
 				ref.columnId,
 				ref.task,
 				sourceLabel,
+				{
+					selectionMode,
+					selected,
+					onSelectionRequest: (event) => this.handleSelectionRequest(ref, refs, event),
+					onContextMenu: (event) => this.showTaskMenu(event, ref, refs),
+					onDragStart: (event) => this.handleDragStart(ref, refs, event),
+					onDragEnd: () => this.drag.cancel(),
+				},
 			);
 			const cardEl = card.getEl();
 			nextCache.set(key, { el: cardEl, snapshot });
@@ -67,6 +90,196 @@ export class TaskList {
 
 		const savedScrollTop = this.scrollTopByScope.get(scopeKey);
 		if (savedScrollTop !== undefined) tasksEl.scrollTop = savedScrollTop;
+	}
+
+	private renderSelectionToolbar(refs: readonly TaskRef[]): void {
+		const toolbarEl = this.el.createDiv({
+			cls: `aulyckanban-task-selection-toolbar${
+				this.selection.isActive ? ' aulyckanban-task-selection-toolbar-active' : ''
+			}`,
+		});
+		if (!this.selection.isActive) {
+			const selectButton = this.createToolbarButton(
+				toolbarEl,
+				'aulyckanban-task-select-mode-btn',
+				'list-checks',
+				t('task.select.mode'),
+			);
+			selectButton.addEventListener('click', () => {
+				this.selection.activate();
+				this.render();
+			});
+			return;
+		}
+
+		const cancelButton = this.createToolbarButton(
+			toolbarEl,
+			'aulyckanban-task-cancel-selection-btn',
+			'x',
+			t('task.select.cancel'),
+		);
+		cancelButton.addEventListener('click', () => {
+			this.selection.deactivate();
+			this.render();
+		});
+
+		const visibleKeys = refs.map(getTaskRefKey);
+		const allSelected = visibleKeys.every((key) => this.selection.isSelected(key));
+		const selectAllButton = this.createToolbarButton(
+			toolbarEl,
+			'aulyckanban-task-select-all-btn',
+			allSelected ? 'list-x' : 'list-checks',
+			allSelected ? t('task.select.clearAll') : t('task.select.all'),
+		);
+		selectAllButton.addEventListener('click', () => {
+			this.selection.selectAll(visibleKeys);
+			this.render();
+		});
+
+		const moveButton = this.createToolbarButton(
+			toolbarEl,
+			'aulyckanban-task-move-selected-btn',
+			'move',
+			t('task.move.selected'),
+		);
+		moveButton.disabled = this.selection.size === 0;
+		moveButton.addEventListener('click', () => {
+			this.openMoveModal(this.getSelectedRefs(refs));
+		});
+
+		toolbarEl.createSpan({
+			cls: 'aulyckanban-task-selected-count',
+			text: t('task.select.count').replace('{count}', String(this.selection.size)),
+		});
+	}
+
+	private createToolbarButton(
+		parentEl: HTMLElement,
+		className: string,
+		icon: string,
+		label: string,
+	): HTMLButtonElement {
+		const button = parentEl.createEl('button', {
+			cls: `aulyckanban-task-selection-btn ${className}`,
+			attr: { type: 'button', tabindex: '-1' },
+		});
+		setIcon(button, icon);
+		appendAccessibleLabel(button, label);
+		return button;
+	}
+
+	private handleSelectionRequest(
+		ref: TaskRef,
+		visibleRefs: readonly TaskRef[],
+		event: MouseEvent | KeyboardEvent,
+	): void {
+		const key = getTaskRefKey(ref);
+		if (event.shiftKey) {
+			this.selection.selectRange(key, visibleRefs.map(getTaskRefKey));
+		} else {
+			this.selection.toggle(key);
+		}
+		this.render();
+	}
+
+	private showTaskMenu(event: MouseEvent, ref: TaskRef, visibleRefs: readonly TaskRef[]): void {
+		const key = getTaskRefKey(ref);
+		let targets = [ref];
+		if (this.selection.isActive) {
+			if (!this.selection.isSelected(key)) {
+				this.selection.selectOnly(key);
+				this.render();
+			}
+			targets = this.getSelectedRefs(visibleRefs);
+		}
+		const menu = new Menu();
+		menu.addItem((item) => {
+			item
+				.setTitle(targets.length > 1 ? t('task.move.selected') : t('task.move.menu'))
+				.setIcon('move')
+				.onClick(() => this.openMoveModal(targets));
+		});
+		menu.showAtMouseEvent(event);
+	}
+
+	private getSelectedRefs(visibleRefs: readonly TaskRef[]): TaskRef[] {
+		return visibleRefs.filter((ref) => this.selection.isSelected(getTaskRefKey(ref)));
+	}
+
+	private openMoveModal(refs: readonly TaskRef[]): void {
+		if (refs.length === 0) return;
+		const initialViewId = this.getCommonValue(refs.map((ref) => ref.viewId));
+		const initialColumnId = this.getCommonValue(refs.map((ref) => ref.columnId));
+		new TaskMoveModal(this.app, {
+			taskCount: refs.length,
+			views: this.store.getTaskViews().map((view) => ({ id: view.id, title: view.title })),
+			columns: this.store
+				.getCurrentColumns()
+				.map((column) => ({ id: column.id, title: column.title })),
+			initialViewId,
+			initialColumnId,
+			onMove: (target) => this.moveTasks(refs, target),
+		}).open();
+	}
+
+	private moveTasks(refs: readonly TaskRef[], target: TaskMoveTarget): void {
+		const coordinates: TaskCoordinate[] = refs.map((ref) => ({
+			viewId: ref.viewId,
+			columnId: ref.columnId,
+			taskId: ref.task.id,
+		}));
+		this.moveCoordinates(coordinates, target);
+	}
+
+	private moveCoordinates(coordinates: readonly TaskCoordinate[], target: TaskMoveTarget): void {
+		const changesDestination = coordinates.some(
+			(coordinate) =>
+				(target.targetViewId !== undefined && target.targetViewId !== coordinate.viewId) ||
+				(target.targetColumnId !== undefined && target.targetColumnId !== coordinate.columnId),
+		);
+		if (!changesDestination) return;
+		this.store.dispatch({
+			type: 'MOVE_TASKS',
+			payload: {
+				tasks: coordinates,
+				targetViewId: target.targetViewId,
+				targetColumnId: target.targetColumnId,
+			},
+		});
+		if (!this.store.lastActionMutatedData) {
+			new Notice(t('task.move.failed'));
+			return;
+		}
+		this.selection.deactivate();
+		new Notice(t('task.move.success').replace('{count}', String(coordinates.length)));
+		this.render();
+	}
+
+	private handleDragStart(ref: TaskRef, visibleRefs: readonly TaskRef[], event: DragEvent): void {
+		const key = getTaskRefKey(ref);
+		const draggedRefs =
+			this.selection.isActive && this.selection.isSelected(key)
+				? this.getSelectedRefs(visibleRefs)
+				: [ref];
+		if (this.selection.isActive && !this.selection.isSelected(key)) this.selection.deactivate();
+		const coordinates = draggedRefs.map((item) => ({
+			viewId: item.viewId,
+			columnId: item.columnId,
+			taskId: item.task.id,
+		}));
+		if (event.dataTransfer) {
+			event.dataTransfer.effectAllowed = 'move';
+			event.dataTransfer.setData(
+				'text/plain',
+				t('task.drag.count').replace('{count}', String(coordinates.length)),
+			);
+		}
+		this.drag.start(coordinates);
+	}
+
+	private getCommonValue(values: readonly string[]): string | null {
+		const first = values[0];
+		return first !== undefined && values.every((value) => value === first) ? first : null;
 	}
 
 	private getScopeKey(): string {

@@ -5,6 +5,7 @@ import { loadSourceModule } from './helpers/load-source-module.mjs';
 class MockElement {
 	constructor(documentRef, options = {}) {
 		this.documentRef = documentRef;
+		this.ownerDocument = documentRef;
 		this.children = [];
 		this.dataset = {};
 		this.attributes = {};
@@ -31,6 +32,10 @@ class MockElement {
 	}
 
 	createSpan(options = {}) {
+		return this.createDiv(options);
+	}
+
+	createEl(_tagName, options = {}) {
 		return this.createDiv(options);
 	}
 
@@ -75,6 +80,10 @@ class MockElement {
 	focus() {
 		this.documentRef.activeElement = this;
 	}
+
+	getBoundingClientRect() {
+		return { left: 10, top: 20, width: 100, height: 40, right: 110, bottom: 60 };
+	}
 }
 
 function descendants(element) {
@@ -112,7 +121,7 @@ const { TaskCard } = await loadSourceModule(new URL('../src/ui/TaskCard.ts', imp
 	},
 });
 
-function createHarness() {
+function createHarness(options = {}) {
 	const documentRef = {
 		activeElement: null,
 		defaultView: {
@@ -120,6 +129,12 @@ function createHarness() {
 		},
 	};
 	documentRef.defaultView.HTMLElement = MockElement;
+	documentRef.defaultView.MouseEvent = class {
+		constructor(type, eventOptions) {
+			this.type = type;
+			Object.assign(this, eventOptions);
+		}
+	};
 	const inlineInputs = [];
 	const icons = [];
 	activeInlineInputs = inlineInputs;
@@ -139,9 +154,95 @@ function createHarness() {
 			createdAt: '2026-07-13T12:00:00Z',
 		},
 		'工作任务',
+		options,
 	).getEl();
 	return { actions, card, documentRef, icons, inlineInputs };
 }
+
+test('selection mode uses card clicks and checkboxes without entering content editing', () => {
+	const selected = [];
+	const { card, inlineInputs } = createHarness({
+		selectionMode: true,
+		selected: true,
+		onSelectionRequest: (event) => selected.push(event),
+	});
+	assert.equal(card.classList.contains('aulyckanban-task-selected'), true);
+	const checkbox = descendants(card).find((element) =>
+		element.classList.contains('aulyckanban-task-select-checkbox'),
+	);
+	assert.ok(checkbox);
+	assert.equal(checkbox.checked, true);
+
+	card.listeners.get('click')[0]({
+		metaKey: false,
+		ctrlKey: false,
+		shiftKey: false,
+		preventDefault() {},
+		stopPropagation() {},
+	});
+	assert.equal(selected.length, 1);
+	const content = descendants(card).find((element) =>
+		element.classList.contains('aulyckanban-task-content'),
+	);
+	content.listeners.get('dblclick')[0]({ preventDefault() {}, stopPropagation() {} });
+	assert.equal(inlineInputs.length, 0);
+});
+
+test('modifier click enters selection and right click delegates the exact card coordinate', () => {
+	const selectionEvents = [];
+	const menuEvents = [];
+	const { card } = createHarness({
+		onSelectionRequest: (event) => selectionEvents.push(event),
+		onContextMenu: (event) => menuEvents.push(event),
+	});
+	card.listeners.get('click')[0]({
+		metaKey: true,
+		ctrlKey: false,
+		shiftKey: false,
+		preventDefault() {},
+		stopPropagation() {},
+	});
+	assert.equal(selectionEvents.length, 1);
+
+	card.listeners.get('contextmenu')[0]({ preventDefault() {}, stopPropagation() {} });
+	assert.equal(menuEvents.length, 1);
+});
+
+test('keyboard context-menu shortcut opens the same task move menu', () => {
+	const menuEvents = [];
+	const { card } = createHarness({ onContextMenu: (event) => menuEvents.push(event) });
+	let prevented = false;
+	card.listeners.get('keydown')[0]({
+		key: 'F10',
+		shiftKey: true,
+		target: card,
+		preventDefault: () => {
+			prevented = true;
+		},
+		stopPropagation() {},
+	});
+	assert.equal(prevented, true);
+	assert.equal(menuEvents.length, 1);
+	assert.equal(menuEvents[0].type, 'contextmenu');
+});
+
+test('desktop drag delegates start and end while marking the card as draggable', () => {
+	const events = [];
+	const { card } = createHarness({
+		onDragStart: (event) => events.push(['start', event]),
+		onDragEnd: (event) => events.push(['end', event]),
+	});
+	assert.equal(card.draggable, true);
+	const startEvent = { dataTransfer: {} };
+	card.listeners.get('dragstart')[0](startEvent);
+	assert.equal(card.classList.contains('aulyckanban-task-dragging'), true);
+	card.listeners.get('dragend')[0]({});
+	assert.equal(card.classList.contains('aulyckanban-task-dragging'), false);
+	assert.deepEqual(events, [
+		['start', startEvent],
+		['end', {}],
+	]);
+});
 
 test('task archive action reuses the toolbar archive folder icon', () => {
 	const { card, icons } = createHarness();

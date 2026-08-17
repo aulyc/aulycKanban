@@ -86,6 +86,13 @@ export interface PluginData {
 	board: BoardData;
 }
 
+/** 普通任务的稳定坐标；任务 ID 只在任务类型与象限坐标内唯一。 */
+export interface TaskCoordinate {
+	viewId: ViewKind;
+	columnId: string;
+	taskId: string;
+}
+
 /** Store Action（可辨识联合类型，每种操作有独立的 payload 类型） */
 export type Action =
 	| { type: 'ADD_TASK'; payload: { viewId?: ViewKind; columnId: string; content: string } }
@@ -95,6 +102,14 @@ export type Action =
 	  }
 	| { type: 'DELETE_TASK'; payload: { viewId?: ViewKind; columnId: string; taskId: string } }
 	| { type: 'TOGGLE_TASK'; payload: { viewId?: ViewKind; columnId: string; taskId: string } }
+	| {
+			type: 'MOVE_TASKS';
+			payload: {
+				tasks: readonly TaskCoordinate[];
+				targetViewId?: ViewKind;
+				targetColumnId?: string;
+			};
+	  }
 	| { type: 'SWITCH_VIEW'; payload: { view: ViewKind } }
 	| { type: 'SHOW_ALL_TASKS' }
 	| { type: 'SHOW_ALL_COLUMNS' }
