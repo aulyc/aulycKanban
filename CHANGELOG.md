@@ -2,7 +2,7 @@
 
 本项目从 `2.2.0` 开始按标准 SemVer、独立发布元数据提交和不可变 annotated tag 记录变更。
 
-## Unreleased
+## [2.11.0-beta.1] - 2026-08-17
 
 - 将 `aulyc-dual-mirror-v1` 项目采用与中央渠道登记同步升级到 `1.7.0`；新增的
   macOS 简洁附件规则对本 Obsidian 插件为 `N/A`，Community 三文件合同保持不变。
