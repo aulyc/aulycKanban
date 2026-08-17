@@ -163,34 +163,69 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 }
 
 .aulyckanban-reorder-dragging {
-	opacity: 0.5;
+	opacity: 0.35;
 }
 
-.aulyckanban-view-tab.aulyckanban-reorder-before::before,
-.aulyckanban-view-tab.aulyckanban-reorder-after::after,
-.aulyckanban-nav-item.aulyckanban-reorder-before::before,
-.aulyckanban-nav-item.aulyckanban-reorder-after::after {
-	position: absolute;
-	z-index: 2;
-	content: '';
-	background: var(--interactive-accent);
-	border-radius: 2px;
+.aulyckanban-reorder-placeholder {
+	display: grid;
+	place-items: center;
+	flex: 0 0 auto;
+	box-sizing: border-box;
+	color: var(--interactive-accent);
+	background: color-mix(in srgb, var(--interactive-accent) 18%, transparent);
+	border: 2px dashed var(--interactive-accent);
+	border-radius: 6px;
+	box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text-on-accent) 38%, transparent);
+	pointer-events: auto;
+}
+
+.aulyckanban-reorder-placeholder::before {
+	font-size: 16px;
+	font-weight: 700;
+	line-height: 1;
+}
+
+.aulyckanban-reorder-placeholder-horizontal {
+	width: var(--aulyckanban-reorder-placeholder-size);
+	min-width: 42px;
+	height: 30px;
+}
+
+.aulyckanban-reorder-placeholder-horizontal::before {
+	content: '↔';
+}
+
+.aulyckanban-reorder-placeholder-vertical {
+	width: 100%;
+	height: var(--aulyckanban-reorder-placeholder-size);
+	min-height: 34px;
+}
+
+.aulyckanban-reorder-placeholder-vertical::before {
+	content: '↕';
+}
+
+.aulyckanban-reorder-drag-preview {
+	position: fixed;
+	top: 0;
+	left: 0;
+	z-index: 1000;
+	display: flex;
+	align-items: center;
+	max-width: 150px;
+	height: 30px;
+	padding: 5px 10px;
+	overflow: hidden;
+	color: var(--text-normal);
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	background: var(--background-primary);
+	border: 1px solid var(--interactive-accent);
+	border-radius: 6px;
+	box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+	font-size: var(--font-ui-small);
+	font-weight: 600;
 	pointer-events: none;
-}
-
-.aulyckanban-view-tab.aulyckanban-reorder-before::before,
-.aulyckanban-view-tab.aulyckanban-reorder-after::after {
-	top: 4px;
-	bottom: 4px;
-	width: 2px;
-}
-
-.aulyckanban-view-tab.aulyckanban-reorder-before::before {
-	left: -5px;
-}
-
-.aulyckanban-view-tab.aulyckanban-reorder-after::after {
-	right: -5px;
 }
 
 .aulyckanban-toolbar
@@ -296,6 +331,32 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	padding: var(--aulyckanban-content-padding-y) var(--aulyckanban-content-padding-right)
 		var(--aulyckanban-content-padding-y) var(--aulyckanban-content-padding-left);
 	overflow: hidden;
+}
+
+/* ==================== 底部提示区 ==================== */
+.aulyckanban-board-footer {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	flex: none;
+	min-height: 32px;
+	box-sizing: border-box;
+	padding: 5px var(--aulyckanban-toolbar-padding-x);
+	color: var(--text-muted);
+	background: var(--background-secondary);
+	border-top: 1px solid var(--background-modifier-border);
+	font-size: var(--font-ui-smaller);
+}
+
+.aulyckanban-board-footer-status {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	min-width: 0;
+}
+
+.aulyckanban-board-footer-selection {
+	white-space: nowrap;
 }
 
 /* 左侧任务区：共享新增控件，列表与归档视图互斥。 */
@@ -612,12 +673,6 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	cursor: default;
 }
 
-.aulyckanban-task-selected-count {
-	color: var(--text-muted);
-	font-size: var(--font-ui-smaller);
-	white-space: nowrap;
-}
-
 /* ==================== 右侧分类导航 ==================== */
 .aulyckanban-category-nav {
 	width: 100%;
@@ -660,21 +715,6 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	cursor: pointer;
 	transition: none;
 	user-select: none;
-}
-
-.aulyckanban-nav-item.aulyckanban-reorder-before::before,
-.aulyckanban-nav-item.aulyckanban-reorder-after::after {
-	left: 6px;
-	right: 6px;
-	height: 2px;
-}
-
-.aulyckanban-nav-item.aulyckanban-reorder-before::before {
-	top: -3px;
-}
-
-.aulyckanban-nav-item.aulyckanban-reorder-after::after {
-	bottom: -3px;
 }
 
 .aulyckanban-nav-item:hover {

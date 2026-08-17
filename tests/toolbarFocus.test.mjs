@@ -19,6 +19,12 @@ class MockElement {
 		);
 		this.textContent = options?.text ?? '';
 		this.listeners = new Map();
+		this.style = {
+			values: {},
+			setProperty: (name, value) => {
+				this.style.values[name] = value;
+			},
+		};
 		this.classList = {
 			contains: (value) => this.classes.has(value),
 		};
@@ -27,9 +33,36 @@ class MockElement {
 	}
 
 	append(child) {
+		return this.appendChild(child);
+	}
+
+	appendChild(child) {
+		child.remove();
 		child.parentElement = this;
 		this.children.push(child);
 		return child;
+	}
+
+	insertBefore(child, reference) {
+		child.remove();
+		child.parentElement = this;
+		const index = reference ? this.children.indexOf(reference) : -1;
+		if (index < 0) this.children.push(child);
+		else this.children.splice(index, 0, child);
+		return child;
+	}
+
+	get nextSibling() {
+		if (!this.parentElement) return null;
+		const index = this.parentElement.children.indexOf(this);
+		return this.parentElement.children[index + 1] ?? null;
+	}
+
+	remove() {
+		if (!this.parentElement) return;
+		const index = this.parentElement.children.indexOf(this);
+		if (index >= 0) this.parentElement.children.splice(index, 1);
+		this.parentElement = null;
 	}
 
 	createDiv(options = {}) {
@@ -131,6 +164,7 @@ const { Toolbar } = await loadSourceModule(new URL('../src/ui/Toolbar.ts', impor
 function createToolbarHarness(drag) {
 	const documentRef = { activeElement: null, defaultView: {} };
 	documentRef.defaultView.HTMLElement = MockElement;
+	documentRef.defaultView.Node = MockElement;
 	documentRef.defaultView.MouseEvent = class {
 		constructor(type, options) {
 			this.type = type;
@@ -143,6 +177,7 @@ function createToolbarHarness(drag) {
 		return 1;
 	};
 	documentRef.defaultView.clearTimeout = () => {};
+	documentRef.body = new MockElement('body', {}, documentRef);
 	globalThis.document = documentRef;
 	globalThis.HTMLElement = MockElement;
 
@@ -215,19 +250,32 @@ test('task types drag horizontally to persist a new order without starting a tas
 		setData(type, value) {
 			this.value = [type, value];
 		},
+		setDragImage(element, x, y) {
+			this.dragImage = { element, x, y };
+		},
 	};
 	sourceButton.listeners.get('dragstart')[0]({ dataTransfer });
 	assert.equal(sourceButton.draggable, true);
 	assert.equal(sourceButton.classList.contains('aulyckanban-reorder-dragging'), true);
 	assert.deepEqual(dataTransfer.value, ['application/x-aulyckanban-view-order', 'work']);
+	assert.equal(
+		dataTransfer.dragImage.element.classList.contains('aulyckanban-reorder-drag-preview'),
+		true,
+	);
+	assert.equal(dataTransfer.dragImage.element.textContent, 'Work');
+	assert.deepEqual([dataTransfer.dragImage.x, dataTransfer.dragImage.y], [18, 30]);
 	let prevented = 0;
 	for (const listener of targetButton.listeners.get('dragover')) {
 		listener({ clientX: 90, dataTransfer, preventDefault: () => prevented++ });
 	}
-	assert.equal(targetButton.classList.contains('aulyckanban-reorder-after'), true);
-	for (const listener of targetButton.listeners.get('drop')) {
+	const placeholder = descendants(parent).find((element) =>
+		element.classList.contains('aulyckanban-reorder-placeholder-horizontal'),
+	);
+	assert.ok(placeholder);
+	assert.equal(placeholder.style.values['--aulyckanban-reorder-placeholder-size'], '100px');
+	assert.equal(placeholder.parentElement.children.at(-1), placeholder);
+	for (const listener of placeholder.listeners.get('drop')) {
 		listener({
-			clientX: 90,
 			preventDefault: () => prevented++,
 			stopPropagation() {},
 		});
@@ -237,7 +285,12 @@ test('task types drag horizontally to persist a new order without starting a tas
 		type: 'REORDER_VIEWS',
 		payload: { viewIds: ['test', 'work'] },
 	});
-	assert.equal(targetButton.classList.contains('aulyckanban-reorder-after'), false);
+	assert.equal(
+		descendants(parent).some((element) =>
+			element.classList.contains('aulyckanban-reorder-placeholder-horizontal'),
+		),
+		false,
+	);
 });
 
 test('task type controls stay out of the native Tab order', () => {

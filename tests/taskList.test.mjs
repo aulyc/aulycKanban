@@ -133,7 +133,9 @@ const { TaskList } = await loadSourceModule(new URL('../src/ui/TaskList.ts', imp
 			appendAccessibleLabel: (element, label) => element.createSpan({ text: label }),
 		},
 		'./InlineInput': { createInlineInput: () => ({}) },
-		'../i18n': { t: (key) => key },
+		'../i18n': {
+			t: (key) => (key === 'task.select.count' ? '已选 {count} 项' : key),
+		},
 	},
 });
 
@@ -210,8 +212,11 @@ test('ordinary task list enters multi-select mode and moves the selected coordin
 		},
 	};
 	const parent = new MockElement();
+	const footerStatus = new MockElement();
 	const list = new TaskList(parent, {}, store);
+	list.setStatusEl(footerStatus);
 	list.render();
+	assert.equal(footerStatus.children.length, 0);
 	const selectionButton = descendants(parent).find((element) =>
 		element.classList.contains('aulyckanban-task-select-mode-btn'),
 	);
@@ -225,6 +230,13 @@ test('ordinary task list enters multi-select mode and moves the selected coordin
 	cancelButton.listeners.get('click')[0]();
 	assert.equal(activeCards.length, cardCountBeforeDisabledCancel);
 	selectionButton.listeners.get('click')[0]();
+	assert.equal(footerStatus.children[0].textContent, '已选 0 项');
+	assert.equal(
+		descendants(parent).some((element) =>
+			element.classList.contains('aulyckanban-task-selected-count'),
+		),
+		false,
+	);
 	cancelButton = descendants(parent).find((element) =>
 		element.classList.contains('aulyckanban-task-cancel-selection-btn'),
 	);
@@ -237,6 +249,11 @@ test('ordinary task list enters multi-select mode and moves the selected coordin
 	);
 	selectingCards[0].options.onSelectionRequest({ shiftKey: false });
 	selectingCards[1].options.onSelectionRequest({ shiftKey: false });
+	assert.equal(footerStatus.children[0].textContent, '已选 2 项');
+	assert.equal(
+		footerStatus.children[0].classList.contains('aulyckanban-board-footer-selection'),
+		true,
+	);
 	const selectedCards = activeCards.slice(-2);
 	const transfer = {
 		setData(type, value) {
@@ -267,6 +284,7 @@ test('ordinary task list enters multi-select mode and moves the selected coordin
 		targetViewId: undefined,
 		targetColumnId: 'important',
 	});
+	assert.equal(footerStatus.children.length, 0);
 });
 
 test('right-clicking an ordinary card opens the exact same move modal for that card', () => {

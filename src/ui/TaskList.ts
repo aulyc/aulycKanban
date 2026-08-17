@@ -17,6 +17,7 @@ export class TaskList {
 	private readonly app: App;
 	private readonly store: KanbanStore;
 	private readonly selectionControlsEl: HTMLElement;
+	private statusEl: HTMLElement | null = null;
 	private readonly scrollTopByScope = new Map<string, number>();
 	private cardCache = new Map<string, { el: HTMLElement; snapshot: string }>();
 	private readonly selection = new TaskSelection();
@@ -38,6 +39,10 @@ export class TaskList {
 		this.el = parentEl.createDiv({ cls: 'aulyckanban-task-list' });
 	}
 
+	setStatusEl(statusEl: HTMLElement): void {
+		this.statusEl = statusEl;
+	}
+
 	render(): void {
 		const previousScopeKey = this.el.dataset['scopeKey'] ?? '';
 		const previousTasksEl = this.el.querySelector<HTMLElement>('.aulyckanban-tasks');
@@ -53,6 +58,7 @@ export class TaskList {
 		const refs = this.store.getVisibleTaskRefs();
 		this.selection.prune(new Set(refs.map(getTaskRefKey)));
 		this.renderSelectionToolbar(refs);
+		this.renderSelectionStatus();
 		if (refs.length === 0) {
 			this.cardCache.clear();
 			this.el.createDiv({
@@ -139,13 +145,16 @@ export class TaskList {
 			else this.selection.activate();
 			this.render();
 		});
+	}
 
-		if (this.selection.isActive) {
-			toolbarEl.createSpan({
-				cls: 'aulyckanban-task-selected-count',
-				text: t('task.select.count').replace('{count}', String(this.selection.size)),
-			});
-		}
+	private renderSelectionStatus(): void {
+		if (!this.statusEl) return;
+		this.statusEl.empty();
+		if (!this.selection.isActive) return;
+		this.statusEl.createSpan({
+			cls: 'aulyckanban-board-footer-selection',
+			text: t('task.select.count').replace('{count}', String(this.selection.size)),
+		});
 	}
 
 	private createToolbarButton(

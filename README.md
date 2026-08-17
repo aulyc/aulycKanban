@@ -15,6 +15,9 @@ tasks; and navigate the board with the keyboard.
 - Search, archive filtering, restore, sorting, and batch deletion.
 - Right-click move actions, desktop drag-and-drop, and atomic multi-select moves
   across task types and quadrants.
+- Desktop task-type and quadrant reordering with full-size insertion slots and
+  compact drag previews that stay above the pointer.
+- A fixed board footer for selection counts and future status messages.
 - Automatic Markdown mirrors for each task type and the archive.
 - Local persistence through Obsidian's plugin data API.
 - Interface language selection: Follow Obsidian, Simplified Chinese, or English.
@@ -39,14 +42,14 @@ only as a public manual-download and release-audit mirror.
 
 ## 主要功能
 
-- 动态任务类型：除默认的工作任务、个人任务外，可通过顶部 `+` 任意新增，可右键重命名或删除，桌面端可横向拖拽排序
+- 动态任务类型：除默认的工作任务、个人任务外，可通过顶部 `+` 任意新增，可右键重命名或删除；桌面端可通过明显的横向占位槽拖拽排序
 - 四区导航：工具区统一搜索与归档，任务类型区保留“全部任务”、真实任务类型及新增入口，象限区只展示真实象限及新增入口
 - 左侧任务列表 + 右侧分类导航
 - 全局共享象限：所有任务类型使用同一套象限，各自保存独立任务内容
-- 象限管理：新增、重命名、删除（删除时自动迁移任务），桌面端可纵向拖拽排序
+- 象限管理：新增、重命名、删除（删除时自动迁移任务），桌面端可通过明显的纵向占位槽拖拽排序
 - 任务操作：共享搜索框提交可移除的搜索标签，下方 `+` 展开一次性新增任务；单击选择任务，双击任务内容或选中后按 Enter 编辑，并支持删除、归档
 - 任务移动：右键任务卡可选择目标任务类型和象限；桌面端可直接拖到任务类型或象限，悬停锁定任务类型后再拖到象限可一次更换两项
-- 多选移动：使用任务列表上方的多选按钮，或在桌面端按 Command/Ctrl、Shift 选择多张卡片，再统一移动
+- 多选移动：使用任务列表上方的多选按钮，或在桌面端按 Command/Ctrl、Shift 选择多张卡片，再统一移动；选择数量显示在固定的底部提示区
 - 归档视图：复用任务搜索与象限筛选，并支持排序、恢复、批量删除
 - 数据持久化：自动保存插件数据
 - 界面语言：支持跟随 Obsidian、简体中文和 English，切换语言不会改名已有数据或同步目录
@@ -150,10 +153,11 @@ Obsidian CLI 仅用于本机开发验证，不属于插件运行时依赖。插�
 
 ## 当前设计说明
 
-- 顶部任务类型可以动态新增；右键任务类型可重命名或删除；桌面端的任务类型与象限均可拖拽排序；新增任务类型与新增象限均使用 Enter 确认
+- 顶部任务类型可以动态新增；右键任务类型可重命名或删除；桌面端的任务类型与象限均使用完整占位槽拖拽排序；新增任务类型与新增象限均使用 Enter 确认
 - 顶部工具区统一放置搜索与归档；任务类型区保留“全部任务”、已有任务类型和新增入口，象限区只显示已有象限及新增入口
 - 搜索仅匹配当前“任务类型 × 象限”的交集；Enter 提交为搜索标签，`x`、Escape、Backspace 或 Delete 可清除
 - 任务区的 `+` 展开一次性输入，并把任务加入当前任务类型和象限
+- 看板底部固定提示区显示当前多选数量，并为后续筛选、同步等状态信息预留统一位置
 - 右键任务卡可移动单项；进入多选后可全选当前筛选结果并批量移动。批量移动会先校验全部来源和目标，任一项无效时整批不变
 - 桌面端拖动任务卡到顶部任务类型或右侧象限可只更换对应维度；在任务类型上悬停锁定后继续拖到象限，可一次同时更换任务类型和象限
 - 删除任务类型会同时删除其中的普通任务、归档任务和同步配置；对应 Markdown 会移入同步目录下的“已删除任务类型”恢复目录；至少保留一个任务类型

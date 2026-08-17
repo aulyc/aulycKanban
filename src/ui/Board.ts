@@ -10,7 +10,7 @@ import { TaskDrag } from './TaskDrag';
 
 /**
  * 看板面板组件
- * 布局：UtilityBar + Toolbar + (左侧 TaskControls + TaskList + 右侧 CategoryNav)
+ * 布局：UtilityBar + Toolbar + (左侧 TaskControls + TaskList + 右侧 CategoryNav) + Footer
  * 归档模式：工具区保留共享搜索，将普通任务列表切换为 ArchiveView。
  */
 export class Board {
@@ -27,6 +27,8 @@ export class Board {
 	private readonly taskList: TaskList;
 	private readonly categoryNav: CategoryNav;
 	private readonly archiveView: ArchiveView;
+	private readonly footerEl: HTMLElement;
+	private readonly footerStatusEl: HTMLElement;
 	private readonly drag = new TaskDrag();
 
 	constructor(containerEl: HTMLElement, app: App, store: KanbanStore) {
@@ -64,6 +66,14 @@ export class Board {
 		this.archiveView = new ArchiveView(this.archiveContainerEl, app, this.store);
 
 		this.categoryNav = new CategoryNav(this.contentAreaEl, app, this.store, this.drag);
+
+		// 固定底部提示区：当前承载多选数量，后续可继续添加同步、筛选等状态提示。
+		this.footerEl = this.containerEl.createDiv({ cls: 'aulyckanban-board-footer' });
+		this.footerStatusEl = this.footerEl.createDiv({
+			cls: 'aulyckanban-board-footer-status',
+			attr: { role: 'status', 'aria-live': 'polite' },
+		});
+		this.taskList.setStatusEl(this.footerStatusEl);
 	}
 
 	render(): void {
@@ -74,8 +84,10 @@ export class Board {
 		const isArchive = this.store.isShowingArchive();
 		// 归档/看板显隐由 .aulyckanban-mode-archive 对应的 CSS 规则控制
 		this.taskPaneEl.toggleClass('aulyckanban-mode-archive', isArchive);
-		if (isArchive) this.archiveView.render();
-		else this.taskList.render();
+		if (isArchive) {
+			this.footerStatusEl.empty();
+			this.archiveView.render();
+		} else this.taskList.render();
 		this.categoryNav.render();
 	}
 

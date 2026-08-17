@@ -11,7 +11,7 @@ class MockElement {
 				.split(/\s+/)
 				.filter(Boolean),
 		);
-		this.attributes = {};
+		this.attributes = { ...(options.attr ?? {}) };
 	}
 
 	createDiv(options = {}) {
@@ -48,6 +48,9 @@ const component = (name) =>
 		}
 		render() {
 			this.renderCount += 1;
+		}
+		setStatusEl(statusEl) {
+			this.statusEl = statusEl;
 		}
 		getEl() {
 			return this.el;
@@ -96,6 +99,12 @@ test('utility row precedes task types while task add stays above normal and arch
 	assert.equal(selectionControls.classes.has('aulyckanban-task-selection-controls'), true);
 	assert.equal(instances.get('archive').parent.parentElement, taskPane);
 	assert.equal(instances.get('archive').parent.attributes.tabindex, undefined);
+	const footer = root.children.at(-1);
+	assert.equal(footer.classes.has('aulyckanban-board-footer'), true);
+	assert.equal(footer.children[0].classes.has('aulyckanban-board-footer-status'), true);
+	assert.equal(instances.get('tasks').statusEl, footer.children[0]);
+	assert.equal(footer.children[0].attributes.role, 'status');
+	assert.equal(footer.children[0].attributes['aria-live'], 'polite');
 
 	board.render();
 	assert.equal(instances.get('utility').renderCount, 1);
@@ -156,6 +165,28 @@ test('utility row keeps search flexible and archive fixed above the task types',
 test('task list is transparent while each task card owns a themed surface', () => {
 	assert.match(rule('.aulyckanban-task-list'), /background:\s*transparent/);
 	assert.match(rule('.aulyckanban-task'), /background:\s*var\(--background-secondary\)/);
+});
+
+test('fixed board footer reserves a reusable status region below scrollable content', () => {
+	const footer = rule('.aulyckanban-board-footer');
+	assert.match(footer, /flex:\s*none/);
+	assert.match(footer, /min-height:\s*32px/);
+	assert.match(footer, /border-top:\s*1px solid var\(--background-modifier-border\)/);
+	assert.match(footer, /justify-content:\s*flex-end/);
+	assert.match(rule('.aulyckanban-board-footer-status'), /justify-content:\s*flex-end/);
+	assert.equal(rule('.aulyckanban-task-selected-count'), '');
+});
+
+test('task type and quadrant reorder use visible slots with compact drag previews', () => {
+	const placeholder = rule('.aulyckanban-reorder-placeholder');
+	assert.match(placeholder, /border:\s*2px dashed var\(--interactive-accent\)/);
+	assert.match(placeholder, /background:\s*color-mix/);
+	assert.match(rule('.aulyckanban-reorder-placeholder-horizontal'), /height:\s*30px/);
+	assert.match(rule('.aulyckanban-reorder-placeholder-vertical'), /width:\s*100%/);
+	const preview = rule('.aulyckanban-reorder-drag-preview');
+	assert.match(preview, /max-width:\s*150px/);
+	assert.match(preview, /height:\s*30px/);
+	assert.match(preview, /pointer-events:\s*none/);
 });
 
 test('task metadata stacks source above a single-line date and time at the left edge', () => {

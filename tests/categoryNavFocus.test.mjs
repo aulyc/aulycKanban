@@ -10,6 +10,7 @@ class MockElement {
 		this.ownerDocument.defaultView.requestAnimationFrame ??= (callback) => callback();
 		this.doc = this.ownerDocument;
 		this.win = this.ownerDocument.defaultView;
+		this.parentElement = null;
 		this.children = [];
 		this.dataset = {};
 		this.attributes = { ...(options.attr ?? {}) };
@@ -20,14 +21,18 @@ class MockElement {
 		);
 		this.textContent = options.text ?? '';
 		this.listeners = new Map();
+		this.style = {
+			values: {},
+			setProperty: (name, value) => {
+				this.style.values[name] = value;
+			},
+		};
 		this.classList = { contains: (value) => this.classes.has(value) };
 	}
 
 	createDiv(options = {}) {
 		const child = new MockElement({ ...options, ownerDocument: this.ownerDocument });
-		child.parentElement = this;
-		this.children.push(child);
-		return child;
+		return this.appendChild(child);
 	}
 
 	createSpan(options = {}) {
@@ -35,7 +40,44 @@ class MockElement {
 	}
 
 	empty() {
+		for (const child of this.children) child.parentElement = null;
 		this.children = [];
+	}
+
+	appendChild(child) {
+		child.remove();
+		child.parentElement = this;
+		this.children.push(child);
+		return child;
+	}
+
+	insertBefore(child, reference) {
+		child.remove();
+		child.parentElement = this;
+		const index = reference ? this.children.indexOf(reference) : -1;
+		if (index < 0) this.children.push(child);
+		else this.children.splice(index, 0, child);
+		return child;
+	}
+
+	get nextSibling() {
+		if (!this.parentElement) return null;
+		const index = this.parentElement.children.indexOf(this);
+		return this.parentElement.children[index + 1] ?? null;
+	}
+
+	remove() {
+		if (!this.parentElement) return;
+		const index = this.parentElement.children.indexOf(this);
+		if (index >= 0) this.parentElement.children.splice(index, 1);
+		this.parentElement = null;
+	}
+
+	contains(element) {
+		for (let current = element; current; current = current.parentElement) {
+			if (current === this) return true;
+		}
+		return false;
 	}
 
 	addClass(value) {
@@ -133,6 +175,11 @@ const { CategoryNav } = await loadSourceModule(
 );
 
 function createCategoryNavHarness(overrides = {}, drag) {
+	const ownerDocument = { activeElement: null, defaultView: {} };
+	ownerDocument.defaultView.HTMLElement = MockElement;
+	ownerDocument.defaultView.Node = MockElement;
+	ownerDocument.defaultView.requestAnimationFrame = (callback) => callback();
+	ownerDocument.body = new MockElement({ ownerDocument });
 	const store = {
 		actions: [],
 		getCurrentColumns: () => [
@@ -150,7 +197,7 @@ function createCategoryNavHarness(overrides = {}, drag) {
 		},
 		...overrides,
 	};
-	const parent = new MockElement();
+	const parent = new MockElement({ ownerDocument });
 	const categoryNav = new CategoryNav(parent, {}, store, drag);
 	return { categoryNav, parent, store };
 }
@@ -207,19 +254,32 @@ test('quadrants drag vertically to persist their shared order without moving tas
 		setData(type, value) {
 			this.value = [type, value];
 		},
+		setDragImage(element, x, y) {
+			this.dragImage = { element, x, y };
+		},
 	};
 	sourceItem.listeners.get('dragstart')[0]({ dataTransfer });
 	assert.equal(sourceItem.draggable, true);
 	assert.equal(sourceItem.classList.contains('aulyckanban-reorder-dragging'), true);
 	assert.deepEqual(dataTransfer.value, ['application/x-aulyckanban-column-order', 'last']);
+	assert.equal(
+		dataTransfer.dragImage.element.classList.contains('aulyckanban-reorder-drag-preview'),
+		true,
+	);
+	assert.equal(dataTransfer.dragImage.element.textContent, '多少啊');
+	assert.deepEqual([dataTransfer.dragImage.x, dataTransfer.dragImage.y], [18, 30]);
 	let prevented = 0;
 	for (const listener of targetItem.listeners.get('dragover')) {
 		listener({ clientY: 35, dataTransfer, preventDefault: () => prevented++ });
 	}
-	assert.equal(targetItem.classList.contains('aulyckanban-reorder-after'), true);
-	for (const listener of targetItem.listeners.get('drop')) {
+	const placeholder = descendants(parent).find((element) =>
+		element.classList.contains('aulyckanban-reorder-placeholder-vertical'),
+	);
+	assert.ok(placeholder);
+	assert.equal(placeholder.style.values['--aulyckanban-reorder-placeholder-size'], '40px');
+	assert.equal(placeholder.parentElement.children.at(-2), placeholder);
+	for (const listener of placeholder.listeners.get('drop')) {
 		listener({
-			clientY: 35,
 			preventDefault: () => prevented++,
 			stopPropagation() {},
 		});
@@ -229,7 +289,12 @@ test('quadrants drag vertically to persist their shared order without moving tas
 		type: 'REORDER_COLUMNS',
 		payload: { columnIds: ['later', 'last'] },
 	});
-	assert.equal(targetItem.classList.contains('aulyckanban-reorder-after'), false);
+	assert.equal(
+		descendants(parent).some((element) =>
+			element.classList.contains('aulyckanban-reorder-placeholder-vertical'),
+		),
+		false,
+	);
 });
 
 test('all quadrants is a fixed first navigation control with the aggregate count', () => {
