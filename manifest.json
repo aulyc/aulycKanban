@@ -1,7 +1,7 @@
 {
 	"id": "aulyckanban",
 	"name": "aulycKanban",
-	"version": "2.11.0-beta.7",
+	"version": "2.11.0-beta.8",
 	"minAppVersion": "1.5.0",
 	"description": "自定义类型和象限的任务看板。\nTask board with custom types and quadrants.",
 	"author": "AULYC",
