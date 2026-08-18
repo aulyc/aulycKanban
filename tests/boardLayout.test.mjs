@@ -178,6 +178,7 @@ test('collapsed and expanded task creation reserve the same single-row height', 
 	);
 	const createInput = rule('.aulyckanban-kanban-container .aulyckanban-task-create-input');
 	assert.match(createInput, /min-height:\s*var\(--aulyckanban-content-control-height\)/);
+	assert.match(createInput, /padding:\s*6px 10px/);
 	assert.match(
 		createInput,
 		/flex:\s*0 0 calc\(100% \+ var\(--aulyckanban-task-selection-controls-width\)\)/,
