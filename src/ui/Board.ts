@@ -48,12 +48,22 @@ export class Board {
 		this.taskPaneEl = this.contentAreaEl.createDiv({ cls: 'aulyckanban-task-pane' });
 		this.taskHeaderEl = this.taskPaneEl.createDiv({ cls: 'aulyckanban-task-header' });
 		let taskList: TaskList | undefined;
-		this.taskControls = new TaskControls(this.taskHeaderEl, app, this.store, () =>
-			taskList?.cancelSelection(),
+		let taskSelectionControlsEl: HTMLElement | undefined;
+		this.taskControls = new TaskControls(
+			this.taskHeaderEl,
+			app,
+			this.store,
+			() => taskList?.cancelSelection(),
+			(isAdding) =>
+				taskSelectionControlsEl?.toggleClass(
+					'aulyckanban-task-selection-controls-hidden',
+					isAdding,
+				),
 		);
 		this.taskSelectionControlsEl = this.taskHeaderEl.createDiv({
 			cls: 'aulyckanban-task-selection-controls',
 		});
+		taskSelectionControlsEl = this.taskSelectionControlsEl;
 		taskList = new TaskList(
 			this.taskPaneEl,
 			app,

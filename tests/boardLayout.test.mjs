@@ -110,6 +110,10 @@ test('utility row precedes task types while task add stays above normal and arch
 	assert.equal(footer.children[0].attributes['aria-live'], 'polite');
 	instances.get('controls').args[2]();
 	assert.equal(instances.get('tasks').cancelSelectionCount, 1);
+	instances.get('controls').args[3](true);
+	assert.equal(selectionControls.classes.has('aulyckanban-task-selection-controls-hidden'), true);
+	instances.get('controls').args[3](false);
+	assert.equal(selectionControls.classes.has('aulyckanban-task-selection-controls-hidden'), false);
 
 	board.render();
 	assert.equal(instances.get('utility').renderCount, 1);
@@ -209,6 +213,12 @@ test('fixed board footer reserves a reusable status region below scrollable cont
 	assert.match(footerStatus, /justify-content:\s*flex-start/);
 	assert.match(footerStatus, /flex:\s*1/);
 	assert.equal(rule('.aulyckanban-task-selected-count'), '');
+});
+
+test('task selection buttons disappear while the create editor is open', () => {
+	const hiddenControls = rule('.aulyckanban-task-selection-controls-hidden');
+	assert.match(hiddenControls, /visibility:\s*hidden/);
+	assert.match(hiddenControls, /pointer-events:\s*none/);
 });
 
 test('task type and quadrant reorder use visible slots with compact drag previews', () => {

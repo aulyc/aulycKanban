@@ -105,7 +105,7 @@ const { TaskControls } = await loadSourceModule(
 	},
 );
 
-function createHarness(overrides = {}, onStartAdding) {
+function createHarness(overrides = {}, onStartAdding, onAddingChange) {
 	const store = {
 		actions: [],
 		keyword: '',
@@ -137,7 +137,7 @@ function createHarness(overrides = {}, onStartAdding) {
 		...overrides,
 	};
 	const parent = new MockElement();
-	const controls = new TaskControls(parent, {}, store, onStartAdding);
+	const controls = new TaskControls(parent, {}, store, onStartAdding, onAddingChange);
 	return { controls, parent, store };
 }
 
@@ -162,21 +162,32 @@ test('collapsed add control expands and creates a task in the concrete intersect
 
 test('opening the create editor requests cancellation of any active task selection', () => {
 	let cancellationCount = 0;
-	const { parent } = createHarness({}, () => {
-		cancellationCount += 1;
-	});
+	const addingStates = [];
+	const { parent } = createHarness(
+		{},
+		() => {
+			cancellationCount += 1;
+		},
+		(isAdding) => addingStates.push(isAdding),
+	);
 	const addButton = descendants(parent).find((element) =>
 		element.classList.contains('aulyckanban-task-add-btn'),
 	);
 	addButton.listeners.get('click')[0]({ preventDefault() {}, stopPropagation() {} });
 
 	assert.equal(cancellationCount, 1);
+	assert.deepEqual(addingStates, [true]);
 	assert.equal(
 		descendants(parent).some((element) =>
 			element.classList.contains('aulyckanban-task-create-input'),
 		),
 		true,
 	);
+	const input = descendants(parent).find((element) =>
+		element.classList.contains('aulyckanban-task-create-input'),
+	);
+	input.inputOptions.onCancel();
+	assert.deepEqual(addingStates, [true, false]);
 });
 
 test('aggregate scopes require explicit task type and quadrant targets before creating', () => {

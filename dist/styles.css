@@ -644,6 +644,11 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	padding: 0;
 }
 
+.aulyckanban-task-selection-controls-hidden {
+	visibility: hidden;
+	pointer-events: none;
+}
+
 .aulyckanban-task-selection-toolbar-active {
 	background: transparent;
 }

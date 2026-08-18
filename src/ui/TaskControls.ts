@@ -11,13 +11,21 @@ export class TaskControls {
 	private readonly el: HTMLElement;
 	private readonly store: KanbanStore;
 	private readonly onStartAdding?: () => void;
+	private readonly onAddingChange?: (isAdding: boolean) => void;
 	private isAdding = false;
 	private targetViewId = '';
 	private targetColumnId = '';
 
-	constructor(parentEl: HTMLElement, _app: App, store: KanbanStore, onStartAdding?: () => void) {
+	constructor(
+		parentEl: HTMLElement,
+		_app: App,
+		store: KanbanStore,
+		onStartAdding?: () => void,
+		onAddingChange?: (isAdding: boolean) => void,
+	) {
 		this.store = store;
 		this.onStartAdding = onStartAdding;
+		this.onAddingChange = onAddingChange;
 		this.el = parentEl.createDiv({ cls: 'aulyckanban-task-controls' });
 		this.render();
 	}
@@ -25,7 +33,7 @@ export class TaskControls {
 	render(): void {
 		this.el.empty();
 		if (this.store.getTaskScope() === 'archive') {
-			this.isAdding = false;
+			this.setAdding(false);
 			return;
 		}
 		if (this.isAdding) this.renderCreateEditor();
@@ -47,7 +55,7 @@ export class TaskControls {
 			event.preventDefault();
 			event.stopPropagation();
 			this.onStartAdding?.();
-			this.isAdding = true;
+			this.setAdding(true);
 			this.targetViewId = this.store.getCurrentView();
 			this.targetColumnId = this.store.getActiveColumnId();
 			this.render();
@@ -65,7 +73,7 @@ export class TaskControls {
 				if (!this.isAdding) return;
 				const active = editorEl.ownerDocument.activeElement;
 				if (active && editorEl.contains(active)) return;
-				this.isAdding = false;
+				this.setAdding(false);
 				this.render();
 			});
 		});
@@ -102,7 +110,7 @@ export class TaskControls {
 			onCommit: (value) => {
 				const content = value.trim();
 				if (!content || !this.targetViewId || !this.targetColumnId) return false;
-				this.isAdding = false;
+				this.setAdding(false);
 				this.store.dispatch({
 					type: 'ADD_TASK',
 					payload: {
@@ -118,10 +126,16 @@ export class TaskControls {
 				return true;
 			},
 			onCancel: () => {
-				this.isAdding = false;
+				this.setAdding(false);
 				this.render();
 			},
 		});
+	}
+
+	private setAdding(isAdding: boolean): void {
+		if (this.isAdding === isAdding) return;
+		this.isAdding = isAdding;
+		this.onAddingChange?.(isAdding);
 	}
 
 	private renderTargetSelect(
