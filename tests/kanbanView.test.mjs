@@ -167,6 +167,7 @@ let resizeClears = [];
 let utilityFocusTarget = null;
 let utilityNavigationItems = [];
 let taskFocusTarget = null;
+let taskHorizontalNavigationItems = [];
 let taskNavigationItems = [];
 let nextViewNavigationTarget = null;
 let nextColumnNavigationTarget = null;
@@ -186,6 +187,7 @@ const focusMocks = {
 		return nextColumnNavigationTarget;
 	},
 	getTaskZoneFocusTarget: () => taskFocusTarget,
+	getTaskZoneHorizontalNavigationItems: () => taskHorizontalNavigationItems,
 	getTaskZoneNavigationItems: () => taskNavigationItems,
 	getUtilityZoneFocusTarget: () => utilityFocusTarget,
 	getUtilityZoneNavigationItems: () => utilityNavigationItems,
@@ -297,6 +299,7 @@ function createHarness() {
 	utilityFocusTarget = null;
 	utilityNavigationItems = [];
 	taskFocusTarget = null;
+	taskHorizontalNavigationItems = [];
 	taskNavigationItems = [];
 	nextViewNavigationTarget = null;
 	nextColumnNavigationTarget = null;
@@ -612,6 +615,36 @@ test('arrow navigation moves within all four zones and dispatches real selection
 	dispatchKey(harness.contentEl, keyEvent('ArrowDown', { target: firstTask }));
 	assert.equal(harness.documentRef.activeElement, secondTask);
 	assert.deepEqual(secondTask.scrollCalls, [{ block: 'nearest' }]);
+});
+
+test('task types enter the task add control and its horizontal row skips disabled controls', async () => {
+	const harness = createHarness();
+	await harness.view.onOpen();
+	const toolbar = child(harness.contentEl, 'aulyckanban-toolbar');
+	const viewTab = child(toolbar, 'aulyckanban-view-tab aulyckanban-tab-active', {
+		viewId: 'work',
+	});
+	const taskPane = child(harness.contentEl, 'aulyckanban-task-pane');
+	const taskAdd = child(taskPane, 'aulyckanban-task-add-btn');
+	const selectMode = child(taskPane, 'aulyckanban-task-select-mode-btn');
+
+	taskFocusTarget = taskAdd;
+	viewTab.focus();
+	const viewDown = keyEvent('ArrowDown', { target: viewTab });
+	dispatchKey(harness.contentEl, viewDown);
+	assert.equal(viewDown.defaultPrevented, true);
+	assert.equal(harness.documentRef.activeElement, taskAdd);
+
+	taskHorizontalNavigationItems = [taskAdd, selectMode];
+	const taskRight = keyEvent('ArrowRight', { target: taskAdd });
+	dispatchKey(harness.contentEl, taskRight);
+	assert.equal(taskRight.defaultPrevented, true);
+	assert.equal(harness.documentRef.activeElement, selectMode);
+
+	const taskLeft = keyEvent('ArrowLeft', { target: selectMode });
+	dispatchKey(harness.contentEl, taskLeft);
+	assert.equal(taskLeft.defaultPrevented, true);
+	assert.equal(harness.documentRef.activeElement, taskAdd);
 });
 
 test('editing inputs keep native arrow behavior while empty task creation can navigate', async () => {

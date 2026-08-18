@@ -7,6 +7,7 @@ const {
 	getColumnNavigationTarget,
 	getNextFocusZone,
 	getTaskZoneFocusTarget,
+	getTaskZoneHorizontalNavigationItems,
 	getTaskZoneNavigationItems,
 	getTaskTypeNavigationTarget,
 	getUtilityZoneFocusTarget,
@@ -39,6 +40,23 @@ test('empty task zones ignore hidden results and focus the task add control', ()
 		taskControlSelector.includes('.aulyckanban-task-pane:not(.aulyckanban-mode-archive)'),
 		true,
 	);
+});
+
+test('non-empty ordinary task zones still enter through the task add control', () => {
+	const addButton = { id: 'task-add' };
+	const firstTask = { id: 'first-task' };
+	const selectors = [];
+	const root = {
+		querySelector(selector) {
+			selectors.push(selector);
+			if (selector.includes('.aulyckanban-task-add-btn')) return addButton;
+			if (selector.includes('.aulyckanban-task-list')) return firstTask;
+			return null;
+		},
+	};
+
+	assert.equal(getTaskZoneFocusTarget(root), addButton);
+	assert.equal(selectors[0].includes('.aulyckanban-task-add-btn'), true);
 });
 
 test('an empty archive task zone focuses its localized sort control', () => {
@@ -109,6 +127,25 @@ test('task arrow navigation includes add controls and only the visible result mo
 	assert.equal(selectors[0].includes('.aulyckanban-task-create-input'), true);
 	assert.equal(selectors[0].includes('.aulyckanban-mode-archive'), true);
 	assert.equal(selectors[0].includes('.aulyckanban-task-search-input'), false);
+});
+
+test('task header horizontal navigation skips disabled selection controls', () => {
+	const addButton = { id: 'task-add' };
+	const cancelButton = { id: 'cancel-selection', disabled: true };
+	const selectButton = { id: 'select-mode', disabled: false };
+	const root = {
+		querySelectorAll() {
+			return [addButton, cancelButton, selectButton];
+		},
+	};
+
+	assert.deepEqual(getTaskZoneHorizontalNavigationItems(root), [addButton, selectButton]);
+	cancelButton.disabled = false;
+	assert.deepEqual(getTaskZoneHorizontalNavigationItems(root), [
+		addButton,
+		cancelButton,
+		selectButton,
+	]);
 });
 
 test('Tab cycles utility, view, tasks, columns, then utility', () => {

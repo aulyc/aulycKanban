@@ -8,6 +8,7 @@ import {
 	getNextFocusZone,
 	getColumnNavigationTarget,
 	getTaskZoneFocusTarget,
+	getTaskZoneHorizontalNavigationItems,
 	getTaskZoneNavigationItems,
 	getTaskTypeNavigationTarget,
 	getUtilityZoneFocusTarget,
@@ -117,6 +118,10 @@ export class KanbanView extends ItemView {
 				e.preventDefault();
 				e.stopPropagation();
 				this.selectAdjacentView(e.key === 'ArrowLeft' ? -1 : 1);
+			} else if (zone === 'view' && e.key === 'ArrowDown') {
+				e.preventDefault();
+				e.stopPropagation();
+				this.focusTaskZone();
 			} else if (zone === 'columns' && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
 				e.preventDefault();
 				e.stopPropagation();
@@ -126,6 +131,12 @@ export class KanbanView extends ItemView {
 					e.preventDefault();
 					e.stopPropagation();
 					this.selectAdjacentTaskItem(e.key === 'ArrowUp' ? -1 : 1);
+				} else if (
+					(e.key === 'ArrowLeft' || e.key === 'ArrowRight') &&
+					this.selectAdjacentTaskHeaderItem(e.key === 'ArrowLeft' ? -1 : 1)
+				) {
+					e.preventDefault();
+					e.stopPropagation();
 				}
 			}
 		};
@@ -398,6 +409,23 @@ export class KanbanView extends ItemView {
 		const target = items[getWrappedItemIndex(currentIndex, items.length, offset)];
 		target?.focus({ preventScroll: true });
 		target?.scrollIntoView({ block: 'nearest' });
+	}
+
+	private focusTaskZone(): void {
+		const target = getTaskZoneFocusTarget(this.contentEl);
+		target?.focus({ preventScroll: true });
+		target?.scrollIntoView({ block: 'nearest' });
+	}
+
+	private selectAdjacentTaskHeaderItem(offset: number): boolean {
+		const items = getTaskZoneHorizontalNavigationItems(this.contentEl);
+		const active = this.getActiveElement();
+		const currentIndex = active ? items.indexOf(active) : -1;
+		if (currentIndex < 0) return false;
+		const target = items[getWrappedItemIndex(currentIndex, items.length, offset)];
+		if (!target) return false;
+		target.focus({ preventScroll: true });
+		return true;
 	}
 
 	private selectAdjacentUtilityItem(offset: number): void {

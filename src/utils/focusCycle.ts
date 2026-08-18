@@ -20,6 +20,10 @@ const TASK_ZONE_CONTROL_SELECTOR =
 	'.aulyckanban-task-pane:not(.aulyckanban-mode-archive) .aulyckanban-task-add-btn, ' +
 	'.aulyckanban-task-pane:not(.aulyckanban-mode-archive) .aulyckanban-task-create-target, ' +
 	'.aulyckanban-task-pane:not(.aulyckanban-mode-archive) .aulyckanban-task-create-input';
+const TASK_ZONE_HORIZONTAL_CONTROL_SELECTOR =
+	'.aulyckanban-task-pane:not(.aulyckanban-mode-archive) .aulyckanban-task-add-btn, ' +
+	'.aulyckanban-task-pane:not(.aulyckanban-mode-archive) .aulyckanban-task-cancel-selection-btn, ' +
+	'.aulyckanban-task-pane:not(.aulyckanban-mode-archive) .aulyckanban-task-select-mode-btn';
 const ARCHIVE_TASK_ZONE_FALLBACK_SELECTOR =
 	'.aulyckanban-task-pane.aulyckanban-mode-archive .aulyckanban-archive-sort-btn';
 
@@ -74,9 +78,9 @@ export function shouldUseTabFocusFallback(context: TabFocusFallbackContext): boo
 /** 获取任务区的首个局部焦点目标，避免焦点落到隐藏控件或整个归档面板。 */
 export function getTaskZoneFocusTarget(root: ParentNode): HTMLElement | null {
 	return (
+		root.querySelector<HTMLElement>(TASK_ZONE_CONTROL_SELECTOR) ??
 		root.querySelector<HTMLElement>(TASK_ZONE_RESULT_SELECTOR) ??
 		root.querySelector<HTMLElement>(ARCHIVE_TASK_ZONE_FALLBACK_SELECTOR) ??
-		root.querySelector<HTMLElement>(TASK_ZONE_CONTROL_SELECTOR) ??
 		root.querySelector<HTMLElement>('.aulyckanban-task-pane')
 	);
 }
@@ -88,6 +92,13 @@ export function getTaskZoneNavigationItems(root: ParentNode): HTMLElement[] {
 			`${TASK_ZONE_CONTROL_SELECTOR}, ${TASK_ZONE_RESULT_SELECTOR}`,
 		),
 	);
+}
+
+/** 获取任务区顶部横向控制，并跳过当前不可用的按钮。 */
+export function getTaskZoneHorizontalNavigationItems(root: ParentNode): HTMLElement[] {
+	return Array.from(
+		root.querySelectorAll<HTMLElement>(TASK_ZONE_HORIZONTAL_CONTROL_SELECTOR),
+	).filter((item) => (item as HTMLButtonElement).disabled !== true);
 }
 
 /** 计算方向键循环选择时的目标下标。 */
