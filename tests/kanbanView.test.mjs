@@ -627,6 +627,7 @@ test('task types enter the task add control and its horizontal row skips disable
 	const taskPane = child(harness.contentEl, 'aulyckanban-task-pane');
 	const taskAdd = child(taskPane, 'aulyckanban-task-add-btn');
 	const selectMode = child(taskPane, 'aulyckanban-task-select-mode-btn');
+	const firstTask = child(taskPane, 'aulyckanban-task');
 
 	taskFocusTarget = taskAdd;
 	viewTab.focus();
@@ -645,6 +646,13 @@ test('task types enter the task add control and its horizontal row skips disable
 	dispatchKey(harness.contentEl, taskLeft);
 	assert.equal(taskLeft.defaultPrevented, true);
 	assert.equal(harness.documentRef.activeElement, taskAdd);
+
+	taskNavigationItems = [taskAdd, firstTask];
+	selectMode.focus();
+	const selectModeDown = keyEvent('ArrowDown', { target: selectMode });
+	dispatchKey(harness.contentEl, selectModeDown);
+	assert.equal(selectModeDown.defaultPrevented, true);
+	assert.equal(harness.documentRef.activeElement, firstTask);
 });
 
 test('editing inputs keep native arrow behavior while empty task creation can navigate', async () => {

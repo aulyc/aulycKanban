@@ -16,6 +16,7 @@ class MockElement {
 		);
 		this.textContent = options.text ?? '';
 		this.scrollTop = 0;
+		this.focusCalls = [];
 		this.classList = { contains: (value) => this.classes.has(value) };
 	}
 
@@ -45,6 +46,10 @@ class MockElement {
 
 	setAttribute(name, value) {
 		this.attributes[name] = value;
+	}
+
+	focus(options) {
+		this.focusCalls.push(options);
 	}
 
 	empty() {
@@ -111,7 +116,7 @@ const { TaskList } = await loadSourceModule(new URL('../src/ui/TaskList.ts', imp
 					this.el.dataset.viewId = viewId;
 					this.el.dataset.columnId = columnId;
 					this.el.dataset.taskId = task.id;
-					activeCards.push({ viewId, columnId, sourceLabel, options });
+					activeCards.push({ viewId, columnId, sourceLabel, options, el: this.el });
 				}
 				getEl() {
 					return this.el;
@@ -285,6 +290,64 @@ test('ordinary task list enters multi-select mode and moves the selected coordin
 		targetColumnId: 'important',
 	});
 	assert.equal(footerStatus.children.length, 0);
+});
+
+test('selection controls and cards preserve keyboard focus across selection rerenders', () => {
+	activeCards = [];
+	const refs = [
+		taskRef('work', '工作任务', 'base', '基础', '工作内容'),
+		{
+			...taskRef('work', '工作任务', 'base', '基础', '第二项'),
+			task: { ...taskRef('work', '工作任务', 'base', '基础', '第二项').task, id: 'second' },
+		},
+	];
+	const store = {
+		getVisibleTaskRefs: () => refs,
+		getTaskScope: () => 'current',
+		getColumnScope: () => 'current',
+		getCurrentView: () => 'work',
+		getActiveColumnId: () => 'base',
+		getSearchKeyword: () => '',
+	};
+	const parent = new MockElement();
+	const list = new TaskList(parent, {}, store);
+	list.render();
+
+	const initialSelectionButton = descendants(parent).find((element) =>
+		element.classList.contains('aulyckanban-task-select-mode-btn'),
+	);
+	initialSelectionButton.listeners.get('click')[0]();
+
+	let currentSelectionButton = descendants(parent).find((element) =>
+		element.classList.contains('aulyckanban-task-select-mode-btn'),
+	);
+	assert.notEqual(currentSelectionButton, initialSelectionButton);
+	assert.deepEqual(currentSelectionButton.focusCalls, [{ preventScroll: true }]);
+
+	let firstCard = activeCards.at(-2);
+	firstCard.options.onSelectionRequest({ key: 'Enter', shiftKey: false });
+	firstCard = activeCards.at(-1);
+	assert.equal(firstCard.options.selected, true);
+	assert.deepEqual(firstCard.el.focusCalls, [{ preventScroll: true }]);
+
+	firstCard.options.onSelectionRequest({ key: 'Enter', shiftKey: false });
+	firstCard = activeCards.at(-1);
+	assert.equal(firstCard.options.selected, false);
+	assert.deepEqual(firstCard.el.focusCalls, [{ preventScroll: true }]);
+
+	currentSelectionButton = descendants(parent).find((element) =>
+		element.classList.contains('aulyckanban-task-select-mode-btn'),
+	);
+	currentSelectionButton.listeners.get('click')[0]();
+	const selectAllButtonAfterRender = descendants(parent).find((element) =>
+		element.classList.contains('aulyckanban-task-select-mode-btn'),
+	);
+	assert.notEqual(selectAllButtonAfterRender, currentSelectionButton);
+	assert.deepEqual(selectAllButtonAfterRender.focusCalls, [{ preventScroll: true }]);
+	assert.equal(
+		activeCards.slice(-2).every((card) => card.options.selectionMode && card.options.selected),
+		true,
+	);
 });
 
 test('cancelling selection clears selected cards and the footer status', () => {

@@ -192,6 +192,17 @@ test('selection mode uses card clicks and checkboxes without entering content ed
 		stopPropagation() {},
 	});
 	assert.equal(selected.length, 1);
+	let enterPrevented = false;
+	card.listeners.get('keydown')[0]({
+		key: 'Enter',
+		target: card,
+		preventDefault() {
+			enterPrevented = true;
+		},
+		stopPropagation() {},
+	});
+	assert.equal(enterPrevented, true);
+	assert.equal(selected.length, 2);
 	const content = descendants(card).find((element) =>
 		element.classList.contains('aulyckanban-task-content'),
 	);

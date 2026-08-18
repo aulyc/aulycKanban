@@ -20,6 +20,7 @@ export class TaskList {
 	private statusEl: HTMLElement | null = null;
 	private readonly scrollTopByScope = new Map<string, number>();
 	private cardCache = new Map<string, { el: HTMLElement; snapshot: string }>();
+	private selectionModeButton: HTMLButtonElement | null = null;
 	private readonly selection = new TaskSelection();
 	private readonly drag: TaskDrag;
 
@@ -127,7 +128,11 @@ export class TaskList {
 			t('task.select.cancel'),
 		);
 		cancelButton.disabled = !this.selection.isActive;
-		cancelButton.addEventListener('click', () => this.cancelSelection());
+		cancelButton.addEventListener('click', () => {
+			const wasActive = this.selection.isActive;
+			this.cancelSelection();
+			if (wasActive) this.focusSelectionModeButton();
+		});
 
 		const visibleKeys = refs.map(getTaskRefKey);
 		const allSelected =
@@ -142,10 +147,12 @@ export class TaskList {
 					: t('task.select.all')
 				: t('task.select.mode'),
 		);
+		this.selectionModeButton = selectAllButton;
 		selectAllButton.addEventListener('click', () => {
 			if (this.selection.isActive) this.selection.selectAll(visibleKeys);
 			else this.selection.activate();
 			this.render();
+			this.focusSelectionModeButton();
 		});
 	}
 
@@ -186,6 +193,11 @@ export class TaskList {
 			this.selection.toggle(key);
 		}
 		this.render();
+		this.cardCache.get(key)?.el.focus({ preventScroll: true });
+	}
+
+	private focusSelectionModeButton(): void {
+		this.selectionModeButton?.focus({ preventScroll: true });
 	}
 
 	private showTaskMenu(event: MouseEvent, ref: TaskRef, visibleRefs: readonly TaskRef[]): void {
