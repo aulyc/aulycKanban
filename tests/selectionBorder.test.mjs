@@ -72,6 +72,24 @@ test('each of the four keyboard zones draws white only from actual focus', () =>
 	}
 });
 
+test('a selected task keeps its purple fill while keyboard focus gets the white border', () => {
+	const selected = combinedRule([
+		'.aulyckanban-task.aulyckanban-task-selected',
+		'.aulyckanban-task.aulyckanban-task-selected:hover',
+	]);
+	assert.equal(
+		declarationValue(selected, 'background'),
+		'color-mix(in srgb, var(--interactive-accent) 12%, var(--background-secondary))',
+	);
+	assert.equal(declarationValue(selected, 'border-color'), 'var(--interactive-accent)');
+
+	const focusedSelected = rule('.aulyckanban-task.aulyckanban-task-selected:focus');
+	assert.equal(
+		declarationValue(focusedSelected, 'border-color'),
+		'var(--aulyckanban-selection-border)',
+	);
+});
+
 test('active quadrant keeps its selected fill, exposes hover feedback, and adds the white focus border', () => {
 	const activeFocus = combinedRule([
 		'.aulyckanban-nav-item-active:focus',

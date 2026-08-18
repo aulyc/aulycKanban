@@ -958,8 +958,7 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 }
 
 .aulyckanban-task.aulyckanban-task-selected,
-.aulyckanban-task.aulyckanban-task-selected:hover,
-.aulyckanban-task.aulyckanban-task-selected:focus {
+.aulyckanban-task.aulyckanban-task-selected:hover {
 	background: color-mix(in srgb, var(--interactive-accent) 12%, var(--background-secondary));
 	border-color: var(--interactive-accent);
 }
@@ -1012,6 +1011,10 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	outline: none;
 	border-color: var(--aulyckanban-selection-border);
 	box-shadow: none;
+}
+
+.aulyckanban-task.aulyckanban-task-selected:focus {
+	border-color: var(--aulyckanban-selection-border);
 }
 
 .aulyckanban-task.aulyckanban-task-editing,
