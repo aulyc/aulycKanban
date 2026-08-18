@@ -847,6 +847,11 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	box-shadow: none;
 }
 
+.aulyckanban-kanban-container .aulyckanban-task-add-btn:focus,
+.aulyckanban-kanban-container .aulyckanban-task-add-btn:focus-visible {
+	border: 1px solid var(--aulyckanban-selection-border);
+}
+
 /* 新增控件接管象限区的视觉选中，原业务选中只保留在数据状态中。 */
 .aulyckanban-category-nav.aulyckanban-add-control-focused .aulyckanban-nav-item-active {
 	background: transparent;

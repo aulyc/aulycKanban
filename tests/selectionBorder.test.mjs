@@ -207,7 +207,7 @@ test('new task textarea starts at one line while remaining content-sized', () =>
 	assert.equal(declarationValue(declarations, 'overflow'), 'hidden');
 });
 
-test('add buttons use hover-like focus while editors keep the white selection border', () => {
+test('task add focus gets a white border while other add controls keep hover-like focus', () => {
 	const sharedFocusRule = combinedRule(
 		['.aulyckanban-view-add-btn', '.aulyckanban-task-add-btn', '.aulyckanban-nav-add-btn'].flatMap(
 			(selector) => [
@@ -218,6 +218,15 @@ test('add buttons use hover-like focus while editors keep the white selection bo
 	);
 	assert.doesNotMatch(sharedFocusRule, /var\(--aulyckanban-selection-border\)/);
 	assert.match(sharedFocusRule, /1px dashed var\(--text-muted\)/);
+
+	const taskAddFocusRule = combinedRule([
+		'.aulyckanban-kanban-container .aulyckanban-task-add-btn:focus',
+		'.aulyckanban-kanban-container .aulyckanban-task-add-btn:focus-visible',
+	]);
+	assert.equal(
+		declarationValue(taskAddFocusRule, 'border'),
+		'1px solid var(--aulyckanban-selection-border)',
+	);
 
 	for (const selector of [
 		'.aulyckanban-kanban-container .aulyckanban-view-inline-input:focus',
