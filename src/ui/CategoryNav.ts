@@ -5,7 +5,7 @@ import { t } from '../i18n';
 import { ConfirmModal } from './ConfirmModal';
 import { createInlineInput } from './InlineInput';
 import { appendAccessibleLabel } from '../utils/dom';
-import { getReorderSide, reorderIdsIfChanged, type ReorderSide } from '../utils/reorder';
+import { getStableReorderSide, reorderIdsIfChanged, type ReorderSide } from '../utils/reorder';
 import type { TaskDrag } from './TaskDrag';
 import { ReorderVisual } from './ReorderVisual';
 
@@ -27,6 +27,8 @@ export class CategoryNav {
 	private readonly drag?: TaskDrag;
 	private readonly unsubscribeDrag?: () => void;
 	private draggedColumnId: string | null = null;
+	private reorderHoverColumnId: string | null = null;
+	private reorderHoverSide: ReorderSide | null = null;
 	private readonly reorderVisual = new ReorderVisual('vertical');
 
 	constructor(parentEl: HTMLElement, app: App, store: KanbanStore, drag?: TaskDrag) {
@@ -217,7 +219,7 @@ export class CategoryNav {
 			if (!this.draggedColumnId) return;
 			event.preventDefault();
 			if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
-			const side = this.getColumnDropSide(itemEl, event);
+			const side = this.getColumnDropSide(itemEl, columnId, event);
 			if (!this.getChangedColumnOrder(columnId, side)) {
 				this.reorderVisual.clearPlaceholder();
 				return;
@@ -240,14 +242,18 @@ export class CategoryNav {
 			if (!this.draggedColumnId) return;
 			event.preventDefault();
 			event.stopPropagation();
-			this.commitColumnReorder(columnId, this.getColumnDropSide(itemEl, event));
+			this.commitColumnReorder(columnId, this.getColumnDropSide(itemEl, columnId, event));
 		});
 		itemEl.addEventListener('dragend', () => this.finishColumnReorder());
 	}
 
-	private getColumnDropSide(itemEl: HTMLElement, event: DragEvent): ReorderSide {
+	private getColumnDropSide(itemEl: HTMLElement, columnId: string, event: DragEvent): ReorderSide {
 		const rect = itemEl.getBoundingClientRect();
-		return getReorderSide(event.clientY, rect.top, rect.height);
+		const previousSide = this.reorderHoverColumnId === columnId ? this.reorderHoverSide : null;
+		const side = getStableReorderSide(event.clientY, rect.top, rect.height, previousSide);
+		this.reorderHoverColumnId = columnId;
+		this.reorderHoverSide = side;
+		return side;
 	}
 
 	private commitColumnReorder(targetColumnId: string, side: ReorderSide): void {
@@ -271,6 +277,8 @@ export class CategoryNav {
 
 	private finishColumnReorder(): void {
 		this.draggedColumnId = null;
+		this.reorderHoverColumnId = null;
+		this.reorderHoverSide = null;
 		this.reorderVisual.finish();
 	}
 

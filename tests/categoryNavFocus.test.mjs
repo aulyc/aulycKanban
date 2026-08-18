@@ -364,6 +364,42 @@ test('quadrant reorder keeps one stable placeholder across the same insertion sl
 	assert.equal(placeholder.nextSibling, nextTarget);
 });
 
+test('quadrant reorder ignores midpoint jitter before returning to the adjacent no-op slot', () => {
+	const { parent } = createCategoryNavHarness();
+	const sourceItem = descendants(parent).find((element) => element.dataset.columnId === 'last');
+	const targetItem = descendants(parent).find((element) => element.dataset.columnId === 'later');
+	const dataTransfer = { setData() {}, setDragImage() {} };
+	sourceItem.listeners.get('dragstart')[0]({ dataTransfer });
+
+	for (const listener of targetItem.listeners.get('dragover')) {
+		listener({ clientY: 35, dataTransfer, preventDefault() {} });
+	}
+	const placeholder = descendants(parent).find((element) =>
+		element.classList.contains('aulyckanban-reorder-placeholder-vertical'),
+	);
+	assert.ok(placeholder);
+
+	for (const listener of targetItem.listeners.get('dragover')) {
+		listener({ clientY: 18, dataTransfer, preventDefault() {} });
+	}
+	assert.equal(
+		descendants(parent).find((element) =>
+			element.classList.contains('aulyckanban-reorder-placeholder-vertical'),
+		),
+		placeholder,
+	);
+
+	for (const listener of targetItem.listeners.get('dragover')) {
+		listener({ clientY: 5, dataTransfer, preventDefault() {} });
+	}
+	assert.equal(
+		descendants(parent).some((element) =>
+			element.classList.contains('aulyckanban-reorder-placeholder-vertical'),
+		),
+		false,
+	);
+});
+
 test('all quadrants is a fixed first navigation control with the aggregate count', () => {
 	const { parent, store } = createCategoryNavHarness();
 	const nav = parent.children[0];

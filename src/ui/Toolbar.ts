@@ -5,7 +5,7 @@ import { createInlineInput } from './InlineInput';
 import { ConfirmModal } from './ConfirmModal';
 import { revealTaskTypeItem } from '../utils/focusCycle';
 import { appendAccessibleLabel } from '../utils/dom';
-import { getReorderSide, reorderIdsIfChanged, type ReorderSide } from '../utils/reorder';
+import { getStableReorderSide, reorderIdsIfChanged, type ReorderSide } from '../utils/reorder';
 import { Menu, setIcon } from 'obsidian';
 import type { App } from 'obsidian';
 import type { TaskDrag } from './TaskDrag';
@@ -26,6 +26,8 @@ export class Toolbar {
 	private readonly unsubscribeDrag?: () => void;
 	private pendingViewLock: number | null = null;
 	private draggedViewId: ViewKind | null = null;
+	private reorderHoverViewId: ViewKind | null = null;
+	private reorderHoverSide: ReorderSide | null = null;
 	private readonly reorderVisual = new ReorderVisual('horizontal');
 
 	constructor(parentEl: HTMLElement, app: App, store: KanbanStore, drag?: TaskDrag) {
@@ -247,7 +249,7 @@ export class Toolbar {
 			if (!this.draggedViewId) return;
 			event.preventDefault();
 			if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
-			const side = this.getViewDropSide(button, event);
+			const side = this.getViewDropSide(button, viewId, event);
 			if (!this.getChangedViewOrder(viewId, side)) {
 				this.reorderVisual.clearPlaceholder();
 				return;
@@ -270,14 +272,18 @@ export class Toolbar {
 			if (!this.draggedViewId) return;
 			event.preventDefault();
 			event.stopPropagation();
-			this.commitViewReorder(viewId, this.getViewDropSide(button, event));
+			this.commitViewReorder(viewId, this.getViewDropSide(button, viewId, event));
 		});
 		button.addEventListener('dragend', () => this.finishViewReorder());
 	}
 
-	private getViewDropSide(button: HTMLElement, event: DragEvent): ReorderSide {
+	private getViewDropSide(button: HTMLElement, viewId: ViewKind, event: DragEvent): ReorderSide {
 		const rect = button.getBoundingClientRect();
-		return getReorderSide(event.clientX, rect.left, rect.width);
+		const previousSide = this.reorderHoverViewId === viewId ? this.reorderHoverSide : null;
+		const side = getStableReorderSide(event.clientX, rect.left, rect.width, previousSide);
+		this.reorderHoverViewId = viewId;
+		this.reorderHoverSide = side;
+		return side;
 	}
 
 	private commitViewReorder(targetViewId: ViewKind, side: ReorderSide): void {
@@ -301,6 +307,8 @@ export class Toolbar {
 
 	private finishViewReorder(): void {
 		this.draggedViewId = null;
+		this.reorderHoverViewId = null;
+		this.reorderHoverSide = null;
 		this.reorderVisual.finish();
 	}
 

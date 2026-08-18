@@ -5,6 +5,26 @@ export function getReorderSide(pointer: number, start: number, size: number): Re
 	return pointer < start + size / 2 ? 'before' : 'after';
 }
 
+/**
+ * 在目标中线附近保留上一侧，避免占位槽引发布局回流时在 before/after 之间抖动。
+ * 指针明确越过稳定区后仍会正常切换，因而可以返回原位的无效插入槽。
+ */
+export function getStableReorderSide(
+	pointer: number,
+	start: number,
+	size: number,
+	previousSide: ReorderSide | null,
+	hysteresis = 6,
+): ReorderSide {
+	if (!previousSide) return getReorderSide(pointer, start, size);
+	const midpoint = start + size / 2;
+	const stableInset = Math.min(Math.max(hysteresis, 0), Math.max(size, 0) / 4);
+	if (previousSide === 'before') {
+		return pointer < midpoint + stableInset ? 'before' : 'after';
+	}
+	return pointer < midpoint - stableInset ? 'before' : 'after';
+}
+
 /** 将一个现有 ID 移到目标 ID 的前面或后面；无效输入保持原顺序。 */
 export function reorderIds(
 	ids: readonly string[],

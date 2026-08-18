@@ -2,11 +2,19 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import reorderModule from '../src/utils/reorder.ts';
 
-const { getReorderSide, reorderIds, reorderIdsIfChanged } = reorderModule;
+const { getReorderSide, getStableReorderSide, reorderIds, reorderIdsIfChanged } = reorderModule;
 
 test('drop side follows the pointer half of the target item', () => {
 	assert.equal(getReorderSide(24, 10, 30), 'before');
 	assert.equal(getReorderSide(25, 10, 30), 'after');
+});
+
+test('stable drop side absorbs midpoint jitter but allows an intentional return', () => {
+	assert.equal(getStableReorderSide(18, 0, 40, null), 'before');
+	assert.equal(getStableReorderSide(18, 0, 40, 'after'), 'after');
+	assert.equal(getStableReorderSide(5, 0, 40, 'after'), 'before');
+	assert.equal(getStableReorderSide(22, 0, 40, 'before'), 'before');
+	assert.equal(getStableReorderSide(35, 0, 40, 'before'), 'after');
 });
 
 test('an item can move before or after another item without losing ids', () => {

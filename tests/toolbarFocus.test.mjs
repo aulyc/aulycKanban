@@ -361,6 +361,42 @@ test('task type reorder keeps one stable placeholder across the same insertion s
 	assert.equal(placeholder.nextSibling, nextTarget);
 });
 
+test('task type reorder ignores midpoint jitter before returning to the adjacent no-op slot', () => {
+	const { parent } = createToolbarHarness();
+	const sourceButton = descendants(parent).find((element) => element.dataset.viewId === 'work');
+	const targetButton = descendants(parent).find((element) => element.dataset.viewId === 'test');
+	const dataTransfer = { setData() {}, setDragImage() {} };
+	sourceButton.listeners.get('dragstart')[0]({ dataTransfer });
+
+	for (const listener of targetButton.listeners.get('dragover')) {
+		listener({ clientX: 90, dataTransfer, preventDefault() {} });
+	}
+	const placeholder = descendants(parent).find((element) =>
+		element.classList.contains('aulyckanban-reorder-placeholder-horizontal'),
+	);
+	assert.ok(placeholder);
+
+	for (const listener of targetButton.listeners.get('dragover')) {
+		listener({ clientX: 47, dataTransfer, preventDefault() {} });
+	}
+	assert.equal(
+		descendants(parent).find((element) =>
+			element.classList.contains('aulyckanban-reorder-placeholder-horizontal'),
+		),
+		placeholder,
+	);
+
+	for (const listener of targetButton.listeners.get('dragover')) {
+		listener({ clientX: 10, dataTransfer, preventDefault() {} });
+	}
+	assert.equal(
+		descendants(parent).some((element) =>
+			element.classList.contains('aulyckanban-reorder-placeholder-horizontal'),
+		),
+		false,
+	);
+});
+
 test('task type controls stay out of the native Tab order', () => {
 	const { parent } = createToolbarHarness();
 	const buttons = descendants(parent).filter((element) => element.tagName === 'button');
