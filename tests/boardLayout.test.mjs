@@ -110,6 +110,9 @@ test('utility row precedes task types while task add stays above normal and arch
 	assert.equal(footer.children[0].attributes['aria-live'], 'polite');
 	instances.get('controls').args[2]();
 	assert.equal(instances.get('tasks').cancelSelectionCount, 1);
+	assert.equal(typeof instances.get('utility').args[1], 'function');
+	instances.get('utility').args[1]();
+	assert.equal(instances.get('tasks').cancelSelectionCount, 2);
 	instances.get('controls').args[3](true);
 	assert.equal(selectionControls.classes.has('aulyckanban-task-selection-controls-hidden'), true);
 	instances.get('controls').args[3](false);

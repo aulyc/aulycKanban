@@ -34,9 +34,12 @@ export class Board {
 	constructor(containerEl: HTMLElement, app: App, store: KanbanStore) {
 		this.containerEl = containerEl;
 		this.store = store;
+		let taskList: TaskList | undefined;
 
 		// 搜索与归档工具区（始终显示）
-		this.utilityBar = new UtilityBar(this.containerEl, this.store);
+		this.utilityBar = new UtilityBar(this.containerEl, this.store, () =>
+			taskList?.cancelSelection(),
+		);
 		this.utilityBar.getEl();
 
 		// 任务类型栏（始终显示）
@@ -47,7 +50,6 @@ export class Board {
 		this.contentAreaEl = this.containerEl.createDiv({ cls: 'aulyckanban-content-area' });
 		this.taskPaneEl = this.contentAreaEl.createDiv({ cls: 'aulyckanban-task-pane' });
 		this.taskHeaderEl = this.taskPaneEl.createDiv({ cls: 'aulyckanban-task-header' });
-		let taskList: TaskList | undefined;
 		let taskSelectionControlsEl: HTMLElement | undefined;
 		this.taskControls = new TaskControls(
 			this.taskHeaderEl,

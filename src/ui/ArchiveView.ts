@@ -237,7 +237,24 @@ export class ArchiveView {
 		});
 		setTextWithLineBreaks(contentEl, task.content);
 
-		const actionsEl = topEl.createDiv({ cls: 'aulyckanban-archive-task-actions' });
+		const footerEl = cardEl.createDiv({ cls: 'aulyckanban-archive-task-footer' });
+		const metaEl = footerEl.createDiv({ cls: 'aulyckanban-archive-task-meta' });
+		metaEl.createSpan({
+			cls: 'aulyckanban-archive-meta-item',
+			text: ref.viewTitle,
+		});
+		metaEl.createSpan({ cls: 'aulyckanban-archive-meta-separator', text: '·' });
+		metaEl.createSpan({
+			cls: 'aulyckanban-archive-meta-item',
+			text: ref.columnTitle,
+		});
+		metaEl.createSpan({ cls: 'aulyckanban-archive-meta-separator', text: '·' });
+		metaEl.createSpan({
+			cls: 'aulyckanban-task-time aulyckanban-archive-task-time',
+			text: `${t('archive.archivedAt')} ${formatDateTimeMinute(getArchivedAtIso(task))}`,
+		});
+
+		const actionsEl = footerEl.createDiv({ cls: 'aulyckanban-archive-task-actions' });
 		if (this.deleteMode) {
 			const checkboxLabel = actionsEl.createEl('label', {
 				cls: 'aulyckanban-archive-select-label',
@@ -270,22 +287,6 @@ export class ArchiveView {
 				}).open();
 			});
 		}
-
-		const metaEl = cardEl.createDiv({ cls: 'aulyckanban-archive-task-meta' });
-		metaEl.createSpan({
-			cls: 'aulyckanban-archive-meta-item',
-			text: ref.viewTitle,
-		});
-		metaEl.createSpan({ cls: 'aulyckanban-archive-meta-separator', text: '·' });
-		metaEl.createSpan({
-			cls: 'aulyckanban-archive-meta-item',
-			text: ref.columnTitle,
-		});
-		metaEl.createSpan({ cls: 'aulyckanban-archive-meta-separator', text: '·' });
-		metaEl.createSpan({
-			cls: 'aulyckanban-task-time aulyckanban-archive-task-time',
-			text: `${t('archive.archivedAt')} ${formatDateTimeMinute(getArchivedAtIso(task))}`,
-		});
 	}
 
 	private toggleTaskSelection(taskKey: string): void {

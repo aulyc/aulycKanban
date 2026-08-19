@@ -8,12 +8,14 @@ import { createInlineInput } from './InlineInput';
 export class UtilityBar {
 	private readonly el: HTMLElement;
 	private readonly store: KanbanStore;
+	private readonly onArchiveActivated: () => void;
 	private isEditingSearch = false;
 	private searchDraft = '';
 	private shouldFocusSearchInput = false;
 
-	constructor(parentEl: HTMLElement, store: KanbanStore) {
+	constructor(parentEl: HTMLElement, store: KanbanStore, onArchiveActivated = () => {}) {
 		this.store = store;
+		this.onArchiveActivated = onArchiveActivated;
 		this.el = parentEl.createDiv({ cls: 'aulyckanban-utility-bar' });
 		this.render();
 	}
@@ -65,6 +67,7 @@ export class UtilityBar {
 		appendAccessibleLabel(archiveBtn, t('archive.open'));
 		const activateArchive = (): void => {
 			if (!this.store.isShowingArchive()) {
+				this.onArchiveActivated();
 				this.store.dispatch({ type: 'TOGGLE_ARCHIVE_VIEW' });
 			}
 		};

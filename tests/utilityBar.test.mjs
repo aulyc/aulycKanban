@@ -83,7 +83,7 @@ const { UtilityBar } = await loadSourceModule(new URL('../src/ui/UtilityBar.ts',
 	},
 });
 
-function createHarness(overrides = {}) {
+function createHarness(overrides = {}, onArchiveActivated = () => {}) {
 	const documentRef = { activeElement: null, defaultView: {} };
 	documentRef.defaultView.HTMLElement = MockElement;
 	globalThis.document = documentRef;
@@ -106,7 +106,7 @@ function createHarness(overrides = {}) {
 		...overrides,
 	};
 	const parent = new MockElement(documentRef);
-	const utilityBar = new UtilityBar(parent, store);
+	const utilityBar = new UtilityBar(parent, store, onArchiveActivated);
 	return { documentRef, parent, store, utilityBar };
 }
 
@@ -226,14 +226,19 @@ test('search tag editing can be cancelled or cleared without changing clear-butt
 });
 
 test('archive focus activates immediately and remains idempotent for click or rerender', () => {
-	const { parent, store, utilityBar } = createHarness();
+	let archiveActivationCount = 0;
+	const { parent, store, utilityBar } = createHarness({}, () => {
+		archiveActivationCount += 1;
+	});
 	const archive = find(parent, 'aulyckanban-archive-btn');
 	archive.listeners.get('focus')[0]();
 	assert.equal(store.actions.at(-1).type, 'TOGGLE_ARCHIVE_VIEW');
+	assert.equal(archiveActivationCount, 1);
 
 	const focusedActionCount = store.actions.length;
 	archive.listeners.get('click')[0]({ preventDefault() {}, stopPropagation() {} });
 	assert.equal(store.actions.length, focusedActionCount);
+	assert.equal(archiveActivationCount, 1);
 
 	utilityBar.render();
 	const activeArchive = find(parent, 'aulyckanban-archive-btn');
@@ -242,6 +247,7 @@ test('archive focus activates immediately and remains idempotent for click or re
 	activeArchive.listeners.get('focus')[0]();
 	activeArchive.listeners.get('click')[0]({ preventDefault() {}, stopPropagation() {} });
 	assert.equal(store.actions.length, actionCount);
+	assert.equal(archiveActivationCount, 1);
 });
 
 test('search focus leaves the temporary archive view', () => {

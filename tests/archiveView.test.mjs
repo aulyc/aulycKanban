@@ -372,19 +372,29 @@ test('select-all and clear-all toggle repeatedly while preserving the toolbar sl
 
 test('archive card selection checkbox occupies the restore action position', () => {
 	const { container } = createHarness();
-	const browseTop = byClass(container, 'aulyckanban-archive-task-top')[0];
+	const browseCard = byClass(container, 'aulyckanban-archive-task')[0];
+	const browseTop = byClass(browseCard, 'aulyckanban-archive-task-top')[0];
 	const browseMain = byClass(browseTop, 'aulyckanban-archive-task-main')[0];
-	const browseActions = byClass(browseTop, 'aulyckanban-archive-task-actions')[0];
+	const browseFooter = byClass(browseCard, 'aulyckanban-archive-task-footer')[0];
+	const browseMeta = byClass(browseFooter, 'aulyckanban-archive-task-meta')[0];
+	const browseActions = byClass(browseFooter, 'aulyckanban-archive-task-actions')[0];
 	const restoreButton = byClass(browseActions, 'aulyckanban-archive-restore-btn')[0];
-	assert.deepEqual(browseTop.children, [browseMain, browseActions]);
+	assert.deepEqual(browseCard.children, [browseTop, browseFooter]);
+	assert.deepEqual(browseTop.children, [browseMain]);
+	assert.deepEqual(browseFooter.children, [browseMeta, browseActions]);
 	assert.equal(restoreButton.parentElement, browseActions);
 
 	byClass(container, 'aulyckanban-archive-select-mode-btn')[0].listeners.get('click')[0]();
-	const selectingTop = byClass(container, 'aulyckanban-archive-task-top')[0];
+	const selectingCard = byClass(container, 'aulyckanban-archive-task')[0];
+	const selectingTop = byClass(selectingCard, 'aulyckanban-archive-task-top')[0];
 	const selectingMain = byClass(selectingTop, 'aulyckanban-archive-task-main')[0];
-	const selectingActions = byClass(selectingTop, 'aulyckanban-archive-task-actions')[0];
+	const selectingFooter = byClass(selectingCard, 'aulyckanban-archive-task-footer')[0];
+	const selectingMeta = byClass(selectingFooter, 'aulyckanban-archive-task-meta')[0];
+	const selectingActions = byClass(selectingFooter, 'aulyckanban-archive-task-actions')[0];
 	const checkboxLabel = byClass(selectingActions, 'aulyckanban-archive-select-label')[0];
-	assert.deepEqual(selectingTop.children, [selectingMain, selectingActions]);
+	assert.deepEqual(selectingCard.children, [selectingTop, selectingFooter]);
+	assert.deepEqual(selectingTop.children, [selectingMain]);
+	assert.deepEqual(selectingFooter.children, [selectingMeta, selectingActions]);
 	assert.equal(checkboxLabel.parentElement, selectingActions);
 
 	const card = byClass(container, 'aulyckanban-archive-task')[0];
@@ -396,6 +406,11 @@ test('archive card selection checkbox occupies the restore action position', () 
 });
 
 test('archive card restore and selection controls share one centered action slot', () => {
+	const footerRule = css.match(/\.aulyckanban-archive-task-footer\s*\{([^}]*)\}/)?.[1] ?? '';
+	assert.match(footerRule, /display:\s*flex;/);
+	assert.match(footerRule, /align-items:\s*flex-end;/);
+	assert.match(footerRule, /justify-content:\s*space-between;/);
+
 	const actionsRule = css.match(/\.aulyckanban-archive-task-actions\s*\{([^}]*)\}/)?.[1] ?? '';
 	assert.match(actionsRule, /display:\s*grid;/);
 	assert.match(actionsRule, /place-items:\s*center;/);
