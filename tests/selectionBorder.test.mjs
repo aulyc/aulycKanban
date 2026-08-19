@@ -41,17 +41,18 @@ test('business selection keeps its fill but never owns the white focus border', 
 	}
 });
 
-test('ordinary task selection checkbox is anchored at the card top right', () => {
+test('ordinary task selection checkbox replaces the bottom-right delete slot', () => {
 	const checkboxLabel = rule('.aulyckanban-task-select-label');
-	assert.equal(declarationValue(checkboxLabel, 'position'), 'absolute');
-	assert.equal(declarationValue(checkboxLabel, 'top'), '12px');
-	assert.equal(declarationValue(checkboxLabel, 'right'), '12px');
+	assert.equal(declarationValue(checkboxLabel, 'position'), '');
+	assert.equal(declarationValue(checkboxLabel, 'width'), '18px');
+	assert.equal(declarationValue(checkboxLabel, 'height'), '18px');
+	assert.equal(declarationValue(checkboxLabel, 'min-width'), '18px');
 	assert.equal(
 		declarationValue(
 			rule('.aulyckanban-task-selecting .aulyckanban-task-content'),
 			'padding-right',
 		),
-		'28px',
+		'',
 	);
 });
 

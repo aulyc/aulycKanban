@@ -77,7 +77,6 @@ export class TaskCard {
 
 	private buildContent(): HTMLElement {
 		const { task } = this;
-		if (this.options.selectionMode) this.buildSelectionCheckbox();
 
 		// 中间区域：内容 + 时间
 		const middleEl = this.el.createDiv({ cls: 'aulyckanban-task-middle' });
@@ -157,7 +156,10 @@ export class TaskCard {
 		});
 
 		const actionsEl = metaRowEl.createDiv({ cls: 'aulyckanban-task-actions' });
-		if (this.options.selectionMode) return metaRowEl;
+		if (this.options.selectionMode) {
+			this.buildSelectionCheckbox(actionsEl);
+			return metaRowEl;
+		}
 
 		const archiveBtn = actionsEl.createSpan({
 			cls: 'aulyckanban-task-archive',
@@ -203,8 +205,8 @@ export class TaskCard {
 		return metaRowEl;
 	}
 
-	private buildSelectionCheckbox(): void {
-		const labelEl = this.el.createEl('label', { cls: 'aulyckanban-task-select-label' });
+	private buildSelectionCheckbox(parentEl: HTMLElement): void {
+		const labelEl = parentEl.createEl('label', { cls: 'aulyckanban-task-select-label' });
 		const checkboxEl = labelEl.createEl('input', {
 			cls: 'aulyckanban-task-select-checkbox',
 			attr: { type: 'checkbox' },

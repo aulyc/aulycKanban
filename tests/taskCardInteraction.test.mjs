@@ -183,6 +183,14 @@ test('selection mode uses card clicks and checkboxes without entering content ed
 	);
 	assert.ok(checkbox);
 	assert.equal(checkbox.checked, true);
+	const actions = descendants(card).find((element) =>
+		element.classList.contains('aulyckanban-task-actions'),
+	);
+	const label = descendants(card).find((element) =>
+		element.classList.contains('aulyckanban-task-select-label'),
+	);
+	assert.equal(label.parentElement, actions);
+	assert.equal(actions.children.at(-1), label);
 
 	card.listeners.get('click')[0]({
 		metaKey: false,

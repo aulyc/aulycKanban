@@ -968,12 +968,13 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 }
 
 .aulyckanban-task-select-label {
-	position: absolute;
-	top: 12px;
-	right: 12px;
-	z-index: 1;
 	display: flex;
 	align-items: center;
+	justify-content: center;
+	width: 18px;
+	height: 18px;
+	min-width: 18px;
+	flex-shrink: 0;
 }
 
 .aulyckanban-task-select-checkbox {
@@ -982,10 +983,6 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	margin: 0;
 	accent-color: var(--interactive-accent);
 	cursor: pointer;
-}
-
-.aulyckanban-task-selecting .aulyckanban-task-content {
-	padding-right: 28px;
 }
 
 .aulyckanban-task-drag-preview {
