@@ -4,6 +4,15 @@ import { loadSourceModule } from './helpers/load-source-module.mjs';
 
 let activeSetup;
 
+class MockDataSchemaVersionError extends Error {
+	constructor(reason, storedVersion, currentVersion) {
+		super('data schema version error');
+		this.reason = reason;
+		this.storedVersion = storedVersion;
+		this.currentVersion = currentVersion;
+	}
+}
+
 class MockPlugin {
 	constructor(app) {
 		this.app = app;
@@ -30,6 +39,7 @@ class MockPlugin {
 
 	addCommand(command) {
 		this.commands.push(command);
+		return command;
 	}
 
 	addSettingTab(tab) {
@@ -46,6 +56,7 @@ class MockRepository {
 	}
 
 	async load() {
+		if (this.setup.loadError) throw this.setup.loadError;
 		return this.setup.loadResult;
 	}
 
@@ -96,6 +107,14 @@ class MockStore {
 
 	getBoardData() {
 		return this.board;
+	}
+
+	getTaskViews() {
+		return [...this.board.views].sort((a, b) => a.order - b.order);
+	}
+
+	getView(viewId) {
+		return this.board.views.find((view) => view.id === viewId);
 	}
 
 	dispatch(action) {
@@ -175,13 +194,16 @@ const { default: KanbanPlugin } = await loadSourceModule(
 				initI18n: (locale) => activeSetup.initializedLocales.push(locale),
 				resolveUiLocale: (language, obsidianLocale) =>
 					language === 'system' ? obsidianLocale : language,
-				t: (key) => key,
+				t: (key) => (key === 'command.focusView' ? 'Focus: {title}' : key),
 			},
 			'./ui/KanbanView': { KanbanView: MockKanbanView },
 			'./ui/KanbanSettingTab': { KanbanSettingTab: MockSettingTab },
 			'./store': { KanbanStore: MockStore },
 			'./services/syncService': { VaultSyncService: MockSyncService },
-			'./services/repository': { PluginDataRepository: MockRepository },
+			'./services/repository': {
+				DataSchemaVersionError: MockDataSchemaVersionError,
+				PluginDataRepository: MockRepository,
+			},
 			'./utils/syncTarget': {
 				getMutationSyncTarget(actionType, currentView, mutatedView, mutatedViews) {
 					if (mutatedViews.length > 1) return { kind: 'views', viewIds: mutatedViews };
@@ -210,8 +232,15 @@ function createHarness({ htmlLocale = 'zh-CN' } = {}) {
 		initializedLocales: [],
 		loadResult: {
 			settings: { uiLanguage: 'system', currentView: 'work' },
-			board: { views: [], archives: {} },
+			board: {
+				views: [
+					{ id: 'work', title: '工作任务', order: 0, columns: [] },
+					{ id: 'personal', title: '个人任务', order: 1, columns: [] },
+				],
+				archives: { work: { tasks: [] }, personal: { tasks: [] } },
+			},
 		},
+		loadError: null,
 		notices: [],
 		repositories: [],
 		saves: [],
@@ -307,6 +336,19 @@ test('plugin load contains managed-note initialization failures and keeps comman
 	harness.plugin.onunload();
 });
 
+test('unsupported persisted data stops initialization without registering mutable entry points', async () => {
+	const harness = createHarness();
+	harness.setup.loadError = new MockDataSchemaVersionError('unsupported', 9, 8);
+	const errors = await captureConsoleErrors(() => harness.plugin.onload());
+
+	assert.equal(errors.length, 1);
+	assert.match(String(errors[0][0]), /persisted data schema/i);
+	assert.deepEqual(harness.setup.notices, ['data.schema.unsupported']);
+	assert.equal(harness.setup.stores.length, 0);
+	assert.deepEqual(harness.plugin.commands, []);
+	assert.deepEqual(harness.plugin.ribbonItems, []);
+});
+
 test('registered controls activate existing or new board leaves and select explicit task types', async () => {
 	const harness = createHarness({ htmlLocale: 'en-GB' });
 	await harness.plugin.onload();
@@ -331,12 +373,75 @@ test('registered controls activate existing or new board leaves and select expli
 	assert.equal(fallbackLeaf.view.focusCount, 1);
 
 	harness.workspace.leaves = [existingLeaf];
-	await harness.plugin.commands.find((command) => command.id === 'focus-work').callback();
-	await harness.plugin.commands.find((command) => command.id === 'focus-personal').callback();
+	harness.plugin.commands.find((command) => command.id === 'focus-work').checkCallback(false);
+	harness.plugin.commands.find((command) => command.id === 'focus-personal').checkCallback(false);
+	await new Promise((resolve) => setImmediate(resolve));
 	assert.deepEqual(harness.setup.stores[0].actions.slice(-2), [
 		{ type: 'SWITCH_VIEW', payload: { view: 'work' } },
 		{ type: 'SWITCH_VIEW', payload: { view: 'personal' } },
 	]);
+	harness.plugin.onunload();
+});
+
+test('task type commands follow dynamic additions, renames, and deletions', async () => {
+	const harness = createHarness();
+	harness.setup.loadResult.board.views.push({
+		id: 'project',
+		title: '项目任务',
+		order: 2,
+		columns: [],
+	});
+	harness.setup.loadResult.board.archives.project = { tasks: [] };
+	await harness.plugin.onload();
+	const store = harness.setup.stores[0];
+
+	assert.deepEqual(
+		harness.plugin.commands.map((command) => [command.id, command.name]),
+		[
+			['open-board', 'command.openBoard'],
+			['focus-work', 'Focus: 工作任务'],
+			['focus-personal', 'Focus: 个人任务'],
+			['focus-view-project', 'Focus: 项目任务'],
+		],
+	);
+
+	store.board.views.find((view) => view.id === 'project').title = '客户项目';
+	store.emitMutation({ actionType: 'RENAME_VIEW', viewId: 'project' });
+	assert.equal(
+		harness.plugin.commands.find((command) => command.id === 'focus-view-project').name,
+		'Focus: 客户项目',
+	);
+
+	store.board.views = store.board.views.filter((view) => view.id !== 'project');
+	store.emitMutation({ actionType: 'DELETE_VIEW', viewId: 'project' });
+	const projectCommand = harness.plugin.commands.find(
+		(command) => command.id === 'focus-view-project',
+	);
+	assert.equal(projectCommand.checkCallback(true), false);
+
+	store.board.views.push({ id: 'project', title: '重建项目', order: 2, columns: [] });
+	store.emitMutation({ actionType: 'ADD_VIEW', viewId: 'project' });
+	assert.equal(projectCommand.name, 'Focus: 重建项目');
+	assert.equal(projectCommand.checkCallback(true), true);
+	assert.equal(
+		harness.plugin.commands.filter((command) => command.id === 'focus-view-project').length,
+		1,
+	);
+	harness.plugin.onunload();
+});
+
+test('a stale task type command does not activate the board or dispatch an invalid switch', async () => {
+	const harness = createHarness();
+	await harness.plugin.onload();
+	const store = harness.setup.stores[0];
+	const staleCommand = harness.plugin.commands.find((command) => command.id === 'focus-work');
+	store.board.views = store.board.views.filter((view) => view.id !== 'work');
+	store.emitMutation({ actionType: 'DELETE_VIEW', viewId: 'work' });
+
+	assert.equal(staleCommand.checkCallback(false), false);
+
+	assert.deepEqual(store.actions, []);
+	assert.equal(harness.workspace.getLeafCalls.length, 0);
 	harness.plugin.onunload();
 });
 

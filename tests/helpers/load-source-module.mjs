@@ -1,13 +1,29 @@
+import { rmSync } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import Module from 'node:module';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
 
 const require = createRequire(import.meta.url);
 const repoDir = fileURLToPath(new URL('../../', import.meta.url));
-const bundleDir = path.join(repoDir, 'test-bundles');
+export function resolveBundleDirectory({
+	repositoryDirectory = repoDir,
+	temporaryDirectory = os.tmpdir(),
+	processId = process.pid,
+	coverageDirectory = process.env.NODE_V8_COVERAGE,
+} = {}) {
+	return coverageDirectory
+		? path.join(repositoryDirectory, 'test-bundles')
+		: path.join(temporaryDirectory, `aulycKanban-test-bundles-${processId}`);
+}
+
+const bundleDir = resolveBundleDirectory();
+if (!process.env.NODE_V8_COVERAGE) {
+	process.once('exit', () => rmSync(bundleDir, { recursive: true, force: true }));
+}
 let bundleSequence = 0;
 
 export async function loadSourceModule(entryPoint, { label = 'source', mocks = {} } = {}) {

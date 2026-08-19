@@ -25,6 +25,12 @@ test('simplified Chinese settings use localized section headings and clear-data 
 	assert.equal(t('settings.clear.desc'), '不可恢复的删除所有数据');
 	assert.equal(t('settings.about.name'), '关于 aulycKanban');
 	assert.equal(t('about.version'), '插件版本');
+	assert.match(t('data.schema.unsupported'), /更高版本/);
+	assert.match(t('data.schema.invalid'), /版本标记/);
+	assert.match(t('settings.import.newerVersion'), /更高版本/);
+	assert.match(t('settings.import.unsupportedVersion'), /不支持/);
+	assert.match(t('settings.import.versionMismatch'), /不匹配/);
+	assert.match(t('settings.import.successMigrated'), /\{version\}/);
 	assert.equal(t('about.requirements'), '软件要求');
 	assert.equal(t('about.website'), '官方网站');
 	assert.equal(t('about.acknowledgements'), '致谢');
@@ -45,6 +51,12 @@ test('English settings retain their localized copy', async () => {
 	assert.equal(t('settings.clear.button'), 'Clear data');
 	assert.equal(t('settings.about.name'), 'About aulycKanban');
 	assert.equal(t('about.version'), 'Plugin version');
+	assert.match(t('data.schema.unsupported'), /newer version/i);
+	assert.match(t('data.schema.invalid'), /version marker/i);
+	assert.match(t('settings.import.newerVersion'), /newer version/i);
+	assert.match(t('settings.import.unsupportedVersion'), /not supported/i);
+	assert.match(t('settings.import.versionMismatch'), /does not match/i);
+	assert.match(t('settings.import.successMigrated'), /\{version\}/);
 	assert.equal(t('about.website'), 'Official website');
 });
 

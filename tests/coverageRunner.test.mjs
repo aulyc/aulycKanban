@@ -6,6 +6,7 @@ import {
 	formatCoverageFailures,
 	mergeCoverageObjects,
 } from '../scripts/coverage.mjs';
+import { resolveBundleDirectory } from './helpers/load-source-module.mjs';
 
 const location = (line) => ({
 	start: { line, column: 0 },
@@ -98,4 +99,25 @@ test('coverage threshold evaluation reports global and per-file regressions', ()
 	);
 	assert.match(formatCoverageFailures(failures), /global statements: 50% < 75%/);
 	assert.match(formatCoverageFailures(failures), /src\/missing\.ts: missing/);
+});
+
+test('source-module bundles stay outside the repository unless coverage collection needs them', () => {
+	assert.equal(
+		resolveBundleDirectory({
+			repositoryDirectory: '/repo',
+			temporaryDirectory: '/tmp',
+			processId: 42,
+			coverageDirectory: '',
+		}),
+		path.join('/tmp', 'aulycKanban-test-bundles-42'),
+	);
+	assert.equal(
+		resolveBundleDirectory({
+			repositoryDirectory: '/repo',
+			temporaryDirectory: '/tmp',
+			processId: 42,
+			coverageDirectory: '/tmp/v8-coverage',
+		}),
+		path.join('/repo', 'test-bundles'),
+	);
 });

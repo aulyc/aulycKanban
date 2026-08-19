@@ -393,12 +393,6 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	display: none;
 }
 
-/* 设置页同步提示 */
-.aulyckanban-settings-hint {
-	margin-top: 8px;
-	padding-left: 16px;
-}
-
 .aulyckanban-settings-action-button {
 	box-sizing: border-box;
 	width: 80px;
@@ -918,11 +912,6 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	}
 }
 
-.aulyckanban-nav-add-input-wrapper {
-	padding: 0;
-	margin-top: 4px;
-}
-
 /* ==================== 任务列表滚动区 ==================== */
 .aulyckanban-tasks {
 	flex: 1;
@@ -1380,37 +1369,6 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	cursor: not-allowed;
 }
 
-/* 归档大类区块（工作/个人） */
-.aulyckanban-archive-view-section {
-	margin-bottom: 24px;
-}
-
-.aulyckanban-archive-view-header {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	padding-bottom: 8px;
-	margin-bottom: 12px;
-	border-bottom: 2px solid var(--background-modifier-border);
-}
-
-.aulyckanban-archive-view-title {
-	font-size: 17px;
-	font-weight: 700;
-	color: var(--text-normal);
-}
-
-.aulyckanban-archive-view-count {
-	font-size: 14px;
-	font-weight: 500;
-	color: var(--text-muted);
-}
-
-/* 归档分类区块 */
-.aulyckanban-archive-section {
-	margin-bottom: 16px;
-}
-
 .aulyckanban-accessible-label {
 	position: absolute;
 	width: 1px;
@@ -1546,25 +1504,6 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	background: var(--interactive-accent);
 	color: var(--text-on-accent);
 	border-color: var(--interactive-accent);
-}
-
-.aulyckanban-archive-delete-btn {
-	background: none;
-	border: 1px solid var(--background-modifier-border);
-	color: var(--text-error);
-	cursor: pointer;
-	padding: 3px 8px;
-	border-radius: 4px;
-	font-size: 12px;
-	flex-shrink: 0;
-	transition: all 0.15s ease;
-	align-self: center;
-}
-
-.aulyckanban-archive-delete-btn:hover {
-	background: var(--text-error);
-	color: #fff;
-	border-color: var(--text-error);
 }
 
 /* ==================== 弹窗样式 ==================== */

@@ -27,7 +27,7 @@ export const PERFORMANCE = {
 } as const;
 
 /** 默认列定义模板（带 order） */
-export const COLUMN_DEFINITIONS: ReadonlyArray<{ id: string; titleKey: I18nKey; order: number }> = [
+const COLUMN_DEFINITIONS: ReadonlyArray<{ id: string; titleKey: I18nKey; order: number }> = [
 	{ id: 'periodic', titleKey: 'column.periodic', order: 0 },
 	{ id: 'urgent-important', titleKey: 'column.urgentImportant', order: 1 },
 	{ id: 'important-not-urgent', titleKey: 'column.importantNotUrgent', order: 2 },

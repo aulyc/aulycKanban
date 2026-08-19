@@ -59,6 +59,42 @@ function definitions(columns) {
 	return columns.map(({ id, title, order }) => ({ id, title, order }));
 }
 
+test('store owns incoming state and root snapshots cannot mutate its nested data', () => {
+	const incomingSettings = settings('work', 'base');
+	const incomingBoard = {
+		views: [view('work', '工作', [column('base', '基础', [task('original')])], 0)],
+		archives: { work: { tasks: [task('archived')] } },
+	};
+	const store = new KanbanStore(incomingSettings, incomingBoard, {
+		persistData: async () => {},
+	});
+
+	incomingSettings.viewSyncTargets.work.filePath = '外部修改.md';
+	incomingBoard.views[0].columns[0].tasks[0].content = '外部修改';
+	incomingBoard.archives.work.tasks.length = 0;
+	assert.equal(store.getSettings().viewSyncTargets.work.filePath, '');
+	assert.equal(store.getBoardData().views[0].columns[0].tasks[0].content, 'original');
+	assert.equal(store.getBoardData().archives.work.tasks.length, 1);
+
+	const settingsSnapshot = store.getSettings();
+	const boardSnapshot = store.getBoardData();
+	settingsSnapshot.viewSyncTargets.work.filePath = '快照修改.md';
+	boardSnapshot.views[0].columns[0].tasks[0].content = '快照修改';
+	boardSnapshot.archives.work.tasks.length = 0;
+	assert.equal(store.getSettings().viewSyncTargets.work.filePath, '');
+	assert.equal(store.getBoardData().views[0].columns[0].tasks[0].content, 'original');
+	assert.equal(store.getBoardData().archives.work.tasks.length, 1);
+
+	const replacement = {
+		views: [view('work', '替换', [column('base', '基础', [task('replacement')])], 0)],
+		archives: { work: { tasks: [] } },
+	};
+	store.dispatch({ type: 'SET_BOARD_DATA', payload: { board: replacement } });
+	replacement.views[0].title = '外部再次修改';
+	assert.equal(store.getBoardData().views[0].title, '替换');
+	store.destroy();
+});
+
 test('fixed work/personal data migrates without mixing tasks', () => {
 	const board = migrateBoardData({
 		work: { columns: [column('base', '基础', [task('work-base')])] },
@@ -243,6 +279,30 @@ test('archive activation preserves current or all task types while intersecting 
 		JSON.stringify(store.getVisibleTaskRefs().map((ref) => ref.task.id)),
 		'["work-archive","personal-archive"]',
 	);
+	store.destroy();
+});
+
+test('switching to a missing task type preserves the current view and transient scopes', () => {
+	const store = createStore(
+		{
+			views: [view('personal', '个人', [column('base', '基础')], 0)],
+			archives: { personal: { tasks: [] } },
+		},
+		'personal',
+		'base',
+	);
+
+	store.dispatch({ type: 'SHOW_ALL_TASKS' });
+	store.dispatch({ type: 'TOGGLE_ARCHIVE_VIEW' });
+	assert.equal(store.getTaskScope(), 'archive');
+	assert.equal(store.getTaskTypeScope(), 'all');
+
+	store.dispatch({ type: 'SWITCH_VIEW', payload: { view: 'work' } });
+
+	assert.equal(store.getCurrentView(), 'personal');
+	assert.equal(store.getTaskScope(), 'archive');
+	assert.equal(store.getTaskTypeScope(), 'all');
+	assert.equal(store.getSettings().showArchive, true);
 	store.destroy();
 });
 

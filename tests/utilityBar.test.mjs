@@ -115,7 +115,7 @@ function find(parent, className) {
 }
 
 test('utility row renders search and archive and commits a trimmed query', () => {
-	const { parent, store, utilityBar } = createHarness();
+	const { parent, store } = createHarness();
 	const row = find(parent, 'aulyckanban-utility-bar');
 	const search = find(parent, 'aulyckanban-task-search-input');
 	const archive = find(parent, 'aulyckanban-archive-btn');
@@ -124,8 +124,6 @@ test('utility row renders search and archive and commits a trimmed query', () =>
 	assert.ok(archive);
 	assert.equal(archive.attributes.tabindex, '-1');
 	assert.equal(find(parent, 'aulyckanban-accessible-label').textContent, 'archive.open');
-	assert.equal(utilityBar.getEl(), row);
-
 	assert.equal(search.inputOptions.onCommit('   '), false);
 	assert.equal(store.actions.length, 0);
 	assert.equal(search.inputOptions.onCommit('  邮箱任务  '), true);

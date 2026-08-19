@@ -4,7 +4,9 @@ import type {
 	ArchiveData,
 	BoardData,
 	Column,
+	DeepReadonly,
 	PluginSettings,
+	SettingsPatch,
 	Task,
 	TaskCoordinate,
 	TaskView,
@@ -20,6 +22,7 @@ import {
 	type TaskScope,
 	type TaskTypeScope,
 } from './utils/taskQuery';
+import { cloneBoardData, cloneSettings } from './utils/stateClone';
 
 type Listener = () => void;
 
@@ -44,24 +47,19 @@ export class KanbanStore {
 	private searchKeyword = '';
 
 	constructor(settings: PluginSettings, board: BoardData, plugin: KanbanPlugin) {
-		this.settings = {
-			...settings,
-			syncFolder: settings.syncFolder,
-			viewSyncTargets: { ...settings.viewSyncTargets },
-			archive: { ...settings.archive },
-		};
-		this.board = this.prepareBoard(board);
+		this.settings = cloneSettings(settings);
+		this.board = this.prepareBoard(cloneBoardData(board));
 		this.plugin = plugin;
 		this.taskScope = settings.showArchive ? 'archive' : 'current';
 		this.ensureCurrentView();
 		this.ensureActiveColumn();
 	}
 
-	getSettings(): Readonly<PluginSettings> {
-		return this.settings;
+	getSettings(): DeepReadonly<PluginSettings> {
+		return cloneSettings(this.settings);
 	}
-	getBoardData(): Readonly<BoardData> {
-		return this.board;
+	getBoardData(): DeepReadonly<BoardData> {
+		return cloneBoardData(this.board);
 	}
 	getCurrentView(): ViewKind {
 		return this.settings.currentView;
@@ -251,7 +249,8 @@ export class KanbanStore {
 				break;
 			}
 			case 'SWITCH_VIEW':
-				if (this.getView(action.payload.view)) this.settings.currentView = action.payload.view;
+				if (!this.getView(action.payload.view)) break;
+				this.settings.currentView = action.payload.view;
 				this.taskScope = 'current';
 				this.archiveTaskTypeScope = 'current';
 				this.settings.showArchive = false;
@@ -327,7 +326,7 @@ export class KanbanStore {
 						: this.deleteArchiveTasks(action.payload.taskIds);
 				break;
 			case 'SET_BOARD_DATA':
-				this.board = this.prepareBoard(action.payload.board);
+				this.board = this.prepareBoard(cloneBoardData(action.payload.board));
 				this.ensureCurrentView();
 				this.ensureActiveColumn();
 				this.resetTaskQuery();
@@ -731,14 +730,13 @@ export class KanbanStore {
 		this.settings.showArchive = false;
 	}
 
-	private updateSettings(partial: Partial<PluginSettings>): void {
+	private updateSettings(partial: SettingsPatch): void {
 		if (partial.uiLanguage !== undefined) this.settings.uiLanguage = partial.uiLanguage;
 		if (partial.currentView !== undefined && this.getView(partial.currentView))
 			this.settings.currentView = partial.currentView;
 		if (partial.activeColumnId !== undefined) this.settings.activeColumnId = partial.activeColumnId;
 		if (partial.showArchive !== undefined) this.settings.showArchive = partial.showArchive;
 		if (partial.syncFolder !== undefined) this.settings.syncFolder = partial.syncFolder;
-		if (partial.schemaVersion !== undefined) this.settings.schemaVersion = partial.schemaVersion;
 		if (partial.saveDebounce !== undefined) this.settings.saveDebounce = partial.saveDebounce;
 		if (partial.syncDebounce !== undefined) this.settings.syncDebounce = partial.syncDebounce;
 		if (partial.viewSyncTargets) {

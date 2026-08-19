@@ -160,8 +160,4 @@ export class TaskControls {
 		selectEl.value = value;
 		selectEl.addEventListener('change', () => onChange(selectEl.value));
 	}
-
-	getEl(): HTMLElement {
-		return this.el;
-	}
 }

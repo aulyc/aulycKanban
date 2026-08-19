@@ -464,8 +464,4 @@ export class CategoryNav {
 				}),
 		}).open();
 	}
-
-	getEl(): HTMLElement {
-		return this.el;
-	}
 }

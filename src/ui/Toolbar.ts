@@ -433,8 +433,4 @@ export class Toolbar {
 		this.shouldFocusInput = false;
 		return shouldFocus;
 	}
-
-	getEl(): HTMLElement {
-		return this.el;
-	}
 }

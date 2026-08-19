@@ -40,11 +40,9 @@ export class Board {
 		this.utilityBar = new UtilityBar(this.containerEl, this.store, () =>
 			taskList?.cancelSelection(),
 		);
-		this.utilityBar.getEl();
 
 		// 任务类型栏（始终显示）
 		this.toolbar = new Toolbar(this.containerEl, app, this.store, this.drag);
-		this.toolbar.getEl();
 
 		// 看板视图容器（左侧任务列表 + 右侧分类导航）
 		this.contentAreaEl = this.containerEl.createDiv({ cls: 'aulyckanban-content-area' });

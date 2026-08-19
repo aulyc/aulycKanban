@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import repositoryModule from '../src/services/repository.ts';
 
-const { PluginDataRepository } = repositoryModule;
+const { DataSchemaVersionError, PluginDataRepository } = repositoryModule;
 
 function board() {
 	return {
@@ -25,6 +25,41 @@ async function loadSettings(rawSettings) {
 	);
 	return (await repository.load()).settings;
 }
+
+test('supported and missing schema versions normalize to the current version', async () => {
+	assert.equal((await loadSettings({ schemaVersion: 1 })).schemaVersion, 8);
+	assert.equal((await loadSettings({ schemaVersion: 8 })).schemaVersion, 8);
+	assert.equal((await loadSettings({})).schemaVersion, 8);
+});
+
+test('future schema versions fail closed instead of loading defaults', async () => {
+	const repository = new PluginDataRepository(
+		async () => ({ settings: { schemaVersion: 9 }, board: board() }),
+		async () => {},
+	);
+
+	await assert.rejects(repository.load(), (error) => {
+		assert.ok(error instanceof DataSchemaVersionError);
+		assert.equal(error.reason, 'unsupported');
+		assert.equal(error.storedVersion, 9);
+		assert.equal(error.currentVersion, 8);
+		return true;
+	});
+});
+
+test('explicit malformed schema versions fail closed', async () => {
+	for (const schemaVersion of ['8', -1, 1.5, Number.NaN]) {
+		const repository = new PluginDataRepository(
+			async () => ({ settings: { schemaVersion }, board: board() }),
+			async () => {},
+		);
+		await assert.rejects(repository.load(), (error) => {
+			assert.ok(error instanceof DataSchemaVersionError);
+			assert.equal(error.reason, 'invalid');
+			return true;
+		});
+	}
+});
 
 test('legacy per-task-type paths migrate into the single managed folder model', async () => {
 	const settings = await loadSettings({

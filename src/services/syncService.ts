@@ -3,7 +3,7 @@ import type { KanbanStore } from '../store';
 import type { Task, TaskView, ViewKind } from '../types';
 import { t } from '../i18n';
 import { generateMarkdown, syncMetadata } from '../utils/markdown';
-import { formatDateTime, formatDateTimeMinute } from '../utils/datetime';
+import { formatDateTime, formatDateTimeMinute, formatFileTimestamp } from '../utils/datetime';
 import { getArchivedAtIso, getArchivedAtTime } from '../utils/task';
 import {
 	buildArchiveNotePath,
@@ -58,10 +58,6 @@ export class VaultSyncService {
 		});
 	}
 
-	scheduleSyncCurrentView(): void {
-		this.scheduleSyncView(this.store.getCurrentView());
-	}
-
 	scheduleSyncView(viewId: ViewKind): void {
 		this.pendingViewIds.add(viewId);
 		this.pendingArchive = true;
@@ -70,11 +66,6 @@ export class VaultSyncService {
 
 	scheduleSyncAllViews(): void {
 		this.pendingAllViews = true;
-		this.pendingArchive = true;
-		this.scheduleSync();
-	}
-
-	scheduleSyncArchive(): void {
 		this.pendingArchive = true;
 		this.scheduleSync();
 	}
@@ -100,17 +91,6 @@ export class VaultSyncService {
 			else await this.syncViews(viewIds, true);
 			if (syncArchive) await this.syncArchive(true);
 		});
-	}
-
-	async syncCurrentView(silent = false): Promise<void> {
-		await this.enqueueSync(async () => {
-			await this.reconcileManagedNotes();
-			await this.syncView(this.store.getCurrentView(), silent);
-		});
-	}
-
-	async syncConfiguredTargets(silent = false): Promise<void> {
-		await this.initialize(silent);
 	}
 
 	/** 以当前已保存的看板数据严格重建全部受管笔记，并把失败传播给调用方。 */
@@ -338,16 +318,7 @@ export class VaultSyncService {
 		owner: ManagedOwner,
 		folder = normalizeSyncFolder(this.store.getSettings().syncFolder),
 	): Promise<void> {
-		const now = new Date();
-		const stamp = [
-			now.getFullYear(),
-			String(now.getMonth() + 1).padStart(2, '0'),
-			String(now.getDate()).padStart(2, '0'),
-			'-',
-			String(now.getHours()).padStart(2, '0'),
-			String(now.getMinutes()).padStart(2, '0'),
-			String(now.getSeconds()).padStart(2, '0'),
-		].join('');
+		const stamp = formatFileTimestamp(new Date());
 		const base = normalizePath(
 			`${folder}/${DELETED_SYNC_FOLDER}/${managedNoteTitle(title)}-${stamp}.md`,
 		);
@@ -490,16 +461,7 @@ export class VaultSyncService {
 	}
 
 	private async buildPreservedHistoryPath(filePath: string): Promise<string> {
-		const now = new Date();
-		const stamp = [
-			now.getFullYear(),
-			String(now.getMonth() + 1).padStart(2, '0'),
-			String(now.getDate()).padStart(2, '0'),
-			'-',
-			String(now.getHours()).padStart(2, '0'),
-			String(now.getMinutes()).padStart(2, '0'),
-			String(now.getSeconds()).padStart(2, '0'),
-		].join('');
+		const stamp = formatFileTimestamp(new Date());
 		const fileName = filePath.slice(filePath.lastIndexOf('/') + 1);
 		const folder = normalizeSyncFolder(this.store.getSettings().syncFolder);
 		const basePath = normalizePath(

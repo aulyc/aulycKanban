@@ -8,7 +8,7 @@ import { AboutModal } from './AboutModal';
 import { ClearDataModal } from './ClearDataModal';
 import { ConfirmModal } from './ConfirmModal';
 
-export function listVaultFolders(app: App): string[] {
+function listVaultFolders(app: App): string[] {
 	return app.vault
 		.getRoot()
 		.children.filter((file): file is TFolder => 'children' in file)

@@ -1,18 +1,20 @@
-import { Notice, Plugin, WorkspaceLeaf } from 'obsidian';
+import { Notice, Plugin, WorkspaceLeaf, type Command } from 'obsidian';
 import { VIEW_TYPE_KANBAN } from './constants';
 import { initI18n, resolveUiLocale, t, type UiLanguage } from './i18n';
 import { KanbanView } from './ui/KanbanView';
 import { KanbanSettingTab } from './ui/KanbanSettingTab';
 import { KanbanStore } from './store';
 import { VaultSyncService } from './services/syncService';
-import { PluginDataRepository } from './services/repository';
+import { DataSchemaVersionError, PluginDataRepository } from './services/repository';
 import { getMutationSyncTarget } from './utils/syncTarget';
+import type { ViewKind } from './types';
 
 export default class KanbanPlugin extends Plugin {
 	store!: KanbanStore;
 	syncService!: VaultSyncService;
 	private repository!: PluginDataRepository;
 	private unsubscribeSync: (() => void) | null = null;
+	private readonly viewCommands = new Map<ViewKind, Command>();
 
 	async onload(): Promise<void> {
 		// 初始化国际化
@@ -20,7 +22,18 @@ export default class KanbanPlugin extends Plugin {
 
 		// 初始化仓储并加载持久化数据
 		this.repository = new PluginDataRepository(this.loadData.bind(this), this.saveData.bind(this));
-		const { settings, board } = await this.repository.load();
+		let loaded: Awaited<ReturnType<PluginDataRepository['load']>>;
+		try {
+			loaded = await this.repository.load();
+		} catch (error) {
+			if (!(error instanceof DataSchemaVersionError)) throw error;
+			console.error('[aulycKanban] Persisted data schema is incompatible:', error);
+			new Notice(
+				t(error.reason === 'unsupported' ? 'data.schema.unsupported' : 'data.schema.invalid'),
+			);
+			return;
+		}
+		const { settings, board } = loaded;
 		if (settings.uiLanguage !== 'system') {
 			initI18n(settings.uiLanguage);
 		}
@@ -38,6 +51,7 @@ export default class KanbanPlugin extends Plugin {
 
 		// 只在数据真正变更时才同步 md（切换视图等 UI 操作不触发）
 		this.unsubscribeSync = this.store.subscribe(() => {
+			this.syncViewCommands();
 			if (!this.store.lastActionMutatedData) return;
 
 			const actionType = this.store.lastActionType;
@@ -74,23 +88,7 @@ export default class KanbanPlugin extends Plugin {
 			},
 		});
 
-		this.addCommand({
-			id: 'focus-work',
-			name: t('command.focusWork'),
-			callback: async () => {
-				await this.activateView();
-				this.store.dispatch({ type: 'SWITCH_VIEW', payload: { view: 'work' } });
-			},
-		});
-
-		this.addCommand({
-			id: 'focus-personal',
-			name: t('command.focusPersonal'),
-			callback: async () => {
-				await this.activateView();
-				this.store.dispatch({ type: 'SWITCH_VIEW', payload: { view: 'personal' } });
-			},
-		});
+		this.syncViewCommands();
 
 		// 注册设置页
 		this.addSettingTab(new KanbanSettingTab(this.app, this));
@@ -126,6 +124,45 @@ export default class KanbanPlugin extends Plugin {
 	/** 应用插件界面语言；已有任务、象限和同步目录保持不变。 */
 	applyUiLanguage(language: UiLanguage): void {
 		initI18n(resolveUiLocale(language, this.getLocale()));
+		this.syncViewCommands();
+	}
+
+	/** 让命令面板与动态任务类型的新增、重命名和删除保持一致。 */
+	private syncViewCommands(): void {
+		for (const view of this.store.getTaskViews()) {
+			const name = t('command.focusView').replace('{title}', () => view.title);
+			const registered = this.viewCommands.get(view.id);
+			if (registered) {
+				registered.name = name;
+				continue;
+			}
+
+			const viewId = view.id;
+			const command = this.addCommand({
+				id: this.getViewCommandId(viewId),
+				name,
+				checkCallback: (checking) => {
+					if (!this.store.getView(viewId)) return false;
+					if (!checking) void this.focusView(viewId);
+					return true;
+				},
+			});
+			this.viewCommands.set(viewId, command);
+		}
+	}
+
+	private async focusView(viewId: ViewKind): Promise<void> {
+		if (!this.store.getView(viewId)) return;
+		await this.activateView();
+		if (!this.store.getView(viewId)) return;
+		this.store.dispatch({ type: 'SWITCH_VIEW', payload: { view: viewId } });
+	}
+
+	/** 保留两个历史命令 ID，使既有 Obsidian 快捷键设置继续生效。 */
+	private getViewCommandId(viewId: ViewKind): string {
+		if (viewId === 'work') return 'focus-work';
+		if (viewId === 'personal') return 'focus-personal';
+		return `focus-view-${encodeURIComponent(viewId)}`;
 	}
 
 	/**

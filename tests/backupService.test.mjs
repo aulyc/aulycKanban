@@ -332,3 +332,56 @@ test('import reports unreadable JSON and ignores an empty file selection', async
 		context.restoreDocument();
 	}
 });
+
+test('import rejects a newer declared backup version without mutating or saving', async () => {
+	const context = await prepareImport();
+	try {
+		await context.harness.dispatchFile({
+			text: async () => JSON.stringify({ ...createBoard(), version: '5.0' }),
+		});
+		assert.deepEqual(context.actions, []);
+		assert.equal(context.getSaveCalls(), 0);
+		assert.equal(context.notices.length, 1);
+		assert.match(context.notices[0], /更高版本/);
+	} finally {
+		context.restoreDocument();
+	}
+});
+
+test('import reports migration when accepting a declared 2.0 backup', async () => {
+	const context = await prepareImport();
+	try {
+		await context.harness.dispatchFile({
+			text: async () =>
+				JSON.stringify({
+					version: '2.0',
+					work: { columns: createBoard().views[0].columns },
+					personal: { columns: createBoard().views[0].columns },
+					workArchive: { tasks: [] },
+					personalArchive: { tasks: [] },
+				}),
+		});
+		assert.equal(context.actions.length, 1);
+		assert.equal(context.getSaveCalls(), 1);
+		assert.match(context.notices[0], /2\.0/);
+	} finally {
+		context.restoreDocument();
+	}
+});
+
+test('import distinguishes unsupported versions from declared shape mismatches', async () => {
+	for (const [payload, expectedNotice] of [
+		[{ ...createBoard(), version: '3.0' }, /不支持.*3\.0/],
+		[{ ...createBoard(), version: '2.0' }, /不匹配/],
+	]) {
+		const context = await prepareImport();
+		try {
+			await context.harness.dispatchFile({ text: async () => JSON.stringify(payload) });
+			assert.deepEqual(context.actions, []);
+			assert.equal(context.getSaveCalls(), 0);
+			assert.match(context.notices[0], expectedNotice);
+		} finally {
+			context.restoreDocument();
+		}
+	}
+});

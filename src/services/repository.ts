@@ -1,8 +1,27 @@
-import type { BoardData, PluginSettings, PluginData, SyncTarget } from '../types';
+import type { BoardData, DeepReadonly, PluginSettings, PluginData, SyncTarget } from '../types';
 import { DEFAULT_SETTINGS, getDefaultBoardData, CURRENT_SCHEMA_VERSION } from '../constants';
 import { normalizeUiLanguage } from '../i18n';
 import { folderFromFilePath, normalizeSyncFolder } from '../utils/noteSync';
 import { migrateBoardData } from './boardMigration';
+import { cloneBoardData, cloneSettings } from '../utils/stateClone';
+
+export type DataSchemaVersionErrorReason = 'invalid' | 'unsupported';
+
+/** 阻止较新或损坏的持久化数据被当前插件静默覆盖。 */
+export class DataSchemaVersionError extends Error {
+	constructor(
+		readonly reason: DataSchemaVersionErrorReason,
+		readonly storedVersion: unknown,
+		readonly currentVersion = CURRENT_SCHEMA_VERSION,
+	) {
+		super(
+			reason === 'unsupported'
+				? `Stored schema version ${String(storedVersion)} is newer than ${currentVersion}`
+				: `Stored schema version ${String(storedVersion)} is invalid`,
+		);
+		this.name = 'DataSchemaVersionError';
+	}
+}
 
 /** 基于 Obsidian Plugin.loadData/saveData 的数据仓储。 */
 export class PluginDataRepository {
@@ -21,6 +40,7 @@ export class PluginDataRepository {
 
 			const data = raw as Record<string, unknown>;
 			const rawSettings = this.record(data['settings']);
+			this.assertSupportedSchemaVersion(rawSettings['schemaVersion']);
 			const rawTargets = this.record(rawSettings['viewSyncTargets']);
 			const legacyWork = this.syncTarget(rawSettings['work']);
 			const legacyPersonal = this.syncTarget(rawSettings['personal']);
@@ -89,13 +109,17 @@ export class PluginDataRepository {
 
 			return { settings, board };
 		} catch (error) {
+			if (error instanceof DataSchemaVersionError) throw error;
 			console.error('[aulycKanban] Failed to load data, using defaults:', error);
 			return this.defaults();
 		}
 	}
 
-	async save(settings: PluginSettings, board: BoardData): Promise<void> {
-		await this.saveDataFn({ settings, board });
+	async save(
+		settings: DeepReadonly<PluginSettings>,
+		board: DeepReadonly<BoardData>,
+	): Promise<void> {
+		await this.saveDataFn({ settings: cloneSettings(settings), board: cloneBoardData(board) });
 	}
 
 	private defaults(): { settings: PluginSettings; board: BoardData } {
@@ -123,5 +147,15 @@ export class PluginDataRepository {
 		return typeof target['filePath'] === 'string'
 			? { filePath: target['filePath'].trim() }
 			: undefined;
+	}
+
+	private assertSupportedSchemaVersion(value: unknown): void {
+		if (value === undefined) return;
+		if (typeof value !== 'number' || !Number.isInteger(value) || value < 0) {
+			throw new DataSchemaVersionError('invalid', value);
+		}
+		if (value > CURRENT_SCHEMA_VERSION) {
+			throw new DataSchemaVersionError('unsupported', value);
+		}
 	}
 }

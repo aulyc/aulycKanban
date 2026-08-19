@@ -19,8 +19,9 @@ const zh = {
 
 	// 命令
 	'command.openBoard': '打开看板',
-	'command.focusWork': '聚焦：工作任务',
-	'command.focusPersonal': '聚焦：个人任务',
+	'command.focusView': '聚焦：{title}',
+	'data.schema.unsupported': '看板数据由更高版本的插件创建。为避免覆盖，请升级插件后再打开。',
+	'data.schema.invalid': '看板数据的版本标记无效。为避免覆盖，插件已停止加载。',
 
 	// 视图
 	'view.displayName': 'aulycKanban',
@@ -84,7 +85,6 @@ const zh = {
 	'archive.open': '查看已归档任务',
 	'archive.other': '其他',
 	'archive.noMatch': '未找到匹配的归档任务',
-	'archive.sort.label': '时间排序',
 	'archive.sort.newest': '最新优先',
 	'archive.sort.oldest': '最早优先',
 	'archive.delete.mode': '选择',
@@ -114,9 +114,13 @@ const zh = {
 	'settings.import.button': '导入',
 	'settings.import.confirm': '导入备份将覆盖当前所有数据，是否继续？',
 	'settings.import.success': '数据导入成功',
+	'settings.import.successMigrated': '已从 {version} 备份格式迁移并导入',
 	'settings.import.fail': '导入失败',
 	'settings.import.invalidFormat': '无效的备份文件格式',
 	'settings.import.duplicateId': '备份包含重复 ID',
+	'settings.import.newerVersion': '备份来自更高版本（{version}），请先升级插件',
+	'settings.import.unsupportedVersion': '不支持的备份版本：{version}',
+	'settings.import.versionMismatch': '备份版本与内容结构不匹配',
 	'settings.clear.name': '清除数据',
 	'settings.clear.desc': '不可恢复的删除所有数据',
 	'settings.clear.button': '清除',
@@ -129,7 +133,6 @@ const zh = {
 	'settings.sync': '笔记同步',
 	'settings.sync.folder.name': '同步文件夹',
 	'settings.sync.folder.desc': '自动创建并管理每个任务类型及归档任务的 Markdown 笔记',
-	'settings.sync.folder.placeholder': 'X-aulyc看板',
 	'settings.sync.force.name': '强制刷新同步',
 	'settings.sync.force.desc': '以当前看板数据重新生成所有任务类型和归档笔记',
 	'settings.sync.force.button': '同步',
@@ -171,8 +174,6 @@ const zh = {
 	'md.stats': '📊 任务统计',
 	'md.totalTasks': '总任务数',
 	'md.noTasks': '暂无任务',
-	'md.activeSection': '进行中',
-	'md.archiveSection': '已归档',
 	'md.archiveStats': '📦 归档统计',
 	'md.archiveTotal': '总归档数',
 
@@ -188,8 +189,11 @@ const en: Record<I18nKey, string> = {
 	'plugin.ribbonTip': 'Open kanban board',
 
 	'command.openBoard': 'Open kanban board',
-	'command.focusWork': 'Focus: Work tasks',
-	'command.focusPersonal': 'Focus: Personal tasks',
+	'command.focusView': 'Focus: {title}',
+	'data.schema.unsupported':
+		'This kanban data was created by a newer version. Upgrade the plugin before opening it.',
+	'data.schema.invalid':
+		'The kanban data version marker is invalid. Loading stopped to avoid overwriting it.',
 
 	'view.displayName': 'aulycKanban',
 	'view.work': '💼 Work',
@@ -248,7 +252,6 @@ const en: Record<I18nKey, string> = {
 	'archive.open': 'View archived tasks',
 	'archive.other': 'Other',
 	'archive.noMatch': 'No archived tasks matched',
-	'archive.sort.label': 'Sort',
 	'archive.sort.newest': 'Newest first',
 	'archive.sort.oldest': 'Oldest first',
 	'archive.delete.mode': 'Select',
@@ -278,9 +281,14 @@ const en: Record<I18nKey, string> = {
 	'settings.import.button': 'Import',
 	'settings.import.confirm': 'Importing will overwrite all current kanban data. Continue?',
 	'settings.import.success': 'Data imported successfully',
+	'settings.import.successMigrated': 'Migrated and imported backup format {version}',
 	'settings.import.fail': 'Import failed',
 	'settings.import.invalidFormat': 'Invalid backup file format',
 	'settings.import.duplicateId': 'Backup contains a duplicate ID',
+	'settings.import.newerVersion':
+		'This backup comes from a newer version ({version}). Upgrade the plugin first.',
+	'settings.import.unsupportedVersion': 'Backup version {version} is not supported',
+	'settings.import.versionMismatch': 'The backup version does not match its data structure',
 	'settings.clear.name': 'Clear all data',
 	'settings.clear.desc': 'Delete task data from every task type (irreversible)',
 	'settings.clear.button': 'Clear data',
@@ -295,7 +303,6 @@ const en: Record<I18nKey, string> = {
 	'settings.sync.folder.name': 'Sync folder',
 	'settings.sync.folder.desc':
 		'Automatically create and manage Markdown notes for each task type and archived tasks',
-	'settings.sync.folder.placeholder': 'X-aulycKanban',
 	'settings.sync.force.name': 'Force refresh synchronization',
 	'settings.sync.force.desc':
 		'Regenerate every task-type and archive note from the current kanban data',
@@ -337,8 +344,6 @@ const en: Record<I18nKey, string> = {
 	'md.stats': '📊 Task Statistics',
 	'md.totalTasks': 'Total tasks',
 	'md.noTasks': 'No tasks',
-	'md.activeSection': 'Active tasks',
-	'md.archiveSection': 'Archived tasks',
 	'md.archiveStats': '📦 Archive Statistics',
 	'md.archiveTotal': 'Total archived',
 

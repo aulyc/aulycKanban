@@ -168,8 +168,4 @@ export class UtilityBar {
 		this.searchDraft = '';
 		this.shouldFocusSearchInput = false;
 	}
-
-	getEl(): HTMLElement {
-		return this.el;
-	}
 }

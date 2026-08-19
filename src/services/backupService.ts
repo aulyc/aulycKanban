@@ -1,9 +1,8 @@
 import { Notice } from 'obsidian';
-import type { BoardData } from '../types';
 import type { KanbanStore } from '../store';
 import { t } from '../i18n';
-import { findImportedBoardDuplicateId, migrateImportedBoardData } from './boardMigration';
 import { BACKUP_VERSION } from '../constants';
+import { parseBackupData, type BackupParseResult } from './backupFormat';
 
 /**
  * 备份导出/导入服务
@@ -71,37 +70,56 @@ export class BackupService {
 		try {
 			const text = await file.text();
 			const importedData: unknown = JSON.parse(text);
-			const duplicate = findImportedBoardDuplicateId(importedData);
-			if (duplicate) {
-				new Notice(`${t('settings.import.duplicateId')}：${duplicate.field}=${duplicate.id}`);
-				return;
-			}
-
-			// 整份备份先完成深层校验，避免部分坏数据覆盖当前看板。
-			const validBoard = this.validateAndMigrate(importedData);
-			if (!validBoard) {
-				new Notice(t('settings.import.invalidFormat'));
+			const parsed = parseBackupData(importedData);
+			if (!parsed.ok) {
+				this.reportInvalidBackup(parsed);
 				return;
 			}
 
 			this.store.dispatch({
 				type: 'SET_BOARD_DATA',
-				payload: { board: validBoard },
+				payload: { board: parsed.board },
 			});
 
 			await this.store.saveNow();
 
-			new Notice(t('settings.import.success'));
+			new Notice(
+				parsed.sourceVersion === '2.0'
+					? t('settings.import.successMigrated').replace('{version}', parsed.sourceVersion)
+					: t('settings.import.success'),
+			);
 		} catch (error) {
 			const msg = error instanceof Error ? error.message : String(error);
 			new Notice(`${t('settings.import.fail')}：${msg}`);
 		}
 	}
 
-	/**
-	 * 校验并迁移导入数据；支持动态任务类型格式和旧格式。
-	 */
-	private validateAndMigrate(data: unknown): BoardData | null {
-		return migrateImportedBoardData(data);
+	private reportInvalidBackup(result: Extract<BackupParseResult, { ok: false }>): void {
+		if (result.reason === 'duplicate-id' && result.duplicate) {
+			new Notice(
+				`${t('settings.import.duplicateId')}：${result.duplicate.field}=${result.duplicate.id}`,
+			);
+			return;
+		}
+		if (result.reason === 'newer-version') {
+			new Notice(
+				t('settings.import.newerVersion').replace('{version}', String(result.declaredVersion)),
+			);
+			return;
+		}
+		if (result.reason === 'unsupported-version') {
+			new Notice(
+				t('settings.import.unsupportedVersion').replace(
+					'{version}',
+					String(result.declaredVersion),
+				),
+			);
+			return;
+		}
+		if (result.reason === 'version-mismatch') {
+			new Notice(t('settings.import.versionMismatch'));
+			return;
+		}
+		new Notice(t('settings.import.invalidFormat'));
 	}
 }

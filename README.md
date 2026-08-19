@@ -147,6 +147,10 @@ Obsidian CLI 仅用于本机开发验证，不属于插件运行时依赖。插�
 - 样式文件：`styles.css`
 - 运行数据：`data.json`
 
+运行数据 schema、历史数据迁移、JSON 备份版本矩阵和 Store 状态所有权合同见
+[DATA_COMPATIBILITY.md](DATA_COMPATIBILITY.md)。`schemaVersion` 与备份格式版本均不是
+产品版本或发布版本。
+
 > 正常情况下，`data.json` 位于 Vault 的插件目录下：
 > `.obsidian/plugins/aulyckanban/data.json`
 > 如果你在项目目录中看到它，通常是本地开发映射/软链接导致。

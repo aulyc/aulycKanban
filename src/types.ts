@@ -4,6 +4,13 @@ import type { UiLanguage } from './i18n';
  * 看板数据类型定义
  */
 
+/** 递归只读视图；Store 对外返回的数据不得暴露可写内部引用。 */
+export type DeepReadonly<T> = T extends readonly (infer Item)[]
+	? readonly DeepReadonly<Item>[]
+	: T extends object
+		? { readonly [Key in keyof T]: DeepReadonly<T[Key]> }
+		: T;
+
 /** 动态任务类型 ID */
 export type ViewKind = string;
 
@@ -86,6 +93,9 @@ export interface PluginData {
 	board: BoardData;
 }
 
+/** 普通设置更新不得伪造或回退持久化 schema 版本。 */
+export type SettingsPatch = Partial<Omit<PluginSettings, 'schemaVersion'>>;
+
 /** 普通任务的稳定坐标；任务 ID 只在任务类型与象限坐标内唯一。 */
 export interface TaskCoordinate {
 	viewId: ViewKind;
@@ -131,7 +141,7 @@ export type Action =
 	  }
 	| { type: 'SET_BOARD_DATA'; payload: { board: BoardData } }
 	| { type: 'CLEAR_ALL_DATA' }
-	| { type: 'UPDATE_SETTINGS'; payload: Partial<PluginSettings> };
+	| { type: 'UPDATE_SETTINGS'; payload: SettingsPatch };
 
 /** 从 Action 联合类型中提取所有 type 字面量 */
 export type ActionType = Action['type'];

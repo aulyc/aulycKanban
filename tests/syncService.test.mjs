@@ -178,7 +178,7 @@ test('a task containing the managed end marker does not create unbounded history
 	const service = new VaultSyncService(vault, store);
 	await service.initialize();
 
-	for (let index = 0; index < 3; index += 1) await service.syncCurrentView(true);
+	for (let index = 0; index < 3; index += 1) await service.initialize(true);
 
 	const history = [...vault.files.keys()].filter((path) => path.includes('/历史同步内容/'));
 	assert.deepEqual(history, []);
