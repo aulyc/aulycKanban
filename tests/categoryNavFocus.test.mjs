@@ -157,7 +157,7 @@ const { CategoryNav } = await loadSourceModule(
 			obsidian: { Menu: class {} },
 			'../i18n': {
 				t: (key) =>
-					({ 'column.all': '全部象限', 'column.addPrompt': '输入新象限名称' })[key] ?? key,
+					({ 'column.all': '🌐 全部象限', 'column.addPrompt': '输入新象限名称' })[key] ?? key,
 			},
 			'./ConfirmModal': { ConfirmModal: class {} },
 			'./InlineInput': {
@@ -412,7 +412,7 @@ test('all quadrants is a fixed first navigation control with the aggregate count
 	);
 	assert.ok(allButton);
 	assert.equal(nav.children[0], allButton);
-	assert.equal(allButton.children[0].textContent, '全部象限');
+	assert.equal(allButton.children[0].textContent, '🌐 全部象限');
 	assert.equal(allButton.children[1].textContent, '2');
 	assert.ok(quadrant);
 	assert.ok(addButton);

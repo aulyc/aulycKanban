@@ -42,7 +42,7 @@ const zh = {
 	'column.importantNotUrgent': '⭐ 重要不紧急',
 	'column.urgentNotImportant': '⚡ 紧急不重要',
 	'column.notUrgentNotImportant': '💤 不紧急不重要',
-	'column.all': '全部象限',
+	'column.all': '🌐 全部象限',
 
 	// 任务操作
 	'task.inputPlaceholder': '输入任务，Enter 添加',
@@ -213,7 +213,7 @@ const en: Record<I18nKey, string> = {
 	'column.importantNotUrgent': '⭐ Important',
 	'column.urgentNotImportant': '⚡ Urgent',
 	'column.notUrgentNotImportant': '💤 Neither',
-	'column.all': 'All quadrants',
+	'column.all': '🌐 All quadrants',
 
 	'task.inputPlaceholder': 'Type task, Enter to add',
 	'task.search.placeholder': 'Search tasks, Enter to apply',

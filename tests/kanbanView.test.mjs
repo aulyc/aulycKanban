@@ -653,6 +653,13 @@ test('task types enter the task add control and its horizontal row skips disable
 	dispatchKey(harness.contentEl, selectModeDown);
 	assert.equal(selectModeDown.defaultPrevented, true);
 	assert.equal(harness.documentRef.activeElement, firstTask);
+
+	taskAdd.focus();
+	const taskUp = keyEvent('ArrowUp', { target: taskAdd });
+	dispatchKey(harness.contentEl, taskUp);
+	assert.equal(taskUp.defaultPrevented, true);
+	assert.equal(harness.documentRef.activeElement, viewTab);
+	assert.equal(revealedItems.at(-1), viewTab);
 });
 
 test('editing inputs keep native arrow behavior while empty task creation can navigate', async () => {
@@ -748,12 +755,18 @@ test('reverse arrows and shared task controls navigate in the expected direction
 	assert.equal(composingArrow.defaultPrevented, false);
 	assert.equal(harness.documentRef.activeElement, search);
 
-	search.value = '';
+	search.value = '正在输入';
 	const verticalArrow = keyEvent('ArrowDown', { target: search });
 	dispatchKey(harness.contentEl, verticalArrow);
-	assert.equal(verticalArrow.defaultPrevented, false);
+	assert.equal(verticalArrow.defaultPrevented, true);
+	assert.equal(harness.documentRef.activeElement, viewTab);
+
+	const viewUpToSearch = keyEvent('ArrowUp', { target: viewTab });
+	dispatchKey(harness.contentEl, viewUpToSearch);
+	assert.equal(viewUpToSearch.defaultPrevented, true);
 	assert.equal(harness.documentRef.activeElement, search);
 
+	search.value = '';
 	const searchArrow = keyEvent('ArrowRight', { target: search });
 	dispatchKey(harness.contentEl, searchArrow);
 	assert.equal(searchArrow.defaultPrevented, true);
@@ -762,6 +775,96 @@ test('reverse arrows and shared task controls navigate in the expected direction
 	dispatchKey(harness.contentEl, archiveArrow);
 	assert.equal(archiveArrow.defaultPrevented, true);
 	assert.equal(harness.documentRef.activeElement, search);
+
+	archive.focus();
+	const archiveDown = keyEvent('ArrowDown', { target: archive });
+	dispatchKey(harness.contentEl, archiveDown);
+	assert.equal(archiveDown.defaultPrevented, true);
+	assert.equal(harness.documentRef.activeElement, viewTab);
+
+	const viewUpToArchive = keyEvent('ArrowUp', { target: viewTab });
+	dispatchKey(harness.contentEl, viewUpToArchive);
+	assert.equal(viewUpToArchive.defaultPrevented, true);
+	assert.equal(harness.documentRef.activeElement, archive);
+
+	search.focus();
+	const searchTab = keyEvent('Tab', { target: search, path: [search, utility, harness.contentEl] });
+	dispatchKey(harness.contentEl, searchTab);
+	harness.flushAnimationFrames();
+	assert.equal(harness.documentRef.activeElement, viewTab);
+	dispatchKey(harness.contentEl, keyEvent('ArrowUp', { target: viewTab }));
+	assert.equal(harness.documentRef.activeElement, search);
+});
+
+test('task cards and quadrants move horizontally and restore the same task after rendering', async () => {
+	const harness = createHarness();
+	await harness.view.onOpen();
+	const taskPane = child(harness.contentEl, 'aulyckanban-task-pane');
+	const task = child(taskPane, 'aulyckanban-task', {
+		viewId: 'work',
+		columnId: 'base',
+		taskId: 'task-1',
+	});
+	const columnNav = child(harness.contentEl, 'aulyckanban-category-nav');
+	const column = child(columnNav, 'aulyckanban-nav-item aulyckanban-nav-item-active', {
+		columnId: 'base',
+	});
+
+	task.focus();
+	const taskRight = keyEvent('ArrowRight', { target: task });
+	dispatchKey(harness.contentEl, taskRight);
+	assert.equal(taskRight.defaultPrevented, true);
+	assert.equal(harness.documentRef.activeElement, column);
+
+	taskPane.children = [];
+	const rebuiltTask = child(taskPane, 'aulyckanban-task', {
+		viewId: 'work',
+		columnId: 'base',
+		taskId: 'task-1',
+	});
+	const columnLeft = keyEvent('ArrowLeft', { target: column });
+	dispatchKey(harness.contentEl, columnLeft);
+	assert.equal(columnLeft.defaultPrevented, true);
+	assert.equal(harness.documentRef.activeElement, rebuiltTask);
+	assert.deepEqual(rebuiltTask.scrollCalls, [{ block: 'nearest' }]);
+
+	const secondTask = child(taskPane, 'aulyckanban-task', {
+		viewId: 'work',
+		columnId: 'base',
+		taskId: 'task-2',
+	});
+	secondTask.focus();
+	dispatchKey(
+		harness.contentEl,
+		keyEvent('Tab', { target: secondTask, path: [secondTask, taskPane, harness.contentEl] }),
+	);
+	assert.equal(harness.documentRef.activeElement, column);
+	dispatchKey(harness.contentEl, keyEvent('ArrowLeft', { target: column }));
+	assert.equal(harness.documentRef.activeElement, secondTask);
+});
+
+test('leaving archive with a utility arrow waits for the rebuilt search before focusing it', async () => {
+	const harness = createHarness();
+	await harness.view.onOpen();
+	const utility = child(harness.contentEl, 'aulyckanban-utility-bar');
+	const search = child(utility, 'aulyckanban-task-search-input');
+	const archive = child(utility, 'aulyckanban-archive-btn');
+	utilityNavigationItems = [search, archive];
+	harness.store.state.taskScope = 'archive';
+	archive.focus();
+
+	const archiveArrow = keyEvent('ArrowLeft', { target: archive });
+	dispatchKey(harness.contentEl, archiveArrow);
+
+	assert.equal(archiveArrow.defaultPrevented, true);
+	assert.deepEqual(harness.store.state.actions.at(-1), { type: 'TOGGLE_ARCHIVE_VIEW' });
+	assert.equal(harness.store.state.taskScope, 'current');
+	assert.equal(harness.documentRef.activeElement, archive);
+	assert.equal(search.focusCalls.length, 0);
+
+	harness.flushAnimationFrames();
+	assert.equal(harness.documentRef.activeElement, search);
+	assert.deepEqual(search.focusCalls, [{ preventScroll: true }]);
 });
 
 test('Tab handles document-level, missing-focus, selector-fallback, and editing-blur paths', async () => {
@@ -877,11 +980,26 @@ test('column navigation includes all quadrants, existing quadrants, and the reta
 	const addColumn = child(columnNav, 'aulyckanban-nav-add-btn');
 
 	addColumn.focus();
+	const boundaryCallCount = columnNavigationCalls.length;
+	const addDown = keyEvent('ArrowDown', { target: addColumn });
+	dispatchKey(harness.contentEl, addDown);
+	assert.equal(addDown.defaultPrevented, true);
+	assert.equal(harness.documentRef.activeElement, addColumn);
+	assert.equal(columnNavigationCalls.length, boundaryCallCount);
+
 	nextColumnNavigationTarget = { kind: 'column', id: 'base' };
-	dispatchKey(harness.contentEl, keyEvent('ArrowDown', { target: addColumn }));
+	dispatchKey(harness.contentEl, keyEvent('ArrowUp', { target: addColumn }));
 	assert.deepEqual(columnNavigationCalls.at(-1)[4], { kind: 'add' });
 	harness.flushAnimationFrames();
 	assert.equal(harness.documentRef.activeElement, column);
+
+	allColumns.focus();
+	const topCallCount = columnNavigationCalls.length;
+	const allUp = keyEvent('ArrowUp', { target: allColumns });
+	dispatchKey(harness.contentEl, allUp);
+	assert.equal(allUp.defaultPrevented, true);
+	assert.equal(harness.documentRef.activeElement, allColumns);
+	assert.equal(columnNavigationCalls.length, topCallCount);
 
 	column.focus();
 	nextColumnNavigationTarget = { kind: 'all' };
