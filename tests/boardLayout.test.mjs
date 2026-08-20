@@ -106,6 +106,7 @@ test('utility row precedes task types while task add stays above normal and arch
 	assert.equal(footer.classes.has('aulyckanban-board-footer'), true);
 	assert.equal(footer.children[0].classes.has('aulyckanban-board-footer-status'), true);
 	assert.equal(instances.get('tasks').statusEl, footer.children[0]);
+	assert.equal(instances.get('archive').statusEl, footer.children[0]);
 	assert.equal(footer.children[0].attributes.role, 'status');
 	assert.equal(footer.children[0].attributes['aria-live'], 'polite');
 	instances.get('controls').args[2]();

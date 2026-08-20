@@ -1,4 +1,4 @@
-/** 普通任务列表的临时多选状态；不写入看板数据。 */
+/** 普通任务与归档任务共享的临时多选状态；不写入看板数据。 */
 export class TaskSelection {
 	private readonly selectedKeys = new Set<string>();
 	private anchorKey: string | null = null;

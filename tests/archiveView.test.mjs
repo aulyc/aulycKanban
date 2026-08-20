@@ -24,6 +24,7 @@ class MockElement {
 		this.scrollTop = 0;
 		this.selectionStart = 0;
 		this.selectionEnd = 0;
+		this.focusCalls = [];
 		this.classList = { contains: (value) => this.classes.has(value) };
 	}
 
@@ -67,6 +68,10 @@ class MockElement {
 		this.listeners.set(name, listeners);
 	}
 
+	focus(options) {
+		this.focusCalls.push(options);
+	}
+
 	querySelector(selector) {
 		if (!selector.startsWith('.')) return null;
 		const className = selector.slice(1);
@@ -96,6 +101,7 @@ function byClass(root, className) {
 
 const source = readFileSync(new URL('../src/ui/ArchiveView.ts', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
+let activeModals = [];
 const { ArchiveView } = await loadSourceModule(
 	new URL('../src/ui/ArchiveView.ts', import.meta.url),
 	{
@@ -107,9 +113,23 @@ const { ArchiveView } = await loadSourceModule(
 				},
 			},
 			'../i18n': {
-				t: (key) => (key === 'archive.delete.selectedCount' ? '已选 {count} 项' : key),
+				t: (key) => {
+					if (key === 'task.select.count') return '已选 {count} 项';
+					if (key === 'archive.confirm.deleteSelected') return '确认删除 {count} 项';
+					return key;
+				},
 			},
-			'./ConfirmModal': { ConfirmModal: class {} },
+			'./ConfirmModal': {
+				ConfirmModal: class {
+					constructor(_app, options) {
+						this.options = options;
+						activeModals.push(this);
+					}
+					open() {
+						this.opened = true;
+					}
+				},
+			},
 			'../utils/datetime': { formatDateTimeMinute: () => '2026/07/12 21:10' },
 			'../utils/dom': {
 				appendAccessibleLabel: (element, text) =>
@@ -140,7 +160,7 @@ const { ArchiveView } = await loadSourceModule(
 	},
 );
 
-function createHarness() {
+function createHarness(storeOverrides = {}) {
 	const task = {
 		id: 'archive-1',
 		content: '已归档任务',
@@ -171,8 +191,12 @@ function createHarness() {
 		getArchive: () => [task],
 		getActiveColumnId: () => 'periodic',
 		getArchiveColumnId: () => 'periodic',
+		getTaskTypeScope: () => 'current',
+		getCurrentView: () => 'work',
+		getColumnScope: () => 'current',
 		getSearchKeyword: () => '',
 		dispatch: () => {},
+		...storeOverrides,
 	};
 	const container = new MockElement('div');
 	const documentRef = {
@@ -186,70 +210,66 @@ function createHarness() {
 	return { archiveView, container };
 }
 
-test('archive browse mode uses one compact toolbar and one-line card metadata', () => {
+test('archive browse mode uses one compact toolbar and shared card metadata', () => {
 	const { container } = createHarness();
 
-	assert.equal(byClass(container, 'aulyckanban-archive-toolbar-browse').length, 1);
+	assert.equal(byClass(container, 'aulyckanban-archive-toolbar').length, 1);
 	assert.equal(byClass(container, 'aulyckanban-archive-search').length, 0);
 	assert.equal(byClass(container, 'aulyckanban-archive-sort-btn').length, 1);
 	assert.equal(byClass(container, 'aulyckanban-archive-filter-select').length, 0);
 	assert.equal(byClass(container, 'aulyckanban-archive-select-mode-btn').length, 1);
 	assert.equal(byClass(container, 'aulyckanban-archive-select-all-btn').length, 1);
 	assert.equal(byClass(container, 'aulyckanban-archive-delete-selected-btn').length, 1);
-	assert.equal(byClass(container, 'aulyckanban-archive-selected-count').length, 1);
-	assert.equal(byClass(container, 'aulyckanban-archive-toolbar-selection').length, 0);
-	assert.equal(byClass(container, 'aulyckanban-archive-task-meta').length, 1);
+	assert.equal(byClass(container, 'aulyckanban-archive-selected-count').length, 0);
+	assert.equal(byClass(container, 'aulyckanban-task-meta-row').length, 1);
+	assert.equal(byClass(container, 'aulyckanban-task-meta-details').length, 1);
 	assert.equal(byClass(container, 'aulyckanban-archive-tag').length, 0);
 	assert.equal(byClass(container, 'aulyckanban-archive-restore-btn').length, 1);
+	assert.equal(byClass(container, 'aulyckanban-archive-task-delete').length, 1);
 	assert.equal(byClass(container, 'aulyckanban-task-content-completed').length, 0);
 });
 
-test('archive browse toolbar keeps sort, select, select-all, delete, and count in fixed order', () => {
-	const { container } = createHarness();
-	const toolbar = byClass(container, 'aulyckanban-archive-toolbar-browse')[0];
-	const sortButton = byClass(toolbar, 'aulyckanban-archive-sort-btn')[0];
-	const selectButton = byClass(toolbar, 'aulyckanban-archive-select-mode-btn')[0];
-	const selectAllButton = byClass(toolbar, 'aulyckanban-archive-select-all-btn')[0];
-	const deleteButton = byClass(toolbar, 'aulyckanban-archive-delete-selected-btn')[0];
-	const selectedCount = byClass(toolbar, 'aulyckanban-archive-selected-count')[0];
+test('archive card source labels follow the same aggregate scope rules as ordinary cards', () => {
+	const current = createHarness().container;
+	assert.equal(byClass(current, 'aulyckanban-task-source').length, 0);
+	assert.equal(byClass(current, 'aulyckanban-archive-meta-item').length, 0);
 
-	assert.deepEqual(toolbar.children, [
-		sortButton,
-		selectButton,
-		selectAllButton,
-		deleteButton,
-		selectedCount,
-	]);
+	const allTypes = createHarness({ getTaskTypeScope: () => 'all' }).container;
+	assert.equal(byClass(allTypes, 'aulyckanban-task-source')[0].textContent, '工作任务');
+
+	const allColumns = createHarness({ getColumnScope: () => 'all' }).container;
+	assert.equal(byClass(allColumns, 'aulyckanban-task-source')[0].textContent, '周期任务');
+
+	const allSources = createHarness({
+		getTaskTypeScope: () => 'all',
+		getColumnScope: () => 'all',
+	}).container;
+	assert.equal(
+		byClass(allSources, 'aulyckanban-task-source')[0].textContent,
+		'工作任务 · 周期任务',
+	);
+});
+
+test('archive toolbar keeps sort, permanent delete, cancel, and select-all in fixed order', () => {
+	const { container } = createHarness();
+	const toolbar = byClass(container, 'aulyckanban-archive-toolbar')[0];
+	const sortButton = byClass(toolbar, 'aulyckanban-archive-sort-btn')[0];
+	const deleteButton = byClass(toolbar, 'aulyckanban-archive-delete-selected-btn')[0];
+	const cancelButton = byClass(toolbar, 'aulyckanban-archive-cancel-selection-btn')[0];
+	const selectButton = byClass(toolbar, 'aulyckanban-archive-select-mode-btn')[0];
+
+	assert.deepEqual(toolbar.children, [sortButton, deleteButton, cancelButton, selectButton]);
 	assert.equal(sortButton.icon, 'arrow-down-wide-narrow');
+	assert.equal(deleteButton.icon, 'trash-2');
+	assert.equal(deleteButton.disabled, true);
+	assert.equal(cancelButton.icon, 'x');
+	assert.equal(cancelButton.disabled, true);
 	assert.equal(selectButton.icon, 'list-checks');
 	assert.equal(selectButton.textContent, '');
 	assert.equal(
 		byClass(selectButton, 'aulyckanban-accessible-label')[0].textContent,
-		'archive.delete.mode',
+		'task.select.mode',
 	);
-	assert.equal(selectAllButton.icon, 'check-check');
-	assert.equal(
-		byClass(selectAllButton, 'aulyckanban-accessible-label')[0].textContent,
-		'archive.delete.selectAll',
-	);
-	assert.equal(deleteButton.icon, 'trash-2');
-	assert.equal(deleteButton.disabled, true);
-	assert.equal(
-		byClass(selectedCount, 'aulyckanban-archive-selected-count-value')[0].textContent,
-		'0',
-	);
-
-	const browseToolbarRule =
-		css.match(/\.aulyckanban-archive-toolbar-browse\s*\{([^}]*)\}/)?.[1] ?? '';
-	assert.match(browseToolbarRule, /justify-content:\s*flex-start;/);
-
-	const countRule = css.match(/\.aulyckanban-archive-selected-count\s*\{([^}]*)\}/)?.[1] ?? '';
-	assert.match(countRule, /margin-left:\s*auto;/);
-	const countValueRule =
-		css.match(/\.aulyckanban-archive-selected-count-value\s*\{([^}]*)\}/)?.[1] ?? '';
-	assert.match(countValueRule, /min-width:\s*3ch;/);
-	assert.match(countValueRule, /text-align:\s*right;/);
-	assert.match(countValueRule, /font-variant-numeric:\s*tabular-nums;/);
 });
 
 test('archive bidirectional sort button toggles newest and oldest order without a select menu', () => {
@@ -273,29 +293,21 @@ test('archive bidirectional sort button toggles newest and oldest order without 
 	);
 });
 
-test('archive selection toolbar keeps aligned icon actions and hides restore actions', () => {
+test('archive selection reuses the ordinary cancel and select-all behavior', () => {
 	const { container } = createHarness();
 	const selectButton = byClass(container, 'aulyckanban-archive-select-mode-btn')[0];
 	selectButton.listeners.get('click')[0]();
 
-	assert.equal(byClass(container, 'aulyckanban-archive-toolbar-browse').length, 0);
-	assert.equal(byClass(container, 'aulyckanban-archive-toolbar-selection').length, 1);
 	assert.equal(byClass(container, 'aulyckanban-archive-search').length, 0);
 	assert.equal(byClass(container, 'aulyckanban-archive-restore-btn').length, 0);
+	assert.equal(byClass(container, 'aulyckanban-archive-task-delete').length, 0);
 	assert.equal(byClass(container, 'aulyckanban-archive-more-btn').length, 0);
-	const toolbar = byClass(container, 'aulyckanban-archive-toolbar-selection')[0];
+	const toolbar = byClass(container, 'aulyckanban-archive-toolbar')[0];
 	const sortButton = byClass(container, 'aulyckanban-archive-sort-btn')[0];
 	const cancelButton = byClass(container, 'aulyckanban-archive-cancel-selection-btn')[0];
-	const selectAllButton = byClass(container, 'aulyckanban-archive-select-all-btn')[0];
 	const deleteButton = byClass(container, 'aulyckanban-archive-delete-selected-btn')[0];
-	const selectedCount = byClass(container, 'aulyckanban-archive-selected-count')[0];
-	assert.deepEqual(toolbar.children, [
-		sortButton,
-		cancelButton,
-		selectAllButton,
-		deleteButton,
-		selectedCount,
-	]);
+	const selectionButton = byClass(container, 'aulyckanban-archive-select-mode-btn')[0];
+	assert.deepEqual(toolbar.children, [sortButton, deleteButton, cancelButton, selectionButton]);
 	assert.equal(deleteButton.icon, 'trash-2');
 	assert.equal(deleteButton.textContent, '');
 	assert.equal(
@@ -303,31 +315,31 @@ test('archive selection toolbar keeps aligned icon actions and hides restore act
 		'archive.delete.selected',
 	);
 	assert.equal(deleteButton.disabled, true);
-	assert.equal(cancelButton.icon, 'list-x');
+	assert.equal(cancelButton.icon, 'x');
+	assert.equal(cancelButton.disabled, false);
 	assert.equal(cancelButton.textContent, '');
 	assert.equal(
 		byClass(cancelButton, 'aulyckanban-accessible-label')[0].textContent,
-		'archive.delete.cancel',
+		'task.select.cancel',
 	);
-	assert.equal(selectAllButton.icon, 'check-check');
-	assert.equal(selectAllButton.disabled, false);
+	assert.equal(selectionButton.icon, 'list-checks');
+	assert.equal(selectionButton.disabled, false);
 	assert.equal(
-		byClass(selectAllButton, 'aulyckanban-accessible-label')[0].textContent,
-		'archive.delete.selectAll',
+		byClass(selectionButton, 'aulyckanban-accessible-label')[0].textContent,
+		'task.select.all',
 	);
 	assert.equal(sortButton.icon, 'arrow-down-wide-narrow');
 	sortButton.listeners.get('click')[0]();
-	assert.equal(byClass(container, 'aulyckanban-archive-toolbar-selection').length, 1);
 	assert.equal(byClass(container, 'aulyckanban-archive-sort-btn')[0].icon, 'arrow-up-narrow-wide');
 });
 
-test('archive selection mode has one explicit delete path and an unboxed toolbar', () => {
+test('archive selection mode has one explicit bulk-delete path and an unboxed toolbar', () => {
 	assert.doesNotMatch(
 		source,
 		/showFilteredDeleteMenu|archive\.delete\.filtered|archive\.confirm\.deleteFiltered/,
 	);
 
-	const toolbarRule = css.match(/\.aulyckanban-archive-toolbar-selection\s*\{([^}]*)\}/)?.[1] ?? '';
+	const toolbarRule = css.match(/\.aulyckanban-archive-toolbar\s*\{([^}]*)\}/)?.[1] ?? '';
 	assert.match(toolbarRule, /border:\s*0;/);
 	assert.match(toolbarRule, /background:\s*transparent;/);
 
@@ -338,99 +350,176 @@ test('archive selection mode has one explicit delete path and an unboxed toolbar
 
 	const deleteRule =
 		css.match(/\.aulyckanban-archive-delete-selected-btn\s*\{([^}]*)\}/)?.[1] ?? '';
-	assert.doesNotMatch(deleteRule, /margin-left:\s*auto;/);
+	assert.match(deleteRule, /margin-left:\s*auto;/);
 	assert.doesNotMatch(source, /selectAllCheckbox|aulyckanban-archive-select-all[^-]/);
 });
 
-test('select-all and clear-all toggle repeatedly while preserving the toolbar slots', () => {
+test('select-all and clear-all toggle through one shared selection button', () => {
 	const { container } = createHarness();
-	byClass(container, 'aulyckanban-archive-select-all-btn')[0].listeners.get('click')[0]();
-
-	assert.equal(byClass(container, 'aulyckanban-archive-toolbar-selection').length, 1);
-	assert.equal(byClass(container, 'aulyckanban-archive-task-selected').length, 1);
-	assert.equal(byClass(container, 'aulyckanban-archive-selected-count-value')[0].textContent, '1');
-	assert.equal(byClass(container, 'aulyckanban-archive-delete-selected-btn')[0].disabled, false);
-
-	byClass(container, 'aulyckanban-archive-clear-all-btn')[0].listeners.get('click')[0]();
-	assert.equal(byClass(container, 'aulyckanban-archive-toolbar-selection').length, 1);
+	byClass(container, 'aulyckanban-archive-select-mode-btn')[0].listeners.get('click')[0]();
 	assert.equal(byClass(container, 'aulyckanban-archive-task-selected').length, 0);
-	assert.equal(byClass(container, 'aulyckanban-archive-selected-count-value')[0].textContent, '0');
+	byClass(container, 'aulyckanban-archive-select-mode-btn')[0].listeners.get('click')[0]();
+
+	assert.equal(byClass(container, 'aulyckanban-archive-task-selected').length, 1);
+	assert.equal(byClass(container, 'aulyckanban-archive-delete-selected-btn')[0].disabled, false);
+	assert.equal(byClass(container, 'aulyckanban-archive-select-mode-btn')[0].icon, 'list-x');
+
+	byClass(container, 'aulyckanban-archive-select-mode-btn')[0].listeners.get('click')[0]();
+	assert.equal(byClass(container, 'aulyckanban-archive-task-selected').length, 0);
 	assert.equal(byClass(container, 'aulyckanban-archive-delete-selected-btn')[0].disabled, true);
 
-	const selectAllAgain = byClass(container, 'aulyckanban-archive-select-all-btn')[0];
+	const selectAllAgain = byClass(container, 'aulyckanban-archive-select-mode-btn')[0];
 	assert.equal(selectAllAgain.disabled, false);
-	assert.equal(selectAllAgain.icon, 'check-check');
+	assert.equal(selectAllAgain.icon, 'list-checks');
 	assert.equal(
 		byClass(selectAllAgain, 'aulyckanban-accessible-label')[0].textContent,
-		'archive.delete.selectAll',
+		'task.select.all',
 	);
 	selectAllAgain.listeners.get('click')[0]();
 	assert.equal(byClass(container, 'aulyckanban-archive-task-selected').length, 1);
-	assert.equal(byClass(container, 'aulyckanban-archive-selected-count-value')[0].textContent, '1');
 	assert.equal(byClass(container, 'aulyckanban-archive-delete-selected-btn')[0].disabled, false);
 });
 
 test('archive card selection checkbox occupies the restore action position', () => {
 	const { container } = createHarness();
 	const browseCard = byClass(container, 'aulyckanban-archive-task')[0];
-	const browseTop = byClass(browseCard, 'aulyckanban-archive-task-top')[0];
-	const browseMain = byClass(browseTop, 'aulyckanban-archive-task-main')[0];
-	const browseFooter = byClass(browseCard, 'aulyckanban-archive-task-footer')[0];
-	const browseMeta = byClass(browseFooter, 'aulyckanban-archive-task-meta')[0];
+	const browseMiddle = byClass(browseCard, 'aulyckanban-task-middle')[0];
+	const browseContent = byClass(browseMiddle, 'aulyckanban-task-content')[0];
+	const browseFooter = byClass(browseCard, 'aulyckanban-task-meta-row')[0];
+	const browseMeta = byClass(browseFooter, 'aulyckanban-task-meta-details')[0];
 	const browseActions = byClass(browseFooter, 'aulyckanban-archive-task-actions')[0];
 	const restoreButton = byClass(browseActions, 'aulyckanban-archive-restore-btn')[0];
-	assert.deepEqual(browseCard.children, [browseTop, browseFooter]);
-	assert.deepEqual(browseTop.children, [browseMain]);
+	const deleteButton = byClass(browseActions, 'aulyckanban-archive-task-delete')[0];
+	assert.deepEqual(browseCard.children, [browseMiddle]);
+	assert.deepEqual(browseMiddle.children, [browseContent, browseFooter]);
 	assert.deepEqual(browseFooter.children, [browseMeta, browseActions]);
+	assert.deepEqual(browseActions.children, [restoreButton, deleteButton]);
 	assert.equal(restoreButton.parentElement, browseActions);
+	assert.equal(deleteButton.parentElement, browseActions);
 
 	byClass(container, 'aulyckanban-archive-select-mode-btn')[0].listeners.get('click')[0]();
 	const selectingCard = byClass(container, 'aulyckanban-archive-task')[0];
-	const selectingTop = byClass(selectingCard, 'aulyckanban-archive-task-top')[0];
-	const selectingMain = byClass(selectingTop, 'aulyckanban-archive-task-main')[0];
-	const selectingFooter = byClass(selectingCard, 'aulyckanban-archive-task-footer')[0];
-	const selectingMeta = byClass(selectingFooter, 'aulyckanban-archive-task-meta')[0];
+	const selectingMiddle = byClass(selectingCard, 'aulyckanban-task-middle')[0];
+	const selectingContent = byClass(selectingMiddle, 'aulyckanban-task-content')[0];
+	const selectingFooter = byClass(selectingCard, 'aulyckanban-task-meta-row')[0];
+	const selectingMeta = byClass(selectingFooter, 'aulyckanban-task-meta-details')[0];
 	const selectingActions = byClass(selectingFooter, 'aulyckanban-archive-task-actions')[0];
 	const checkboxLabel = byClass(selectingActions, 'aulyckanban-archive-select-label')[0];
-	assert.deepEqual(selectingCard.children, [selectingTop, selectingFooter]);
-	assert.deepEqual(selectingTop.children, [selectingMain]);
+	const checkbox = byClass(selectingActions, 'aulyckanban-archive-select-checkbox')[0];
+	assert.deepEqual(selectingCard.children, [selectingMiddle]);
+	assert.deepEqual(selectingMiddle.children, [selectingContent, selectingFooter]);
 	assert.deepEqual(selectingFooter.children, [selectingMeta, selectingActions]);
 	assert.equal(checkboxLabel.parentElement, selectingActions);
+	assert.equal(checkboxLabel.classes.has('aulyckanban-task-select-label'), true);
+	assert.equal(checkbox.classes.has('aulyckanban-task-select-checkbox'), true);
 
 	const card = byClass(container, 'aulyckanban-archive-task')[0];
 	card.listeners.get('click')[0]({ target: card });
 
 	assert.equal(byClass(container, 'aulyckanban-archive-task-selected').length, 1);
-	assert.equal(byClass(container, 'aulyckanban-archive-selected-count-value')[0].textContent, '1');
 	assert.equal(byClass(container, 'aulyckanban-archive-delete-selected-btn')[0].disabled, false);
 });
 
-test('archive card restore and selection controls share one centered action slot', () => {
-	const footerRule = css.match(/\.aulyckanban-archive-task-footer\s*\{([^}]*)\}/)?.[1] ?? '';
+test('archive card restore, delete, and selection controls reuse the ordinary action slot', () => {
+	const footerRule = css.match(/\.aulyckanban-task-meta-row\s*\{([^}]*)\}/)?.[1] ?? '';
 	assert.match(footerRule, /display:\s*flex;/);
 	assert.match(footerRule, /align-items:\s*flex-end;/);
 	assert.match(footerRule, /justify-content:\s*space-between;/);
 
 	const actionsRule = css.match(/\.aulyckanban-archive-task-actions\s*\{([^}]*)\}/)?.[1] ?? '';
-	assert.match(actionsRule, /display:\s*grid;/);
-	assert.match(actionsRule, /place-items:\s*center;/);
-	assert.match(actionsRule, /width:\s*24px;/);
-	assert.match(actionsRule, /height:\s*24px;/);
+	assert.doesNotMatch(actionsRule, /display:\s*grid;/);
+	assert.doesNotMatch(actionsRule, /width:\s*24px;/);
 
-	for (const selector of [
-		'.aulyckanban-archive-select-label',
-		'.aulyckanban-archive-restore-btn',
-	]) {
+	for (const selector of ['.aulyckanban-archive-restore-btn', '.aulyckanban-archive-task-delete']) {
 		const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 		const declarations = css.match(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`))?.[1] ?? '';
-		assert.match(declarations, /display:\s*grid;/);
-		assert.match(declarations, /place-items:\s*center;/);
-		assert.match(declarations, /width:\s*24px;/);
-		assert.match(declarations, /height:\s*24px;/);
+		assert.match(declarations, /width:\s*18px;/);
+		assert.match(declarations, /height:\s*18px;/);
 	}
 
-	const checkboxRule = css.match(/\.aulyckanban-archive-select-checkbox\s*\{([^}]*)\}/)?.[1] ?? '';
-	assert.match(checkboxRule, /display:\s*block;/);
+	assert.equal(css.match(/\.aulyckanban-archive-select-checkbox\s*\{([^}]*)\}/)?.[1] ?? '', '');
+	const checkboxRule = css.match(/\.aulyckanban-task-select-checkbox\s*\{([^}]*)\}/)?.[1] ?? '';
+	assert.match(checkboxRule, /width:\s*16px;/);
+	assert.match(checkboxRule, /height:\s*16px;/);
+});
+
+test('archive selection count is announced only in the shared board footer', () => {
+	const { archiveView, container } = createHarness();
+	const footerStatus = new MockElement('div');
+	archiveView.setStatusEl(footerStatus);
+	archiveView.render();
+
+	assert.equal(footerStatus.children.length, 0);
+	assert.equal(byClass(container, 'aulyckanban-archive-selected-count').length, 0);
+	byClass(container, 'aulyckanban-archive-select-mode-btn')[0].listeners.get('click')[0]();
+	assert.equal(footerStatus.children[0].textContent, '已选 0 项');
+
+	const card = byClass(container, 'aulyckanban-archive-task')[0];
+	card.listeners.get('click')[0]({ target: card });
+	assert.equal(footerStatus.children[0].textContent, '已选 1 项');
+
+	byClass(container, 'aulyckanban-archive-cancel-selection-btn')[0].listeners.get('click')[0]();
+	assert.equal(footerStatus.children.length, 0);
+});
+
+test('one archived card can be permanently deleted by its exact task reference', () => {
+	activeModals = [];
+	const actions = [];
+	const { container } = createHarness({ dispatch: (action) => actions.push(action) });
+	const deleteButton = byClass(container, 'aulyckanban-archive-task-delete')[0];
+	deleteButton.listeners.get('click')[0]({ stopPropagation() {} });
+
+	assert.equal(activeModals.length, 1);
+	assert.equal(activeModals[0].opened, true);
+	assert.equal(activeModals[0].options.isDestructive, true);
+	assert.equal(activeModals[0].options.message, 'archive.confirm.delete');
+	activeModals[0].options.onConfirm();
+	assert.deepEqual(actions, [
+		{
+			type: 'DELETE_ARCHIVE_TASKS',
+			payload: { tasks: [{ viewId: 'work', taskId: 'archive-1' }] },
+		},
+	]);
+});
+
+test('bulk permanent delete confirms and dispatches the exact selected references', () => {
+	activeModals = [];
+	const actions = [];
+	const { container } = createHarness({ dispatch: (action) => actions.push(action) });
+	byClass(container, 'aulyckanban-archive-select-mode-btn')[0].listeners.get('click')[0]();
+	byClass(container, 'aulyckanban-archive-select-mode-btn')[0].listeners.get('click')[0]();
+	byClass(container, 'aulyckanban-archive-delete-selected-btn')[0].listeners.get('click')[0]();
+
+	assert.equal(activeModals[0].options.message, '确认删除 1 项');
+	assert.equal(activeModals[0].options.isDestructive, true);
+	activeModals[0].options.onConfirm();
+	assert.deepEqual(actions, [
+		{
+			type: 'DELETE_ARCHIVE_TASKS',
+			payload: { tasks: [{ viewId: 'work', taskId: 'archive-1' }] },
+		},
+	]);
+});
+
+test('sorting preserves archive selection while a scope change clears it', () => {
+	let keyword = '';
+	const { archiveView, container } = createHarness({ getSearchKeyword: () => keyword });
+	const footerStatus = new MockElement('div');
+	archiveView.setStatusEl(footerStatus);
+	archiveView.render();
+	byClass(container, 'aulyckanban-archive-select-mode-btn')[0].listeners.get('click')[0]();
+	const card = byClass(container, 'aulyckanban-archive-task')[0];
+	card.listeners.get('click')[0]({ target: card });
+
+	byClass(container, 'aulyckanban-archive-sort-btn')[0].listeners.get('click')[0]();
+	assert.equal(byClass(container, 'aulyckanban-archive-task-selected').length, 1);
+	assert.equal(footerStatus.children[0].textContent, '已选 1 项');
+
+	keyword = '新的范围';
+	archiveView.render();
+	assert.equal(byClass(container, 'aulyckanban-archive-task-selected').length, 0);
+	assert.equal(byClass(container, 'aulyckanban-archive-restore-btn').length, 1);
+	assert.equal(footerStatus.children.length, 0);
 });
 
 test('selected archive cards keep their normal surface and use only a red border', () => {

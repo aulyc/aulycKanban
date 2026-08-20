@@ -3,10 +3,12 @@ import { setIcon } from 'obsidian';
 import type { App } from 'obsidian';
 import { t } from '../i18n';
 import { ConfirmModal } from './ConfirmModal';
-import { formatDateTimeMinute } from '../utils/datetime';
-import { appendAccessibleLabel, setTextWithLineBreaks } from '../utils/dom';
-import { getArchivedAtIso, getArchivedAtTime } from '../utils/task';
+import { appendAccessibleLabel } from '../utils/dom';
+import { getArchivedAtTime } from '../utils/task';
 import { getTaskRefKey, type TaskRef } from '../utils/taskQuery';
+import { ArchiveTaskCard } from './ArchiveTaskCard';
+import { TaskSelection } from './TaskSelection';
+import { createTaskSelectionButtons } from './TaskSelectionToolbar';
 
 /**
  * 归档视图组件
@@ -17,8 +19,9 @@ export class ArchiveView {
 	private readonly app: App;
 	private readonly store: KanbanStore;
 	private sortOrder: 'desc' | 'asc' = 'desc';
-	private deleteMode = false;
-	private readonly selectedTaskKeys = new Set<string>();
+	private readonly selection = new TaskSelection();
+	private statusEl: HTMLElement | null = null;
+	private selectionModeButton: HTMLButtonElement | null = null;
 	private listScrollTop = 0;
 
 	constructor(containerEl: HTMLElement, app: App, store: KanbanStore) {
@@ -27,19 +30,31 @@ export class ArchiveView {
 		this.store = store;
 	}
 
+	setStatusEl(statusEl: HTMLElement): void {
+		this.statusEl = statusEl;
+	}
+
+	cancelSelection(): void {
+		this.selection.deactivate();
+		this.renderSelectionStatus();
+	}
+
 	render(): void {
 		const prevListEl = this.containerEl.querySelector<HTMLElement>('.aulyckanban-archive-list');
 		if (prevListEl) {
 			this.listScrollTop = prevListEl.scrollTop;
 		}
 
-		this.containerEl.empty();
-
+		const scopeKey = this.getScopeKey();
+		this.selection.resetForScope(scopeKey);
 		const filtered = this.applySort(this.store.getVisibleTaskRefs());
-		this.syncSelectionWithFiltered(filtered);
+		this.selection.prune(new Set(filtered.map(getTaskRefKey)));
+
+		this.containerEl.empty();
 
 		const controlsEl = this.containerEl.createDiv({ cls: 'aulyckanban-archive-controls' });
 		this.renderFilters(controlsEl, filtered);
+		this.renderSelectionStatus();
 
 		if (filtered.length === 0) {
 			const emptyEl = this.containerEl.createDiv({ cls: 'aulyckanban-archive-empty' });
@@ -49,9 +64,7 @@ export class ArchiveView {
 
 		const listEl = this.containerEl.createDiv({ cls: 'aulyckanban-archive-list' });
 
-		for (const item of filtered) {
-			this.renderArchiveCard(listEl, item);
-		}
+		for (const item of filtered) this.renderArchiveCard(listEl, item);
 		listEl.scrollTop = this.listScrollTop;
 	}
 
@@ -59,25 +72,39 @@ export class ArchiveView {
 	 * 渲染筛选控件
 	 */
 	private renderFilters(controlsEl: HTMLElement, filteredItems: TaskRef[]): void {
-		const toolbarEl = controlsEl.createDiv({
-			cls: [
-				'aulyckanban-archive-toolbar',
-				this.deleteMode
-					? 'aulyckanban-archive-toolbar-selection'
-					: 'aulyckanban-archive-toolbar-browse',
-			].join(' '),
-		});
+		const toolbarEl = controlsEl.createDiv({ cls: 'aulyckanban-archive-toolbar' });
 		this.renderSortButton(toolbarEl);
-		this.renderSelectionModeButton(toolbarEl, filteredItems.length > 0);
-		this.renderSelectAllButton(toolbarEl, filteredItems);
 		this.renderDeleteSelectedButton(toolbarEl);
-		this.renderSelectedCount(toolbarEl);
+
+		const visibleKeys = filteredItems.map(getTaskRefKey);
+		const allSelected =
+			visibleKeys.length > 0 && visibleKeys.every((key) => this.selection.isSelected(key));
+		const { selectionButton } = createTaskSelectionButtons(toolbarEl, {
+			active: this.selection.isActive,
+			hasItems: visibleKeys.length > 0,
+			allSelected,
+			cancelClass: 'aulyckanban-archive-cancel-selection-btn',
+			selectionClass: 'aulyckanban-archive-select-mode-btn aulyckanban-archive-select-all-btn',
+			onCancel: () => {
+				const wasActive = this.selection.isActive;
+				this.cancelSelection();
+				this.render();
+				if (wasActive) this.focusSelectionModeButton();
+			},
+			onSelect: () => {
+				if (this.selection.isActive) this.selection.selectAll(visibleKeys);
+				else this.selection.activate();
+				this.render();
+				this.focusSelectionModeButton();
+			},
+		});
+		this.selectionModeButton = selectionButton;
 	}
 
 	private renderSortButton(toolbarEl: HTMLElement): void {
 		const sortBtn = toolbarEl.createEl('button', {
-			cls: 'aulyckanban-archive-sort-btn',
-			attr: { type: 'button' },
+			cls: 'aulyckanban-task-selection-btn aulyckanban-archive-sort-btn',
+			attr: { type: 'button', tabindex: '-1' },
 		});
 		const sortLabel =
 			this.sortOrder === 'desc' ? t('archive.sort.newest') : t('archive.sort.oldest');
@@ -89,83 +116,17 @@ export class ArchiveView {
 		});
 	}
 
-	private renderSelectionModeButton(toolbarEl: HTMLElement, hasFilteredItems: boolean): void {
-		const selectBtn = toolbarEl.createEl('button', {
-			cls: this.deleteMode
-				? 'aulyckanban-archive-selection-btn aulyckanban-archive-cancel-selection-btn'
-				: 'aulyckanban-archive-select-mode-btn',
-			attr: { type: 'button' },
-		});
-		setIcon(selectBtn, this.deleteMode ? 'list-x' : 'list-checks');
-		appendAccessibleLabel(
-			selectBtn,
-			this.deleteMode ? t('archive.delete.cancel') : t('archive.delete.mode'),
-		);
-		selectBtn.disabled = !this.deleteMode && !hasFilteredItems;
-		selectBtn.addEventListener('click', () => {
-			if (this.deleteMode) this.selectedTaskKeys.clear();
-			this.deleteMode = !this.deleteMode;
-			this.render();
-		});
-	}
-
-	private renderSelectAllButton(toolbarEl: HTMLElement, filteredItems: TaskRef[]): void {
-		const filteredIds = filteredItems.map(getTaskRefKey);
-		const selectedCount = this.selectedTaskKeys.size;
-		const shouldClearSelection = this.deleteMode && selectedCount > 0;
-		const selectAllBtn = toolbarEl.createEl('button', {
-			cls: [
-				'aulyckanban-archive-selection-btn',
-				'aulyckanban-archive-select-all-btn',
-				shouldClearSelection ? 'aulyckanban-archive-clear-all-btn' : '',
-			]
-				.filter(Boolean)
-				.join(' '),
-			attr: { type: 'button' },
-		});
-		setIcon(selectAllBtn, shouldClearSelection ? 'square-x' : 'check-check');
-		appendAccessibleLabel(
-			selectAllBtn,
-			shouldClearSelection ? t('archive.delete.clearAll') : t('archive.delete.selectAll'),
-		);
-		selectAllBtn.disabled = filteredIds.length === 0;
-		selectAllBtn.addEventListener('click', () => {
-			if (shouldClearSelection) {
-				for (const id of filteredIds) this.selectedTaskKeys.delete(id);
-			} else {
-				this.deleteMode = true;
-				for (const id of filteredIds) this.selectedTaskKeys.add(id);
-			}
-			this.render();
-		});
-	}
-
 	private renderDeleteSelectedButton(toolbarEl: HTMLElement): void {
-		const selectedCount = this.selectedTaskKeys.size;
 		const deleteSelectedBtn = toolbarEl.createEl('button', {
-			cls: 'aulyckanban-archive-selection-btn aulyckanban-archive-delete-selected-btn',
-			attr: { type: 'button' },
+			cls: 'aulyckanban-task-selection-btn aulyckanban-archive-delete-selected-btn',
+			attr: { type: 'button', tabindex: '-1' },
 		});
 		setIcon(deleteSelectedBtn, 'trash-2');
 		appendAccessibleLabel(deleteSelectedBtn, t('archive.delete.selected'));
-		deleteSelectedBtn.disabled = selectedCount === 0;
+		deleteSelectedBtn.disabled = this.selection.size === 0;
 		deleteSelectedBtn.addEventListener('click', () => {
-			this.confirmDeleteSelected(Array.from(this.selectedTaskKeys));
+			this.confirmDeleteSelected(this.selection.keys);
 		});
-	}
-
-	private renderSelectedCount(toolbarEl: HTMLElement): void {
-		const selectedCount = this.selectedTaskKeys.size;
-		const [beforeCount = '', afterCount = ''] = t('archive.delete.selectedCount').split('{count}');
-		const selectedCountEl = toolbarEl.createSpan({
-			cls: 'aulyckanban-archive-selected-count',
-		});
-		selectedCountEl.createSpan({ text: beforeCount });
-		selectedCountEl.createSpan({
-			cls: 'aulyckanban-archive-selected-count-value',
-			text: String(selectedCount),
-		});
-		selectedCountEl.createSpan({ text: afterCount });
 	}
 
 	private confirmDeleteSelected(keys: string[]): void {
@@ -179,7 +140,7 @@ export class ArchiveView {
 					.getVisibleTaskRefs()
 					.filter((ref) => selectedKeys.has(getTaskRefKey(ref)))
 					.map((ref) => ({ viewId: ref.viewId, taskId: ref.task.id }));
-				this.selectedTaskKeys.clear();
+				this.selection.deactivate();
 				this.store.dispatch({ type: 'DELETE_ARCHIVE_TASKS', payload: { tasks } });
 			},
 		}).open();
@@ -193,105 +154,49 @@ export class ArchiveView {
 		});
 	}
 
-	private syncSelectionWithFiltered(filteredItems: TaskRef[]): void {
-		if (!this.deleteMode) return;
-		const validIds = new Set(filteredItems.map(getTaskRefKey));
-		for (const id of Array.from(this.selectedTaskKeys)) {
-			if (!validIds.has(id)) this.selectedTaskKeys.delete(id);
-		}
+	private renderArchiveCard(parentEl: HTMLElement, ref: TaskRef): void {
+		const key = getTaskRefKey(ref);
+		new ArchiveTaskCard(parentEl, this.app, this.store, ref, {
+			selectionMode: this.selection.isActive,
+			selected: this.selection.isSelected(key),
+			sourceLabel: this.getSourceLabel(ref),
+			onSelectionRequest: () => this.toggleTaskSelection(key),
+		});
 	}
 
-	private renderArchiveCard(parentEl: HTMLElement, ref: TaskRef): void {
-		const { task } = ref;
-		const key = getTaskRefKey(ref);
-		const isSelected = this.selectedTaskKeys.has(key);
-		const cardEl = parentEl.createDiv({
-			cls: [
-				'aulyckanban-task',
-				'aulyckanban-archive-task',
-				this.deleteMode ? 'aulyckanban-archive-task-selecting' : '',
-				isSelected ? 'aulyckanban-archive-task-selected' : '',
-			]
-				.filter(Boolean)
-				.join(' '),
-			attr: { tabindex: '-1' },
-		});
-		cardEl.dataset['viewId'] = ref.viewId;
-		cardEl.dataset['columnId'] = ref.columnId;
-		cardEl.dataset['taskId'] = task.id;
-		if (this.deleteMode) {
-			cardEl.setAttribute('role', 'checkbox');
-			cardEl.setAttribute('aria-checked', String(isSelected));
-			cardEl.addEventListener('click', (event: MouseEvent) => {
-				const target = event.target;
-				if (target instanceof Element && target.closest('input, button')) return;
-				this.toggleTaskSelection(key);
-			});
-		}
-
-		const topEl = cardEl.createDiv({ cls: 'aulyckanban-archive-task-top' });
-		const mainEl = topEl.createDiv({ cls: 'aulyckanban-archive-task-main' });
-
-		const contentEl = mainEl.createDiv({
-			cls: 'aulyckanban-task-content aulyckanban-archive-task-title',
-		});
-		setTextWithLineBreaks(contentEl, task.content);
-
-		const footerEl = cardEl.createDiv({ cls: 'aulyckanban-archive-task-footer' });
-		const metaEl = footerEl.createDiv({ cls: 'aulyckanban-archive-task-meta' });
-		metaEl.createSpan({
-			cls: 'aulyckanban-archive-meta-item',
-			text: ref.viewTitle,
-		});
-		metaEl.createSpan({ cls: 'aulyckanban-archive-meta-separator', text: '·' });
-		metaEl.createSpan({
-			cls: 'aulyckanban-archive-meta-item',
-			text: ref.columnTitle,
-		});
-		metaEl.createSpan({ cls: 'aulyckanban-archive-meta-separator', text: '·' });
-		metaEl.createSpan({
-			cls: 'aulyckanban-task-time aulyckanban-archive-task-time',
-			text: `${t('archive.archivedAt')} ${formatDateTimeMinute(getArchivedAtIso(task))}`,
-		});
-
-		const actionsEl = footerEl.createDiv({ cls: 'aulyckanban-archive-task-actions' });
-		if (this.deleteMode) {
-			const checkboxLabel = actionsEl.createEl('label', {
-				cls: 'aulyckanban-archive-select-label',
-			});
-			const checkbox = checkboxLabel.createEl('input', {
-				attr: { type: 'checkbox' },
-				cls: 'aulyckanban-archive-select-checkbox',
-			});
-			appendAccessibleLabel(checkboxLabel, t('archive.delete.selectTask'));
-			checkbox.checked = isSelected;
-			checkboxLabel.addEventListener('click', (event: MouseEvent) => event.stopPropagation());
-			checkbox.addEventListener('click', (event: MouseEvent) => event.stopPropagation());
-			checkbox.addEventListener('change', () => this.toggleTaskSelection(key));
-		} else {
-			const restoreBtn = actionsEl.createEl('button', {
-				cls: 'aulyckanban-archive-restore-btn',
-				attr: { type: 'button' },
-			});
-			setIcon(restoreBtn, 'rotate-ccw');
-			appendAccessibleLabel(restoreBtn, t('archive.restore'));
-			restoreBtn.addEventListener('click', (event: MouseEvent) => {
-				event.stopPropagation();
-				new ConfirmModal(this.app, {
-					message: t('archive.confirm.restore'),
-					onConfirm: () =>
-						this.store.dispatch({
-							type: 'RESTORE_TASK',
-							payload: { viewId: ref.viewId, taskId: task.id },
-						}),
-				}).open();
-			});
-		}
+	private getSourceLabel(ref: TaskRef): string | undefined {
+		const labels: string[] = [];
+		if (this.store.getTaskTypeScope() === 'all') labels.push(ref.viewTitle);
+		if (this.store.getColumnScope() === 'all') labels.push(ref.columnTitle);
+		return labels.length > 0 ? labels.join(' · ') : undefined;
 	}
 
 	private toggleTaskSelection(taskKey: string): void {
-		if (this.selectedTaskKeys.has(taskKey)) this.selectedTaskKeys.delete(taskKey);
-		else this.selectedTaskKeys.add(taskKey);
+		this.selection.toggle(taskKey);
 		this.render();
+	}
+
+	private renderSelectionStatus(): void {
+		if (!this.statusEl) return;
+		this.statusEl.empty();
+		if (!this.selection.isActive) return;
+		this.statusEl.createSpan({
+			cls: 'aulyckanban-board-footer-selection',
+			text: t('task.select.count').replace('{count}', String(this.selection.size)),
+		});
+	}
+
+	private focusSelectionModeButton(): void {
+		this.selectionModeButton?.focus({ preventScroll: true });
+	}
+
+	private getScopeKey(): string {
+		return [
+			this.store.getTaskTypeScope(),
+			this.store.getCurrentView(),
+			this.store.getColumnScope(),
+			this.store.getActiveColumnId(),
+			this.store.getSearchKeyword(),
+		].join('|');
 	}
 }

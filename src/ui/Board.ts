@@ -88,6 +88,7 @@ export class Board {
 			attr: { role: 'status', 'aria-live': 'polite' },
 		});
 		this.taskList.setStatusEl(this.footerStatusEl);
+		this.archiveView.setStatusEl(this.footerStatusEl);
 	}
 
 	render(): void {
@@ -98,10 +99,11 @@ export class Board {
 		const isArchive = this.store.isShowingArchive();
 		// 归档/看板显隐由 .aulyckanban-mode-archive 对应的 CSS 规则控制
 		this.taskPaneEl.toggleClass('aulyckanban-mode-archive', isArchive);
-		if (isArchive) {
-			this.footerStatusEl.empty();
-			this.archiveView.render();
-		} else this.taskList.render();
+		if (isArchive) this.archiveView.render();
+		else {
+			this.archiveView.cancelSelection();
+			this.taskList.render();
+		}
 		this.categoryNav.render();
 	}
 

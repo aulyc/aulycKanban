@@ -7,6 +7,7 @@ import { formatDateTimeMinute } from '../utils/datetime';
 import { setTextWithLineBreaks } from '../utils/dom';
 import { ConfirmModal } from './ConfirmModal';
 import { createInlineInput } from './InlineInput';
+import { createTaskCardMeta } from './TaskCardMeta';
 
 export interface TaskCardOptions {
 	selectionMode?: boolean;
@@ -145,17 +146,10 @@ export class TaskCard {
 		}
 
 		// 底部信息：来源与完整日期时间分行显示，操作图标固定在右侧
-		const metaRowEl = middleEl.createDiv({ cls: 'aulyckanban-task-meta-row' });
-		const metaDetailsEl = metaRowEl.createDiv({ cls: 'aulyckanban-task-meta-details' });
-		if (this.sourceLabel) {
-			metaDetailsEl.createDiv({ cls: 'aulyckanban-task-source', text: this.sourceLabel });
-		}
-		metaDetailsEl.createDiv({
-			cls: 'aulyckanban-task-time',
-			text: formatDateTimeMinute(task.updatedAt ?? task.createdAt),
+		const { rowEl: metaRowEl, actionsEl } = createTaskCardMeta(middleEl, {
+			sourceLabel: this.sourceLabel,
+			timeLabel: formatDateTimeMinute(task.updatedAt ?? task.createdAt),
 		});
-
-		const actionsEl = metaRowEl.createDiv({ cls: 'aulyckanban-task-actions' });
 		if (this.options.selectionMode) {
 			this.buildSelectionCheckbox(actionsEl);
 			return metaRowEl;

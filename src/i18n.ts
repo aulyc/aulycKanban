@@ -95,6 +95,7 @@ const zh = {
 	'archive.delete.clearAll': '取消全选',
 	'archive.delete.selectTask': '选择任务',
 	'archive.confirm.restore': '确认恢复该归档任务吗？',
+	'archive.confirm.delete': '确认永久删除该归档任务吗？此操作不可恢复。',
 	'archive.confirm.deleteSelected': '将删除选中的 {count} 条归档任务，此操作不可恢复。确认删除吗？',
 
 	// 设置页
@@ -262,6 +263,7 @@ const en: Record<I18nKey, string> = {
 	'archive.delete.clearAll': 'Clear selection',
 	'archive.delete.selectTask': 'Select task',
 	'archive.confirm.restore': 'Restore this archived task?',
+	'archive.confirm.delete': 'Permanently delete this archived task? This cannot be undone.',
 	'archive.confirm.deleteSelected':
 		'Delete the {count} selected archived tasks? This cannot be undone.',
 

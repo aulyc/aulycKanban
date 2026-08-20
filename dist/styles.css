@@ -1239,108 +1239,25 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 .aulyckanban-archive-toolbar {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: var(--aulyckanban-content-control-gap);
 	min-width: 0;
-}
-
-.aulyckanban-archive-toolbar-browse {
-	justify-content: flex-start;
-}
-
-.aulyckanban-archive-sort-btn,
-.aulyckanban-archive-select-mode-btn,
-.aulyckanban-archive-select-all-btn,
-.aulyckanban-archive-selection-btn {
-	height: 30px;
-	padding: 0 10px;
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 6px;
-	background: var(--interactive-normal);
-	color: var(--text-normal);
-	font-size: 12px;
-	cursor: pointer;
-}
-
-.aulyckanban-archive-sort-btn,
-.aulyckanban-archive-select-mode-btn,
-.aulyckanban-archive-select-all-btn {
-	display: grid;
-	place-items: center;
-	flex: 0 0 auto;
-	width: 30px;
+	min-height: var(--aulyckanban-content-control-height);
 	padding: 0;
-	box-shadow: none;
+	border: 0;
+	background: transparent;
 }
 
 .aulyckanban-archive-sort-btn svg,
 .aulyckanban-archive-select-mode-btn svg,
 .aulyckanban-archive-select-all-btn svg,
-.aulyckanban-archive-selection-btn svg,
+.aulyckanban-archive-cancel-selection-btn svg,
 .aulyckanban-archive-delete-selected-btn svg {
 	width: 15px;
 	height: 15px;
 }
 
-.aulyckanban-archive-sort-btn:focus,
-.aulyckanban-archive-sort-btn:focus-visible,
-.aulyckanban-archive-select-mode-btn:focus,
-.aulyckanban-archive-select-mode-btn:focus-visible,
-.aulyckanban-archive-select-all-btn:focus,
-.aulyckanban-archive-select-all-btn:focus-visible,
-.aulyckanban-archive-selection-btn:focus,
-.aulyckanban-archive-selection-btn:focus-visible,
-.aulyckanban-archive-delete-selected-btn:focus,
-.aulyckanban-archive-delete-selected-btn:focus-visible {
-	border-color: var(--aulyckanban-selection-border);
-	outline: none;
-	box-shadow: none;
-}
-
-.aulyckanban-archive-sort-btn:hover,
-.aulyckanban-archive-select-mode-btn:hover,
-.aulyckanban-archive-select-all-btn:not(:disabled):hover,
-.aulyckanban-archive-selection-btn:hover {
-	background: var(--interactive-hover);
-}
-
-.aulyckanban-archive-toolbar-selection {
-	min-height: 30px;
-	padding: 0;
-	border: 0;
-	border-radius: 0;
-	background: transparent;
-}
-
-.aulyckanban-archive-selected-count {
-	display: inline-flex;
-	align-items: center;
-	margin-left: auto;
-	flex: 0 0 auto;
-	color: var(--text-muted);
-	font-size: 12px;
-	white-space: nowrap;
-}
-
-.aulyckanban-archive-selected-count-value {
-	display: inline-block;
-	min-width: 3ch;
-	text-align: right;
-	font-variant-numeric: tabular-nums;
-}
-
-.aulyckanban-archive-selection-btn {
-	display: grid;
-	place-items: center;
-	min-width: 30px;
-	width: 30px;
-	padding: 0;
-	box-shadow: none;
-}
-
 .aulyckanban-archive-delete-selected-btn {
-	min-width: 30px;
-	width: 30px;
-	padding: 0;
+	margin-left: auto;
 	border-color: color-mix(in srgb, var(--text-error) 70%, var(--background-modifier-border));
 	background: var(--text-error);
 	color: #fff;
@@ -1359,16 +1276,6 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	cursor: not-allowed;
 }
 
-.aulyckanban-archive-select-mode-btn:disabled {
-	opacity: 0.45;
-	cursor: not-allowed;
-}
-
-.aulyckanban-archive-select-all-btn:disabled {
-	opacity: 0.45;
-	cursor: not-allowed;
-}
-
 .aulyckanban-accessible-label {
 	position: absolute;
 	width: 1px;
@@ -1383,83 +1290,11 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 
 .aulyckanban-archive-task {
 	cursor: default;
-	display: flex;
-	flex-direction: column;
-	align-items: stretch;
-	gap: 6px;
-}
-
-.aulyckanban-archive-task-top {
-	min-width: 0;
-}
-
-.aulyckanban-archive-task-main {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	flex: 1;
-	min-width: 0;
-	min-height: 24px;
 }
 
 .aulyckanban-archive-task-title {
 	color: var(--text-normal);
 	text-decoration: none;
-}
-
-.aulyckanban-archive-task-footer {
-	display: flex;
-	align-items: flex-end;
-	justify-content: space-between;
-	gap: 8px;
-	min-width: 0;
-}
-
-.aulyckanban-archive-task-meta {
-	display: flex;
-	align-items: center;
-	gap: 5px;
-	flex-wrap: wrap;
-	flex: 1;
-	min-width: 0;
-	color: var(--text-muted);
-	font-size: 12px;
-}
-
-.aulyckanban-archive-meta-item {
-	min-width: 0;
-}
-
-.aulyckanban-archive-meta-separator {
-	color: var(--text-faint);
-}
-
-.aulyckanban-archive-task-time {
-	white-space: nowrap;
-}
-
-.aulyckanban-archive-select-checkbox {
-	display: block;
-	width: 16px;
-	height: 16px;
-	margin: 0;
-	accent-color: var(--text-error);
-}
-
-.aulyckanban-archive-select-label {
-	display: grid;
-	place-items: center;
-	width: 24px;
-	height: 24px;
-	flex: 0 0 auto;
-}
-
-.aulyckanban-archive-task-actions {
-	display: grid;
-	place-items: center;
-	width: 24px;
-	height: 24px;
-	flex: 0 0 24px;
 }
 
 .aulyckanban-archive-task:hover {
@@ -1481,29 +1316,39 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 }
 
 .aulyckanban-archive-restore-btn {
-	background: none;
-	border: 1px solid var(--background-modifier-border);
 	color: var(--text-muted);
 	cursor: pointer;
-	width: 24px;
-	height: 24px;
-	padding: 0;
+	font-size: 14px;
+	width: 18px;
+	height: 18px;
+	min-width: 18px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	visibility: hidden;
+	transition: all 0.2s ease;
 	border-radius: 4px;
 	flex-shrink: 0;
-	transition: all 0.15s ease;
-	display: grid;
-	place-items: center;
+	line-height: 1;
 }
 
 .aulyckanban-archive-restore-btn svg {
-	width: 12px;
-	height: 12px;
+	width: 16px;
+	height: 16px;
+}
+
+.aulyckanban-archive-task:hover .aulyckanban-archive-restore-btn {
+	visibility: visible;
 }
 
 .aulyckanban-archive-restore-btn:hover {
-	background: var(--interactive-accent);
-	color: var(--text-on-accent);
-	border-color: var(--interactive-accent);
+	color: var(--color-orange);
+	transform: scale(1.15);
+}
+
+.aulyckanban-archive-task-delete {
+	width: 18px;
+	height: 18px;
 }
 
 /* ==================== 弹窗样式 ==================== */

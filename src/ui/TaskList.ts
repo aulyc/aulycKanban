@@ -1,15 +1,15 @@
-import { Menu, Notice, setIcon } from 'obsidian';
+import { Menu, Notice } from 'obsidian';
 import type { App } from 'obsidian';
 import type { KanbanStore } from '../store';
 import type { TaskCoordinate } from '../types';
 import type { TaskRef } from '../utils/taskQuery';
 import { getTaskRefKey } from '../utils/taskQuery';
 import { t } from '../i18n';
-import { appendAccessibleLabel } from '../utils/dom';
 import { TaskCard } from './TaskCard';
 import { TaskDrag } from './TaskDrag';
 import { TaskMoveModal, type TaskMoveTarget } from './TaskMoveModal';
 import { TaskSelection } from './TaskSelection';
+import { createTaskSelectionButtons } from './TaskSelectionToolbar';
 
 /** 当前任务范围与象限范围交叉后的未归档任务列表。 */
 export class TaskList {
@@ -121,39 +121,28 @@ export class TaskList {
 				this.selection.isActive ? ' aulyckanban-task-selection-toolbar-active' : ''
 			}`,
 		});
-		const cancelButton = this.createToolbarButton(
-			toolbarEl,
-			'aulyckanban-task-cancel-selection-btn',
-			'x',
-			t('task.select.cancel'),
-		);
-		cancelButton.disabled = !this.selection.isActive;
-		cancelButton.addEventListener('click', () => {
-			const wasActive = this.selection.isActive;
-			this.cancelSelection();
-			if (wasActive) this.focusSelectionModeButton();
-		});
-
 		const visibleKeys = refs.map(getTaskRefKey);
 		const allSelected =
 			visibleKeys.length > 0 && visibleKeys.every((key) => this.selection.isSelected(key));
-		const selectAllButton = this.createToolbarButton(
-			toolbarEl,
-			'aulyckanban-task-select-mode-btn aulyckanban-task-select-all-btn',
-			this.selection.isActive && allSelected ? 'list-x' : 'list-checks',
-			this.selection.isActive
-				? allSelected
-					? t('task.select.clearAll')
-					: t('task.select.all')
-				: t('task.select.mode'),
-		);
-		this.selectionModeButton = selectAllButton;
-		selectAllButton.addEventListener('click', () => {
-			if (this.selection.isActive) this.selection.selectAll(visibleKeys);
-			else this.selection.activate();
-			this.render();
-			this.focusSelectionModeButton();
+		const { selectionButton } = createTaskSelectionButtons(toolbarEl, {
+			active: this.selection.isActive,
+			hasItems: visibleKeys.length > 0,
+			allSelected,
+			cancelClass: 'aulyckanban-task-cancel-selection-btn',
+			selectionClass: 'aulyckanban-task-select-mode-btn aulyckanban-task-select-all-btn',
+			onCancel: () => {
+				const wasActive = this.selection.isActive;
+				this.cancelSelection();
+				if (wasActive) this.focusSelectionModeButton();
+			},
+			onSelect: () => {
+				if (this.selection.isActive) this.selection.selectAll(visibleKeys);
+				else this.selection.activate();
+				this.render();
+				this.focusSelectionModeButton();
+			},
 		});
+		this.selectionModeButton = selectionButton;
 	}
 
 	private renderSelectionStatus(): void {
@@ -164,21 +153,6 @@ export class TaskList {
 			cls: 'aulyckanban-board-footer-selection',
 			text: t('task.select.count').replace('{count}', String(this.selection.size)),
 		});
-	}
-
-	private createToolbarButton(
-		parentEl: HTMLElement,
-		className: string,
-		icon: string,
-		label: string,
-	): HTMLButtonElement {
-		const button = parentEl.createEl('button', {
-			cls: `aulyckanban-task-selection-btn ${className}`,
-			attr: { type: 'button', tabindex: '-1' },
-		});
-		setIcon(button, icon);
-		appendAccessibleLabel(button, label);
-		return button;
 	}
 
 	private handleSelectionRequest(
