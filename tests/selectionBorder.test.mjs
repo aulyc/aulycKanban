@@ -42,11 +42,32 @@ test('business selection keeps its fill but never owns the white focus border', 
 });
 
 test('ordinary task selection checkbox replaces the bottom-right delete slot', () => {
-	const checkboxLabel = rule('.aulyckanban-task-select-label');
+	const actionSlot = combinedRule(['.aulyckanban-task-select-label', '.aulyckanban-task-delete']);
+	assert.equal(declarationValue(actionSlot, 'display'), 'grid');
+	assert.equal(declarationValue(actionSlot, 'place-items'), 'center');
+	assert.equal(declarationValue(actionSlot, 'width'), '18px');
+	assert.equal(declarationValue(actionSlot, 'height'), '18px');
+	assert.equal(declarationValue(actionSlot, 'min-width'), '18px');
+	assert.equal(declarationValue(actionSlot, 'flex'), '0 0 18px');
+
+	const checkboxLabel = actionSlot;
 	assert.equal(declarationValue(checkboxLabel, 'position'), '');
-	assert.equal(declarationValue(checkboxLabel, 'width'), '18px');
-	assert.equal(declarationValue(checkboxLabel, 'height'), '18px');
-	assert.equal(declarationValue(checkboxLabel, 'min-width'), '18px');
+	const checkbox = rule(
+		".aulyckanban-kanban-container .aulyckanban-task-select-label > input[type='checkbox'].aulyckanban-task-select-checkbox",
+	);
+	assert.equal(declarationValue(checkbox, 'display'), 'block');
+	assert.equal(declarationValue(checkbox, 'width'), '16px');
+	assert.equal(declarationValue(checkbox, 'height'), '16px');
+	assert.equal(declarationValue(checkbox, 'min-width'), '16px');
+	assert.equal(declarationValue(checkbox, 'margin'), '0');
+	assert.equal(declarationValue(checkbox, 'margin-inline'), '0');
+	assert.equal(declarationValue(checkbox, 'flex'), '0 0 16px');
+	assert.equal(declarationValue(checkbox, 'box-sizing'), 'border-box');
+
+	const deleteIcon = rule('.aulyckanban-task-delete svg');
+	assert.equal(declarationValue(deleteIcon, 'display'), 'block');
+	assert.equal(declarationValue(deleteIcon, 'width'), '16px');
+	assert.equal(declarationValue(deleteIcon, 'height'), '16px');
 	assert.equal(
 		declarationValue(
 			rule('.aulyckanban-task-selecting .aulyckanban-task-content'),

@@ -313,15 +313,21 @@ test('dragging multiple selected tasks uses a count-aware drag image', () => {
 	assert.equal(documentRef.body.children.length, 0);
 });
 
-test('task archive action reuses the toolbar archive folder icon', () => {
+test('task actions use the shared archive and delete icons', () => {
 	const { card, icons } = createHarness();
 	const archiveButton = descendants(card).find((element) =>
 		element.classList.contains('aulyckanban-task-archive'),
 	);
+	const deleteButton = descendants(card).find((element) =>
+		element.classList.contains('aulyckanban-task-delete'),
+	);
 
-	assert.equal(icons.length, 1);
+	assert.equal(icons.length, 2);
 	assert.equal(icons[0].element, archiveButton);
 	assert.equal(icons[0].name, 'archive');
+	assert.equal(icons[1].element, deleteButton);
+	assert.equal(icons[1].name, 'x');
+	assert.equal(deleteButton.attributes['aria-label'], 'task.confirm.delete');
 });
 
 test('single mouse clicks only select a task and double-clicking its content edits it', () => {

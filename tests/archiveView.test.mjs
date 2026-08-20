@@ -403,6 +403,8 @@ test('archive card selection checkbox occupies the restore action position', () 
 	assert.deepEqual(browseActions.children, [restoreButton, deleteButton]);
 	assert.equal(restoreButton.parentElement, browseActions);
 	assert.equal(deleteButton.parentElement, browseActions);
+	assert.equal(deleteButton.icon, 'x');
+	assert.equal(deleteButton.attributes['aria-label'], 'archive.confirm.delete');
 
 	byClass(container, 'aulyckanban-archive-select-mode-btn')[0].listeners.get('click')[0]();
 	const selectingCard = byClass(container, 'aulyckanban-archive-task')[0];
@@ -445,9 +447,17 @@ test('archive card restore, delete, and selection controls reuse the ordinary ac
 	}
 
 	assert.equal(css.match(/\.aulyckanban-archive-select-checkbox\s*\{([^}]*)\}/)?.[1] ?? '', '');
-	const checkboxRule = css.match(/\.aulyckanban-task-select-checkbox\s*\{([^}]*)\}/)?.[1] ?? '';
+	const checkboxRule =
+		css.match(
+			/\.aulyckanban-kanban-container\s+\.aulyckanban-task-select-label\s*>\s*input\[type='checkbox'\]\.aulyckanban-task-select-checkbox\s*\{([^}]*)\}/,
+		)?.[1] ?? '';
+	assert.match(checkboxRule, /display:\s*block;/);
 	assert.match(checkboxRule, /width:\s*16px;/);
 	assert.match(checkboxRule, /height:\s*16px;/);
+	assert.match(checkboxRule, /min-width:\s*16px;/);
+	assert.match(checkboxRule, /margin:\s*0;/);
+	assert.match(checkboxRule, /margin-inline:\s*0;/);
+	assert.match(checkboxRule, /flex:\s*0 0 16px;/);
 });
 
 test('archive selection count is announced only in the shared board footer', () => {

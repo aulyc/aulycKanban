@@ -177,9 +177,10 @@ export class TaskCard {
 
 		// 删除按钮（两次点击确认）
 		const deleteBtn = actionsEl.createSpan({
-			text: '✕',
 			cls: 'aulyckanban-task-delete',
 		});
+		setIcon(deleteBtn, 'x');
+		deleteBtn.setAttribute('aria-label', t('task.confirm.delete'));
 		deleteBtn.addEventListener('click', (e: MouseEvent) => {
 			e.stopPropagation();
 			new ConfirmModal(this.app, {

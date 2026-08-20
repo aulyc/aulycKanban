@@ -961,20 +961,28 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	opacity: 0.5;
 }
 
-.aulyckanban-task-select-label {
-	display: flex;
-	align-items: center;
-	justify-content: center;
+.aulyckanban-task-select-label,
+.aulyckanban-task-delete {
+	display: grid;
+	place-items: center;
 	width: 18px;
 	height: 18px;
 	min-width: 18px;
-	flex-shrink: 0;
+	flex: 0 0 18px;
+	line-height: 1;
 }
 
-.aulyckanban-task-select-checkbox {
+.aulyckanban-kanban-container
+	.aulyckanban-task-select-label
+	> input[type='checkbox'].aulyckanban-task-select-checkbox {
+	display: block;
 	width: 16px;
 	height: 16px;
+	min-width: 16px;
 	margin: 0;
+	margin-inline: 0;
+	flex: 0 0 16px;
+	box-sizing: border-box;
 	accent-color: var(--interactive-accent);
 	cursor: pointer;
 }
@@ -1131,19 +1139,16 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 .aulyckanban-task-delete {
 	color: var(--text-muted);
 	cursor: pointer;
-	font-size: 14px;
-	width: 18px;
-	height: 18px;
-	min-width: 18px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
 	visibility: hidden;
 	transition: all 0.2s ease;
 	border-radius: 4px;
-	flex-shrink: 0;
-	line-height: 1;
 	margin-top: 0;
+}
+
+.aulyckanban-task-delete svg {
+	display: block;
+	width: 16px;
+	height: 16px;
 }
 
 .aulyckanban-task:hover .aulyckanban-task-delete {
