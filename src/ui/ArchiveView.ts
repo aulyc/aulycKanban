@@ -108,7 +108,7 @@ export class ArchiveView {
 		});
 		const sortLabel =
 			this.sortOrder === 'desc' ? t('archive.sort.newest') : t('archive.sort.oldest');
-		setIcon(sortBtn, this.sortOrder === 'desc' ? 'arrow-down-wide-narrow' : 'arrow-up-narrow-wide');
+		setIcon(sortBtn, this.sortOrder === 'desc' ? 'arrow-down' : 'arrow-up');
 		appendAccessibleLabel(sortBtn, sortLabel);
 		sortBtn.addEventListener('click', () => {
 			this.sortOrder = this.sortOrder === 'desc' ? 'asc' : 'desc';

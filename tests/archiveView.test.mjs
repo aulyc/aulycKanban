@@ -262,7 +262,7 @@ test('archive toolbar keeps sort, permanent delete, cancel, and select-all in fi
 	const selectButton = byClass(toolbar, 'aulyckanban-archive-select-mode-btn')[0];
 
 	assert.deepEqual(toolbar.children, [sortButton, deleteButton, cancelButton, selectButton]);
-	assert.equal(sortButton.icon, 'arrow-down-wide-narrow');
+	assert.equal(sortButton.icon, 'arrow-down');
 	assert.equal(deleteButton.icon, 'trash-2');
 	assert.equal(deleteButton.disabled, true);
 	assert.equal(cancelButton.icon, 'x');
@@ -279,7 +279,7 @@ test('archive bidirectional sort button toggles newest and oldest order without 
 	const { container } = createHarness();
 	const newestFirstButton = byClass(container, 'aulyckanban-archive-sort-btn')[0];
 
-	assert.equal(newestFirstButton.icon, 'arrow-down-wide-narrow');
+	assert.equal(newestFirstButton.icon, 'arrow-down');
 	assert.equal(newestFirstButton.attributes['aria-label'], undefined);
 	assert.equal(newestFirstButton.attributes.title, undefined);
 	assert.equal(
@@ -289,7 +289,7 @@ test('archive bidirectional sort button toggles newest and oldest order without 
 	newestFirstButton.listeners.get('click')[0]();
 
 	const oldestFirstButton = byClass(container, 'aulyckanban-archive-sort-btn')[0];
-	assert.equal(oldestFirstButton.icon, 'arrow-up-narrow-wide');
+	assert.equal(oldestFirstButton.icon, 'arrow-up');
 	assert.equal(
 		byClass(oldestFirstButton, 'aulyckanban-accessible-label')[0].textContent,
 		'archive.sort.oldest',
@@ -331,9 +331,9 @@ test('archive selection reuses the ordinary cancel and select-all behavior', () 
 		byClass(selectionButton, 'aulyckanban-accessible-label')[0].textContent,
 		'task.select.all',
 	);
-	assert.equal(sortButton.icon, 'arrow-down-wide-narrow');
+	assert.equal(sortButton.icon, 'arrow-down');
 	sortButton.listeners.get('click')[0]();
-	assert.equal(byClass(container, 'aulyckanban-archive-sort-btn')[0].icon, 'arrow-up-narrow-wide');
+	assert.equal(byClass(container, 'aulyckanban-archive-sort-btn')[0].icon, 'arrow-up');
 });
 
 test('archive selection mode has one explicit bulk-delete path and an unboxed toolbar', () => {
@@ -361,11 +361,11 @@ test('archive selection mode has one explicit bulk-delete path and an unboxed to
 	assert.doesNotMatch(source, /selectAllCheckbox|aulyckanban-archive-select-all[^-]/);
 });
 
-test('archive sort icon keeps the shared toolbar size without clipping its strokes', () => {
+test('archive sort icon uses a complete directional glyph at the shared toolbar size', () => {
 	const sortIconRule = css.match(/\.aulyckanban-archive-sort-btn svg\s*\{([^}]*)\}/)?.[1] ?? '';
 	assert.match(sortIconRule, /width:\s*18px;/);
 	assert.match(sortIconRule, /height:\s*18px;/);
-	assert.match(sortIconRule, /overflow:\s*visible;/);
+	assert.doesNotMatch(sortIconRule, /overflow:/);
 
 	const deleteIconRule =
 		css.match(/\.aulyckanban-archive-delete-selected-btn svg\s*\{([^}]*)\}/)?.[1] ?? '';
