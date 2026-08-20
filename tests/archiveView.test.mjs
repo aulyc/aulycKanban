@@ -361,6 +361,18 @@ test('archive selection mode has one explicit bulk-delete path and an unboxed to
 	assert.doesNotMatch(source, /selectAllCheckbox|aulyckanban-archive-select-all[^-]/);
 });
 
+test('archive sort icon keeps the shared toolbar size without clipping its strokes', () => {
+	const sortIconRule = css.match(/\.aulyckanban-archive-sort-btn svg\s*\{([^}]*)\}/)?.[1] ?? '';
+	assert.match(sortIconRule, /width:\s*18px;/);
+	assert.match(sortIconRule, /height:\s*18px;/);
+	assert.match(sortIconRule, /overflow:\s*visible;/);
+
+	const deleteIconRule =
+		css.match(/\.aulyckanban-archive-delete-selected-btn svg\s*\{([^}]*)\}/)?.[1] ?? '';
+	assert.match(deleteIconRule, /width:\s*15px;/);
+	assert.match(deleteIconRule, /height:\s*15px;/);
+});
+
 test('select-all and clear-all toggle through one shared selection button', () => {
 	const { container } = createHarness();
 	byClass(container, 'aulyckanban-archive-select-mode-btn')[0].listeners.get('click')[0]();

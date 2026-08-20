@@ -1257,7 +1257,12 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	background: transparent;
 }
 
-.aulyckanban-archive-sort-btn svg,
+.aulyckanban-archive-sort-btn svg {
+	width: 18px;
+	height: 18px;
+	overflow: visible;
+}
+
 .aulyckanban-archive-delete-selected-btn svg {
 	width: 15px;
 	height: 15px;
