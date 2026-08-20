@@ -485,9 +485,8 @@ export class KanbanView extends ItemView {
 	}
 
 	private focusColumnFromTask(active: HTMLElement | null): boolean {
-		const task = active?.closest<HTMLElement>('.aulyckanban-task');
-		if (!task) return false;
-		this.rememberTaskFocusTarget(task);
+		if (!active?.closest('.aulyckanban-task-pane')) return false;
+		this.rememberTaskFocusTarget(active);
 		const target = this.getFocusTarget('columns');
 		if (!target) return false;
 		target.focus({ preventScroll: true });
@@ -542,7 +541,7 @@ export class KanbanView extends ItemView {
 		const currentIndex = active ? items.indexOf(active) : -1;
 		if (currentIndex < 0) return false;
 		const target = items[getWrappedItemIndex(currentIndex, items.length, offset)];
-		if (!target) return false;
+		if (!target || target === active) return false;
 		target.focus({ preventScroll: true });
 		return true;
 	}

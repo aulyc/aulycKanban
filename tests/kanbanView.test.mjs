@@ -662,6 +662,30 @@ test('task types enter the task add control and its horizontal row skips disable
 	assert.equal(revealedItems.at(-1), viewTab);
 });
 
+test('an empty task zone moves from its sole add control to the current quadrant', async () => {
+	const harness = createHarness();
+	await harness.view.onOpen();
+	const taskPane = child(harness.contentEl, 'aulyckanban-task-pane');
+	const taskAdd = child(taskPane, 'aulyckanban-task-add-btn');
+	const columnNav = child(harness.contentEl, 'aulyckanban-category-nav');
+	const column = child(columnNav, 'aulyckanban-nav-item aulyckanban-nav-item-active', {
+		columnId: 'base',
+	});
+
+	taskHorizontalNavigationItems = [taskAdd];
+	taskAdd.focus();
+	const taskRight = keyEvent('ArrowRight', { target: taskAdd });
+	dispatchKey(harness.contentEl, taskRight);
+
+	assert.equal(taskRight.defaultPrevented, true);
+	assert.equal(harness.documentRef.activeElement, column);
+
+	const columnLeft = keyEvent('ArrowLeft', { target: column });
+	dispatchKey(harness.contentEl, columnLeft);
+	assert.equal(columnLeft.defaultPrevented, true);
+	assert.equal(harness.documentRef.activeElement, taskAdd);
+});
+
 test('editing inputs keep native arrow behavior while empty task creation can navigate', async () => {
 	const harness = createHarness();
 	await harness.view.onOpen();
