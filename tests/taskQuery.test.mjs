@@ -4,8 +4,14 @@ import taskQueryModule from '../src/utils/taskQuery.ts';
 
 const { getTaskRefKey, queryTaskRefs } = taskQueryModule;
 
-function task(id, content = id) {
-	return { id, content, completed: false, createdAt: '2026-01-01T00:00:00.000Z' };
+function task(id, content = id, timestamps = {}) {
+	return {
+		id,
+		content,
+		completed: false,
+		createdAt: '2026-01-01T00:00:00.000Z',
+		...timestamps,
+	};
 }
 
 const board = {
@@ -55,7 +61,7 @@ test('specific task type and quadrant return only their intersecting active task
 	assert.equal(refs[0].columnId, 'urgent');
 });
 
-test('all task and quadrant scopes preserve view and column order', () => {
+test('active tasks with equal activity times preserve view and column order', () => {
 	const refs = queryTaskRefs(board, {
 		taskScope: 'all',
 		taskTypeScope: 'all',
@@ -68,6 +74,126 @@ test('all task and quadrant scopes preserve view and column order', () => {
 	assert.equal(
 		JSON.stringify(refs.map((ref) => ref.task.id)),
 		'["work-urgent","work-later","personal-urgent","personal-later"]',
+	);
+});
+
+test('active tasks are globally sorted by updated time then created time', () => {
+	const activityBoard = {
+		views: [
+			{
+				id: 'work',
+				title: '工作任务',
+				order: 0,
+				columns: [
+					{
+						id: 'urgent',
+						title: '紧急',
+						order: 0,
+						tasks: [
+							task('older-first-quadrant', '较早任务', {
+								createdAt: '2026-08-17T19:57:00.000Z',
+							}),
+						],
+					},
+					{
+						id: 'later',
+						title: '稍后',
+						order: 1,
+						tasks: [
+							task('newer-later-quadrant', '刚创建的任务', {
+								createdAt: '2026-08-20T16:56:00.000Z',
+							}),
+						],
+					},
+				],
+			},
+			{
+				id: 'personal',
+				title: '个人任务',
+				order: 1,
+				columns: [
+					{
+						id: 'urgent',
+						title: '紧急',
+						order: 0,
+						tasks: [
+							task('edited-latest', '刚修改的任务', {
+								createdAt: '2026-01-01T00:00:00.000Z',
+								updatedAt: '2026-08-20T17:00:00.000Z',
+							}),
+						],
+					},
+				],
+			},
+		],
+		archives: { work: { tasks: [] }, personal: { tasks: [] } },
+	};
+
+	const refs = queryTaskRefs(activityBoard, {
+		taskScope: 'all',
+		taskTypeScope: 'all',
+		currentViewId: 'work',
+		columnScope: 'all',
+		activeColumnId: 'urgent',
+		keyword: '',
+	});
+
+	assert.deepEqual(
+		refs.map((ref) => ref.task.id),
+		['edited-latest', 'newer-later-quadrant', 'older-first-quadrant'],
+	);
+});
+
+test('active task sorting falls back to created time and remains stable for ties', () => {
+	const fallbackBoard = {
+		views: [
+			{
+				id: 'work',
+				title: '工作任务',
+				order: 0,
+				columns: [
+					{
+						id: 'urgent',
+						title: '紧急',
+						order: 0,
+						tasks: [
+							task('same-time-first', '同时间一', {
+								createdAt: '2026-08-20T16:00:00.000Z',
+							}),
+						],
+					},
+					{
+						id: 'later',
+						title: '稍后',
+						order: 1,
+						tasks: [
+							task('invalid-update-fallback', '无效修改时间', {
+								createdAt: '2026-08-20T17:00:00.000Z',
+								updatedAt: 'invalid',
+							}),
+							task('same-time-second', '同时间二', {
+								createdAt: '2026-08-20T16:00:00.000Z',
+							}),
+						],
+					},
+				],
+			},
+		],
+		archives: { work: { tasks: [] } },
+	};
+
+	const refs = queryTaskRefs(fallbackBoard, {
+		taskScope: 'current',
+		taskTypeScope: 'current',
+		currentViewId: 'work',
+		columnScope: 'all',
+		activeColumnId: 'urgent',
+		keyword: '',
+	});
+
+	assert.deepEqual(
+		refs.map((ref) => ref.task.id),
+		['invalid-update-fallback', 'same-time-first', 'same-time-second'],
 	);
 });
 

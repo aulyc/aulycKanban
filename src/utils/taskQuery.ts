@@ -29,6 +29,27 @@ export function normalizeTaskSearchText(value: string): string {
 	return value.normalize('NFKC').trim().toLocaleLowerCase().replace(/\s+/g, ' ');
 }
 
+function parseTaskTime(value: string | undefined): number | undefined {
+	if (!value) return undefined;
+	const time = Date.parse(value);
+	return Number.isFinite(time) ? time : undefined;
+}
+
+function getTaskActivityTime(task: Readonly<Task>): number {
+	return parseTaskTime(task.updatedAt) ?? parseTaskTime(task.createdAt) ?? Number.NEGATIVE_INFINITY;
+}
+
+function sortActiveTaskRefsByActivity(refs: readonly TaskRef[]): TaskRef[] {
+	return refs
+		.map((ref, index) => ({ ref, index, time: getTaskActivityTime(ref.task) }))
+		.sort((left, right) => {
+			if (left.time > right.time) return -1;
+			if (left.time < right.time) return 1;
+			return left.index - right.index;
+		})
+		.map(({ ref }) => ref);
+}
+
 export function queryTaskRefs(board: Readonly<BoardData>, query: TaskQuery): TaskRef[] {
 	const keyword = normalizeTaskSearchText(query.keyword);
 	const views = [...board.views]
@@ -68,5 +89,5 @@ export function queryTaskRefs(board: Readonly<BoardData>, query: TaskQuery): Tas
 			}
 		}
 	}
-	return refs;
+	return query.taskScope === 'archive' ? refs : sortActiveTaskRefsByActivity(refs);
 }
