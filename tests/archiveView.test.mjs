@@ -351,6 +351,10 @@ test('archive selection mode has one explicit bulk-delete path and an unboxed to
 	const deleteRule =
 		css.match(/\.aulyckanban-archive-delete-selected-btn\s*\{([^}]*)\}/)?.[1] ?? '';
 	assert.match(deleteRule, /margin-left:\s*auto;/);
+	assert.doesNotMatch(
+		css,
+		/\.aulyckanban-archive-(?:cancel-selection|select-mode|select-all)-btn svg/,
+	);
 	assert.doesNotMatch(source, /selectAllCheckbox|aulyckanban-archive-select-all[^-]/);
 });
 

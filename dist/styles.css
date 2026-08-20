@@ -662,6 +662,11 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 	cursor: pointer;
 }
 
+.aulyckanban-task-selection-btn svg {
+	width: 18px;
+	height: 18px;
+}
+
 .aulyckanban-task-selection-btn:hover {
 	background: var(--interactive-hover);
 	color: var(--text-normal);
@@ -1248,9 +1253,6 @@ body:not(.is-mobile) .aulyckanban-resize-host {
 }
 
 .aulyckanban-archive-sort-btn svg,
-.aulyckanban-archive-select-mode-btn svg,
-.aulyckanban-archive-select-all-btn svg,
-.aulyckanban-archive-cancel-selection-btn svg,
 .aulyckanban-archive-delete-selected-btn svg {
 	width: 15px;
 	height: 15px;

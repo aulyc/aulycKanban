@@ -172,6 +172,9 @@ test('collapsed and expanded task creation reserve the same single-row height', 
 	const selectionButton = rule('.aulyckanban-task-selection-btn');
 	assert.match(selectionButton, /width:\s*var\(--aulyckanban-content-control-height\)/);
 	assert.match(selectionButton, /height:\s*var\(--aulyckanban-content-control-height\)/);
+	const selectionIcon = rule('.aulyckanban-task-selection-btn svg');
+	assert.match(selectionIcon, /width:\s*18px/);
+	assert.match(selectionIcon, /height:\s*18px/);
 	assert.match(
 		rule('.aulyckanban-nav-item'),
 		/height:\s*var\(--aulyckanban-content-control-height\)/,
