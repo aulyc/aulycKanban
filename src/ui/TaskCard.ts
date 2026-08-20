@@ -4,7 +4,7 @@ import type { Task } from '../types';
 import type { KanbanStore } from '../store';
 import { t } from '../i18n';
 import { formatDateTimeMinute } from '../utils/datetime';
-import { setTextWithLineBreaks } from '../utils/dom';
+import { appendAccessibleLabel, setTextWithLineBreaks } from '../utils/dom';
 import { ConfirmModal } from './ConfirmModal';
 import { createInlineInput } from './InlineInput';
 import { createTaskCardMeta } from './TaskCardMeta';
@@ -180,7 +180,7 @@ export class TaskCard {
 			cls: 'aulyckanban-task-delete',
 		});
 		setIcon(deleteBtn, 'x');
-		deleteBtn.setAttribute('aria-label', t('task.confirm.delete'));
+		appendAccessibleLabel(deleteBtn, t('task.confirm.delete'));
 		deleteBtn.addEventListener('click', (e: MouseEvent) => {
 			e.stopPropagation();
 			new ConfirmModal(this.app, {

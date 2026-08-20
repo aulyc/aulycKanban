@@ -115,6 +115,9 @@ const { TaskCard } = await loadSourceModule(new URL('../src/ui/TaskCard.ts', imp
 			formatDateTimeMinute: () => '2026/07/13 12:00',
 		},
 		'../utils/dom': {
+			appendAccessibleLabel: (element, value) => {
+				element.createSpan({ cls: 'aulyckanban-accessible-label', text: value });
+			},
 			setTextWithLineBreaks: (element, value) => {
 				element.textContent = value;
 			},
@@ -327,7 +330,12 @@ test('task actions use the shared archive and delete icons', () => {
 	assert.equal(icons[0].name, 'archive');
 	assert.equal(icons[1].element, deleteButton);
 	assert.equal(icons[1].name, 'x');
-	assert.equal(deleteButton.attributes['aria-label'], 'task.confirm.delete');
+	assert.equal(
+		descendants(deleteButton).find((element) =>
+			element.classList.contains('aulyckanban-accessible-label'),
+		).textContent,
+		'task.confirm.delete',
+	);
 });
 
 test('single mouse clicks only select a task and double-clicking its content edits it', () => {

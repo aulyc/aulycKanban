@@ -404,7 +404,10 @@ test('archive card selection checkbox occupies the restore action position', () 
 	assert.equal(restoreButton.parentElement, browseActions);
 	assert.equal(deleteButton.parentElement, browseActions);
 	assert.equal(deleteButton.icon, 'x');
-	assert.equal(deleteButton.attributes['aria-label'], 'archive.confirm.delete');
+	assert.equal(
+		byClass(deleteButton, 'aulyckanban-accessible-label')[0].textContent,
+		'archive.confirm.delete',
+	);
 
 	byClass(container, 'aulyckanban-archive-select-mode-btn')[0].listeners.get('click')[0]();
 	const selectingCard = byClass(container, 'aulyckanban-archive-task')[0];

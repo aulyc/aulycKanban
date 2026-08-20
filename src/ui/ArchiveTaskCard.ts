@@ -88,7 +88,7 @@ export class ArchiveTaskCard {
 			cls: 'aulyckanban-task-delete aulyckanban-archive-task-delete',
 		});
 		setIcon(deleteBtn, 'x');
-		deleteBtn.setAttribute('aria-label', t('archive.confirm.delete'));
+		appendAccessibleLabel(deleteBtn, t('archive.confirm.delete'));
 		deleteBtn.addEventListener('click', (event: MouseEvent) => {
 			event.stopPropagation();
 			new ConfirmModal(app, {
