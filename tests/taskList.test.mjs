@@ -154,7 +154,7 @@ function taskRef(viewId, viewTitle, columnId, columnTitle, content) {
 	};
 }
 
-test('aggregate list renders duplicate task ids with their explicit source labels', () => {
+test('ordinary cards always render task type and quadrant source labels', () => {
 	const cards = [];
 	activeCards = cards;
 	globalThis.document = { activeElement: null };
@@ -177,11 +177,23 @@ test('aggregate list renders duplicate task ids with their explicit source label
 	list.render();
 
 	assert.equal(cards.length, 2);
-	assert.equal(JSON.stringify(cards.map((card) => card.sourceLabel)), '["工作任务","个人任务"]');
+	assert.equal(
+		JSON.stringify(cards.map((card) => card.sourceLabel)),
+		'["工作任务 · 基础","个人任务 · 基础"]',
+	);
 	const tasks = descendants(list.getEl()).find((element) =>
 		element.classList.contains('aulyckanban-tasks'),
 	);
 	assert.equal(tasks.children.length, 2);
+
+	activeCards = [];
+	const currentScopeStore = {
+		...store,
+		getVisibleTaskRefs: () => [refs[0]],
+		getTaskScope: () => 'current',
+	};
+	new TaskList(new MockElement(), {}, currentScopeStore).render();
+	assert.equal(activeCards[0].sourceLabel, '工作任务 · 基础');
 });
 
 test('ordinary task list enters multi-select mode and moves the selected coordinates together', () => {

@@ -285,11 +285,8 @@ export class TaskList {
 		].join('|');
 	}
 
-	private getSourceLabel(ref: TaskRef): string | undefined {
-		const labels: string[] = [];
-		if (this.store.getTaskScope() === 'all') labels.push(ref.viewTitle);
-		if (this.store.getColumnScope() === 'all') labels.push(ref.columnTitle);
-		return labels.length > 0 ? labels.join(' · ') : undefined;
+	private getSourceLabel(ref: TaskRef): string {
+		return `${ref.viewTitle} · ${ref.columnTitle}`;
 	}
 
 	getEl(): HTMLElement {

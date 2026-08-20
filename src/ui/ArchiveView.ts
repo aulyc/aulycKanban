@@ -164,11 +164,8 @@ export class ArchiveView {
 		});
 	}
 
-	private getSourceLabel(ref: TaskRef): string | undefined {
-		const labels: string[] = [];
-		if (this.store.getTaskTypeScope() === 'all') labels.push(ref.viewTitle);
-		if (this.store.getColumnScope() === 'all') labels.push(ref.columnTitle);
-		return labels.length > 0 ? labels.join(' · ') : undefined;
+	private getSourceLabel(ref: TaskRef): string {
+		return `${ref.viewTitle} · ${ref.columnTitle}`;
 	}
 
 	private toggleTaskSelection(taskKey: string): void {

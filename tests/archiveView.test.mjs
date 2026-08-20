@@ -229,16 +229,19 @@ test('archive browse mode uses one compact toolbar and shared card metadata', ()
 	assert.equal(byClass(container, 'aulyckanban-task-content-completed').length, 0);
 });
 
-test('archive card source labels follow the same aggregate scope rules as ordinary cards', () => {
+test('archive cards always render task type and quadrant source labels', () => {
 	const current = createHarness().container;
-	assert.equal(byClass(current, 'aulyckanban-task-source').length, 0);
+	assert.equal(byClass(current, 'aulyckanban-task-source')[0].textContent, '工作任务 · 周期任务');
 	assert.equal(byClass(current, 'aulyckanban-archive-meta-item').length, 0);
 
 	const allTypes = createHarness({ getTaskTypeScope: () => 'all' }).container;
-	assert.equal(byClass(allTypes, 'aulyckanban-task-source')[0].textContent, '工作任务');
+	assert.equal(byClass(allTypes, 'aulyckanban-task-source')[0].textContent, '工作任务 · 周期任务');
 
 	const allColumns = createHarness({ getColumnScope: () => 'all' }).container;
-	assert.equal(byClass(allColumns, 'aulyckanban-task-source')[0].textContent, '周期任务');
+	assert.equal(
+		byClass(allColumns, 'aulyckanban-task-source')[0].textContent,
+		'工作任务 · 周期任务',
+	);
 
 	const allSources = createHarness({
 		getTaskTypeScope: () => 'all',
